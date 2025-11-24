@@ -58,7 +58,11 @@ async function loadMonthlyJson(year, month) {
 // Gera 12x36 alternando dias (assume início no dia startWorkingDay)
 function generate12x36Schedule(startWorkingDay, totalDays) {
     const schedule = new Array(totalDays).fill('F');
-    for (let d = startWorkingDay; d <= totalDays; d += 2) schedule[d-1] = 'T';
+    // startWorkingDay é o dia do mês (1-based) em que o trabalho começa.
+    // O dia de trabalho é no índice (d-1)
+    for (let d = startWorkingDay; d <= totalDays; d += 2) {
+        schedule[d-1] = 'T'; 
+    }
     return schedule;
 }
 
@@ -153,20 +157,34 @@ function buildFinalScheduleForMonth(employeeData, monthObj) {
     const schedule = new Array(totalDays).fill(null);
 
     // Helper: interpreta T (string, array, pattern)
-    const parseTtoArray = (t) => {
-        if (!t) return [];
+    const parseTtoArray = (t, rawData) => {
+        if (!t) t = [];
+        
+        // CORREÇÃO: Tratar o padrão 12x36 vindo de 'escala' e 'inicio' se 'T' for vazio
+        if ((Array.isArray(t) && t.length === 0) || (typeof t === 'string' && t.trim().length === 0)) {
+            if (rawData.escala && /12x36/i.test(rawData.escala) && rawData.inicio) {
+                const start = parseInt(rawData.inicio, 10);
+                if (!isNaN(start) && start >= 1 && start <= totalDays) {
+                    return generate12x36Schedule(start, totalDays);
+                }
+            }
+        }
+        
         // If already an array like ['T','F',...'] assume full schedule
         if (Array.isArray(t) && t.length === totalDays && typeof t[0] === 'string') return t;
-        // If string contains '12x36', generate 12x36 pattern (try to detect start day)
+        
+        // If string contains '12x36', generate 12x36 pattern (try to detect start day) - Mantido para compatibilidade
         if (typeof t === 'string' && /12x36/i.test(t)) {
             const m = t.match(/iniciado no dia\s*(\d{1,2})/i);
             const start = m ? parseInt(m[1],10) : 1;
             return generate12x36Schedule(start, totalDays);
         }
+        
         // If string says 'segunda a sexta' or 'fins de semana' -> generate 5x2 pattern
         if (typeof t === 'string' && /segunda a sexta|segunda à sexta/i.test(t)) {
             return generate5x2ScheduleDefaultForMonth(monthObj);
         }
+        
         // If string looks like list of days -> parseDayListForMonth returns array of day numbers
         if (typeof t === 'string') {
             const parsedDays = parseDayListForMonth(t, monthObj);
@@ -191,7 +209,7 @@ function buildFinalScheduleForMonth(employeeData, monthObj) {
     vacDays.forEach(d => { if (d>=1 && d<=totalDays) schedule[d-1] = 'FE'; });
 
     // 2) Try fixed schedule
-    const tParsed = parseTtoArray(employeeData.T);
+    const tParsed = parseTtoArray(employeeData.T, employeeData); // Passa employeeData para checar 12x36
     const isFixedFullSchedule = Array.isArray(tParsed) && tParsed.length === totalDays && typeof tParsed[0] === 'string';
 
     if (isFixedFullSchedule) {
@@ -289,7 +307,17 @@ function rebuildScheduleDataForSelectedMonth() {
 
     scheduleData = {};
     Object.keys(employeeMetadata).forEach(name => {
-        const data = rawSchedule && rawSchedule[name] ? rawSchedule[name] : { T: employeeMetadata[name].Horário || 'segunda a sexta', F: 'fins de semana', FS: '', FD: '', FE: '' };
+        // CORREÇÃO: Usar o horário do metadado como fallback para 'T' se não houver dados específicos no JSON mensal
+        const fallbackSchedule = { 
+            T: employeeMetadata[name].Horário || 'segunda a sexta', 
+            F: 'fins de semana', 
+            FS: '', 
+            FD: '', 
+            FE: '' 
+        };
+        // Se houver dados no rawSchedule, usa-os, caso contrário, usa o fallback.
+        const data = rawSchedule && rawSchedule[name] ? rawSchedule[name] : fallbackSchedule;
+        
         scheduleData[name] = {
             info: employeeMetadata[name],
             schedule: buildFinalScheduleForMonth(data, monthObj)
@@ -340,6 +368,7 @@ function updateDailyView() {
     const monthObj = { year: selectedMonthObj.year, month: selectedMonthObj.month };
     const dayOfWeekIndex = new Date(monthObj.year, monthObj.month, currentDay).getDay();
     const now = new Date();
+    // Verifica se a data atual é igual ao dia selecionado
     const isToday = (now.getDate() === currentDay && now.getMonth() === systemMonth && now.getFullYear() === systemYear);
     const dayString = currentDay < 10 ? '0'+currentDay : currentDay;
     currentDateLabel.textContent = `${daysOfWeek[dayOfWeekIndex]}, ${dayString}/${pad(monthObj.month+1)}/${monthObj.year}`;
@@ -523,6 +552,7 @@ function updateWeekendTable() {
             let satWorkers = [], sunWorkers = [];
             Object.keys(scheduleData).forEach(name=>{
                 const emp = scheduleData[name];
+                // Inclui Operador Noc e Líder de Célula
                 if (emp.info.Grupo === "Operador Noc" || emp.info.Grupo === "Líder de Célula") {
                     if (satDay > 0 && satDay <= totalDays && emp.schedule[satDay-1] === 'T') satWorkers.push(name);
                     if (sunDay > 0 && sunDay <= totalDays && emp.schedule[sunDay-1] === 'T') sunWorkers.push(name);
@@ -573,7 +603,8 @@ function initTabs() {
             tabContents.forEach(content => {
                 if (content.id === `${target}View`) {
                     content.classList.remove('hidden');
-                    if (target === 'personal') updateWeekendTable();
+                    // Chama updateWeekendTable quando a aba 'personal' é ativada
+                    if (target === 'personal') updateWeekendTable(); 
                 } else {
                     content.classList.add('hidden');
                 }
@@ -605,7 +636,10 @@ function initMonthSelect() {
         select.appendChild(opt);
     });
     const header = document.querySelector('header');
-    const container = document.createElement('div'); container.className = 'mt-3'; container.appendChild(select); header.appendChild(container);
+    const container = document.createElement('div'); container.className = 'mt-3'; container.appendChild(select); 
+    // Garante que o select seja inserido no DOM
+    const headerDate = document.getElementById('headerDate');
+    if (headerDate) headerDate.insertAdjacentElement('afterend', container);
 
     select.addEventListener('change', (e) => {
         const [y, mo] = e.target.value.split('-').map(Number);
@@ -616,7 +650,9 @@ function initMonthSelect() {
             rebuildScheduleDataForSelectedMonth();
             initSelect();
             updateDailyView();
-            updateWeekendTable();
+            // Recarrega a tabela de plantão ao mudar o mês se a aba estiver ativa (ou por precaução)
+            const personalTab = document.querySelector('.tab-button[data-tab="personal"]');
+            if(personalTab && personalTab.classList.contains('active')) updateWeekendTable();
             document.getElementById('headerDate').textContent = `Mês de Referência: ${monthNames[selectedMonthObj.month]} de ${selectedMonthObj.year}`;
         });
     });
@@ -637,16 +673,4 @@ function initGlobal() {
         rebuildScheduleDataForSelectedMonth();
         document.getElementById('headerDate').textContent = `Mês de Referência: ${monthNames[selectedMonthObj.month]} de ${selectedMonthObj.year}`;
         const monthObj = { year: selectedMonthObj.year, month: selectedMonthObj.month };
-        const totalDays = new Date(monthObj.year, monthObj.month+1, 0).getDate();
-        const slider = document.getElementById('dateSlider'); if (slider) slider.max = totalDays;
-        const sliderMaxLabel = document.getElementById('sliderMaxLabel'); if (sliderMaxLabel) sliderMaxLabel.textContent = `Dia ${totalDays}`;
-        initTabs(); initSelect(); initDailyView();
-        currentDay = Math.min(systemDay, totalDays);
-        const ds = document.getElementById('dateSlider'); if (ds) ds.value = currentDay;
-        updateDailyView();
-        scheduleMidnightUpdate();
-        updateWeekendTable();
-    });
-}
-
-document.addEventListener('DOMContentLoaded', initGlobal);
+        const totalDays = new Date(monthObj.year, month
