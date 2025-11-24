@@ -1,52 +1,68 @@
 // Este script depende das variáveis globais: rawDataFromEscala e employeeMetadata (de escala-data.js)
 
 // ==========================================
-// 1. CONFIGURAÇÃO DE DATA
+// 1. CONFIGURAÇÃO DE DATA (MULTI-MÊS)
 // ==========================================
 const currentDateObj = new Date();
 const monthNames = ["Janeiro", "Fevereiro", "Março", "Abril", "Maio", "Junho", "Julho", "Agosto", "Setembro", "Outubro", "Novembro", "Dezembro"];
 
-// Variáveis para a DATA DO SISTEMA (para iniciar o slider no dia e mês atual real)
+// Variáveis do sistema
 const systemYear = currentDateObj.getFullYear();
-const systemMonth = currentDateObj.getMonth(); // Mês atual real (0=Jan, 10=Nov)
+const systemMonth = currentDateObj.getMonth();
 const systemDay = currentDateObj.getDate();
 
-// Variáveis para a ESCALA (Fixas em Novembro/2025, conforme solicitação)
-const scheduleYear = 2025; 
-const scheduleMonth = 10; // Novembro (index 10)
-const daysInScheduleMonth = new Date(scheduleYear, scheduleMonth + 1, 0).getDate(); // 30 dias para Nov
-let currentDay = systemDay; // Variável para o dia atualmente selecionado no slider
+// Meses disponíveis na interface (Nov 2025, Dez 2025, Jan 2026)
+const availableMonths = [
+    { year: 2025, month: 10 }, // Novembro 2025 (index 10)
+    { year: 2025, month: 11 }, // Dezembro 2025 (index 11)
+    { year: 2026, month: 0 }   // Janeiro 2026 (index 0)
+];
+
+// Estado selecionado (inicialmente tenta systemMonth se estiver disponível, senão primeiro disponível)
+let selectedMonthObj = availableMonths.find(m => m.year === systemYear && m.month === systemMonth) || availableMonths[0];
+let currentDay = systemDay;
+
+// scheduleData para o mês atual (reconstruído ao trocar mês)
+let scheduleData = {};
+let rawSchedule = {}; // resultado do parse inicial do texto bruto
+
+// Mapa de status
+const daysOfWeek = ["Dom", "Seg", "Ter", "Qua", "Qui", "Sex", "Sáb"];
+const statusMap = { 'T': 'Trabalhando', 'F': 'Folga', 'FS': 'Folga Sáb', 'FD': 'Folga Dom', 'FE': 'Férias', 'OFF-SHIFT': 'Exp. Encerrado' };
+let dailyChart = null;
 
 
 // ==========================================
 // 2. FUNÇÕES DE PARSE E GERAÇÃO DA ESCALA
 // ==========================================
 
-// Função para processar o texto bruto e extrair os dados de cada colaborador
+// Processa o texto bruto e extrai os blocos. Também corrige nomes com quebras estranhas (une linhas seguidas quando necessário).
 function processRawSchedule(rawText) {
     const records = rawText.trim().split('*********************************');
     const processedData = {};
-    
+
     records.forEach(record => {
-        // Filtra linhas vazias após o trim()
-        const lines = record.trim().split('\n').map(line => line.trim()).filter(line => line.length > 0);
+        // Normaliza quebras de linha duplicadas e remove trailing markers
+        const normalized = record.replace(/\r/g, '\n').replace(/\n{2,}/g, '\n').trim();
+        const lines = normalized.split('\n').map(line => line.trim()).filter(line => line.length > 0);
         let name = '';
         const data = { T: '', F: '', FS: '', FD: '', FE: '' };
-        let currentField = null; // Variável de estado para rastrear o campo atual
+        let currentField = null;
 
         lines.forEach(line => {
+            // Se a linha iniciar com "Nome do colaborador:" mas por alguma razão o nome estiver em duas linhas,
+            // juntamos as próximas linhas até encontrar outro rótulo conhecido.
             if (line.startsWith('Nome do colaborador:')) {
                 name = line.replace('Nome do colaborador:', '').trim();
-                currentField = null; // Não há campo de dados ativo após o nome
+                currentField = null;
             } else if (line.startsWith('Dias trabalhados:')) {
                 data.T = line.replace('Dias trabalhados:', '').trim();
                 currentField = 'T';
             } else if (line.startsWith('F:')) {
-                if (line.includes('12x36')) {
-                    // Trata o caso do 12x36 onde 'F:' contém a info de trabalho, movendo para 'T'
+                if (line.includes('12x36') || line.toLowerCase().includes('12x36')) {
                     data.T = line.substring(line.indexOf('12x36'));
                     data.F = '';
-                    currentField = 'T'; 
+                    currentField = 'T';
                 } else {
                     data.F = line.replace('F:', '').trim();
                     currentField = 'F';
@@ -61,231 +77,266 @@ function processRawSchedule(rawText) {
                 data.FE = line.replace('FE:', '').trim();
                 currentField = 'FE';
             } else if (currentField) {
-                // Se estamos em um campo de dados (currentField != null) e a linha não é um novo rótulo,
-                // trata como continuação e anexa ao campo atual.
                 data[currentField] += ', ' + line;
+            } else {
+                // Se a linha não pertence a campo conhecido, pode ser continuação do nome (ex: "Patricia" newline "Oliveira")
+                if (name && !data.T && !data.F && !data.FS && !data.FD && !data.FE) {
+                    name = (name + ' ' + line).trim();
+                }
             }
         });
-        
-        // Limpeza final para remover vírgulas ou espaços soltos no início/fim
+
+        // limpeza final
         Object.keys(data).forEach(key => {
             data[key] = data[key].replace(/,\s*$/, '').replace(/^\s*,\s*/, '').trim();
         });
 
-        if (name) processedData[name] = data;
+        if (name) {
+            // Normaliza espaços repetidos no nome
+            const cleanName = name.replace(/\s{2,}/g, ' ').trim();
+            processedData[cleanName] = data;
+        }
     });
+
     return processedData;
 }
 
 /**
- * Gera a escala 12x36 (T/F/T/F...) para o mês de Novembro.
- * Day 1 (offset 0) é Trabalhando se startWorkingDay for 1.
+ * Função que resolve strings contendo:
+ * - listas de dias: "1,2,3"
+ * - ranges simples: "10-15"
+ * - ranges com datas: "03/11 a 03/12", "24/11 até 08/12", "03/11-03/12"
+ * - datas únicas: "03/11" ou "3/11"
+ *
+ * Retorna um array de números representando os dias do mês 'monthObj' (monthObj = {year, month})
  */
-function generate12x36ScheduleNov(startWorkingDay, totalDays) {
+function parseDayListForMonth(dayString, monthObj) {
+    if (!dayString) return [];
+    const totalDays = new Date(monthObj.year, monthObj.month + 1, 0).getDate();
+    const days = new Set();
+
+    // Normaliza conectores
+    const normalized = dayString.replace(/\b(at[eé]|até|a)\b/gi, ' a ')
+                                .replace(/–|—/g, '-')
+                                .replace(/\s*-\s*/g, '-')
+                                .replace(/\s+até\s+/gi, ' a ')
+                                .replace(/\s+/g, ' ')
+                                .trim();
+
+    // Splita por vírgula, mas preserva ranges com barra
+    const parts = normalized.split(',').map(p => p.trim()).filter(p => p.length > 0);
+
+    parts.forEach(part => {
+        // 1) Range de data com formato dd/mm [a|-] dd/mm  => 03/11 a 03/12
+        const dateRange = part.match(/^(\d{1,2})\/(\d{1,2})(?:\/(\d{2,4}))?\s*(?:a|-)\s*(\d{1,2})\/(\d{1,2})(?:\/(\d{2,4}))?$/);
+        if (dateRange) {
+            let [ , sDay, sMonth, sYear, eDay, eMonth, eYear ] = dateRange;
+            sDay = parseInt(sDay, 10);
+            sMonth = parseInt(sMonth, 10) - 1;
+            eDay = parseInt(eDay, 10);
+            eMonth = parseInt(eMonth, 10) - 1;
+
+            // Assumir anos se não fornecidos: usar year do monthObj ou inferir sequência
+            const sY = sYear ? parseInt(sYear,10) : (sMonth <= monthObj.month ? monthObj.year : monthObj.year - (sMonth > monthObj.month ? 1 : 0));
+            const eY = eYear ? parseInt(eYear,10) : (eMonth >= monthObj.month ? monthObj.year : monthObj.year + (eMonth < monthObj.month ? 1 : 0));
+
+            const startDate = new Date(sY, sMonth, sDay);
+            const endDate = new Date(eY, eMonth, eDay);
+
+            if (isNaN(startDate) || isNaN(endDate)) return;
+
+            for (let d = new Date(startDate); d <= endDate; d.setDate(d.getDate() + 1)) {
+                if (d.getFullYear() === monthObj.year && d.getMonth() === monthObj.month) {
+                    days.add(d.getDate());
+                }
+            }
+            return;
+        }
+
+        // 2) Data única no formato dd/mm
+        const singleDate = part.match(/^(\d{1,2})\/(\d{1,2})(?:\/(\d{2,4}))?$/);
+        if (singleDate) {
+            const day = parseInt(singleDate[1],10);
+            const month = parseInt(singleDate[2],10) - 1;
+            const year = singleDate[3] ? parseInt(singleDate[3],10) : (month <= monthObj.month ? monthObj.year : monthObj.year + (month < monthObj.month ? 1 : 0));
+            if (year === monthObj.year && month === monthObj.month) {
+                if (day >=1 && day <= totalDays) days.add(day);
+            }
+            return;
+        }
+
+        // 3) Range simples de números 10-15
+        const simpleRange = part.match(/^(\d{1,2})-(\d{1,2})$/);
+        if (simpleRange) {
+            let start = parseInt(simpleRange[1],10);
+            let end = parseInt(simpleRange[2],10);
+            if (!isNaN(start) && !isNaN(end) && start <= end) {
+                for (let d = start; d <= end; d++) {
+                    if (d >=1 && d <= totalDays) days.add(d);
+                }
+            }
+            return;
+        }
+
+        // 4) Dia isolado "5" ou " 05 "
+        const dayOnly = part.match(/^(\d{1,2})$/);
+        if (dayOnly) {
+            const d = parseInt(dayOnly[1],10);
+            if (d >=1 && d <= totalDays) days.add(d);
+            return;
+        }
+
+        // 5) Caso especial: texto 'fins de semana' ou 'segunda a sexta'
+        if (/fins de semana/i.test(part) || /fim de semana/i.test(part)) {
+            // adicionar sáb/dom do mês
+            for (let d = 1; d <= totalDays; d++) {
+                const dow = new Date(monthObj.year, monthObj.month, d).getDay();
+                if (dow === 0 || dow === 6) days.add(d);
+            }
+            return;
+        }
+        if (/segunda a sexta/i.test(part) || /segunda à sexta/i.test(part)) {
+            for (let d = 1; d <= totalDays; d++) {
+                const dow = new Date(monthObj.year, monthObj.month, d).getDay();
+                if (dow >= 1 && dow <= 5) days.add(d);
+            }
+            return;
+        }
+
+        // 6) Caso não reconhecido: ignorar
+    });
+
+    return Array.from(days).sort((a,b) => a-b);
+}
+
+
+// Gera a 12x36 para qualquer mês (ajustada para considerar início)
+function generate12x36Schedule(startWorkingDay, totalDays) {
     let schedule = [];
     for (let day = 1; day <= totalDays; day++) {
         const offset = day - startWorkingDay;
-        // Se o offset for par (0, 2, 4...), é dia de trabalho.
         schedule.push(offset >= 0 && offset % 2 === 0 ? "T" : "F");
     }
     return schedule;
 }
 
-// Função que gera a escala 5x2 (segunda a sexta)
-function generate5x2ScheduleDefault(totalDays) {
+// Gera 5x2 (segunda a sexta) para qualquer mês
+function generate5x2ScheduleDefaultForMonth(monthObj) {
+    const totalDays = new Date(monthObj.year, monthObj.month + 1, 0).getDate();
     let schedule = [];
     for (let day = 1; day <= totalDays; day++) {
-        // Usa o scheduleYear (2025) e scheduleMonth para calcular o dia da semana CORRETO
-        let date = new Date(scheduleYear, scheduleMonth, day); 
-        let dayOfWeek = date.getDay(); // 0=Dom, 6=Sáb
-        if (dayOfWeek === 0 || dayOfWeek === 6) schedule.push("F");
-        else schedule.push("T");
+        const dow = new Date(monthObj.year, monthObj.month, day).getDay();
+        schedule.push((dow === 0 || dow === 6) ? "F" : "T");
     }
     return schedule;
 }
 
-// Função auxiliar para parsear dias ou ranges (ex: 1, 5, 10-15)
-function parseDayList(dayString, totalDays) {
-    if (!dayString) return [];
-    const days = new Set();
-    // Substitui espaços em torno de vírgulas, remove espaços em excesso e filtra partes vazias.
-    const parts = dayString.replace(/\s*,\s*/g, ',').split(',').map(s => s.trim()).filter(s => s.length > 0); 
 
-    parts.forEach(part => {
-        // Trata ranges: 10-15
-        const rangeMatch = part.match(/^(\d{1,2})\s*-\s*(\d{1,2})$/);
-        if (rangeMatch) {
-            const start = parseInt(rangeMatch[1]);
-            const end = parseInt(rangeMatch[2]);
-            if (!isNaN(start) && !isNaN(end) && start > 0 && end <= totalDays && start <= end) {
-                for (let day = start; day <= end; day++) {
-                    days.add(day);
-                }
-            }
-            return;
-        }
-        
-        // Trata dias específicos: 5, 24, 25, 26, ...
-        const dayMatch = part.match(/^(\d{1,2})$/);
-        if (dayMatch) {
-            const day = parseInt(dayMatch[1]);
-            if (!isNaN(day) && day > 0 && day <= totalDays) {
-                days.add(day);
-            }
-            return;
-        }
-
-        // Trata ranges de data/mês (Embora a escala seja fixa, este parser é mais robusto)
-        const dateRangeMatch = part.match(/(\d{1,2})\/(\d{1,2})\s*a\s*(\d{1,2})\/(\d{1,2})/);
-        if (dateRangeMatch) {
-            const startDay = parseInt(dateRangeMatch[1]);
-            const startMonth = parseInt(dateRangeMatch[2]) - 1; // Mês é 0-indexed
-            const endDay = parseInt(dateRangeMatch[3]);
-            const endMonth = parseInt(dateRangeMatch[4]) - 1;
-
-            if (startMonth <= scheduleMonth && endMonth >= scheduleMonth) { // Usar scheduleMonth
-                const effectiveStartDay = startMonth === scheduleMonth ? startDay : 1;
-                const effectiveEndDay = endMonth === scheduleMonth ? endDay : totalDays;
-
-                for (let day = Math.max(1, effectiveStartDay); day <= Math.min(totalDays, effectiveEndDay); day++) {
-                    days.add(day);
-                }
-            }
-        }
-    });
-
-    return Array.from(days).sort((a, b) => a - b);
-}
-
-
-// Função principal que constrói a escala final a partir dos dados de texto
-function buildFinalSchedule(employeeData, totalDays) {
-    // Inicializa a agenda com o status de "indefinido" (null)
+// Constrói a escala final a partir dos dados de texto para um mês específico
+function buildFinalScheduleForMonth(employeeData, monthObj) {
+    const totalDays = new Date(monthObj.year, monthObj.month + 1, 0).getDate();
     let schedule = new Array(totalDays).fill(null);
-    
-    // Função auxiliar para determinar se deve usar a escala fixa ou a lista de dias
+
     const parseDaysOrSchedule = (dayString) => {
         if (!dayString) return [];
-        // Se for 5x2 ou 12x36, retorna a escala completa (array de T/F/T/F...)
-        if (dayString.includes('segunda a sexta') || dayString.includes('fins de semana')) return generate5x2ScheduleDefault(totalDays);
-        if (dayString.includes('12x36 iniciado no dia 1/11')) return generate12x36ScheduleNov(1, totalDays);
-        if (dayString.includes('12x36 iniciado no dia 2/11')) return generate12x36ScheduleNov(2, totalDays);
-
-        // Caso contrário, retorna a lista de dias (números)
-        return parseDayList(dayString, totalDays); 
+        if (dayString.toLowerCase().includes('segunda a sexta') || dayString.toLowerCase().includes('segunda à sexta')) return generate5x2ScheduleDefaultForMonth(monthObj);
+        if (dayString.toLowerCase().includes('12x36 iniciado no dia 1/11')) return generate12x36Schedule(1, totalDays);
+        if (dayString.toLowerCase().includes('12x36 iniciado no dia 2/11')) return generate12x36Schedule(2, totalDays);
+        // Se string parecer conter dias (números/datas), usar parseDayListForMonth
+        return parseDayListForMonth(dayString, monthObj);
     };
 
-    // 1. Prioridade Máxima: Férias (FE)
-    const vacationDays = parseDayList(employeeData.FE, totalDays);
+    // 1. FÉRIAS - PRIORIDADE MÁXIMA
+    const vacationDays = parseDayListForMonth(employeeData.FE, monthObj);
     vacationDays.forEach(day => {
-        if (day > 0 && day <= totalDays) {
-            schedule[day - 1] = 'FE';
-        }
+        if (day >=1 && day <= totalDays) schedule[day - 1] = 'FE';
     });
 
-
-    // 2. Escala Fixa (12x36 ou 5x2) - Definida em 'T' ou 'F'
+    // 2. Escala fixa
     let isFixedSchedule = false;
     let fixedScheduleDays = [];
-    
-    // Verifica se a escala fixa foi definida no campo 'T'
+
     const workingStatusOrDays = parseDaysOrSchedule(employeeData.T);
     if (Array.isArray(workingStatusOrDays) && workingStatusOrDays.length === totalDays && typeof workingStatusOrDays[0] === 'string') {
-        // É uma escala fixa (ex: 12x36 ou 5x2)
         fixedScheduleDays = workingStatusOrDays;
         isFixedSchedule = true;
-    } 
-    // Se não estiver em 'T', verifica se está em 'F' (ex: "Folga fins de semana" para 5x2)
-    else if (employeeData.F.includes('fins de semana')) {
-         fixedScheduleDays = generate5x2ScheduleDefault(totalDays);
-         isFixedSchedule = true;
+    } else if (employeeData.F && employeeData.F.toLowerCase().includes('fins de semana')) {
+        fixedScheduleDays = generate5x2ScheduleDefaultForMonth(monthObj);
+        isFixedSchedule = true;
     }
 
-
     if (isFixedSchedule) {
-        // Aplica a escala fixa, mas *mantém* as Férias (FE)
         schedule = fixedScheduleDays.map((status, index) => schedule[index] === 'FE' ? 'FE' : status);
     } else {
-        // 3. Aplica Dias Trabalhados (T) se não houver escala fixa
-        // Se o resultado de workingStatusOrDays é uma lista de dias (números), aplica 'T'
         if (Array.isArray(workingStatusOrDays)) {
-            workingStatusOrDays.forEach(day => { 
-                if (schedule[day - 1] === null) schedule[day - 1] = 'T'; 
+            workingStatusOrDays.forEach(day => {
+                if (schedule[day - 1] === null) schedule[day - 1] = 'T';
             });
         }
     }
-    
-    // 4. Folga Domingo (FD) - Sobrescreve 'T' ou 'null'
-    // Prioridade maior que 'T' e Folgas genéricas, mas menor que FE
-    parseDayList(employeeData.FD, totalDays).forEach(day => { 
-        if (schedule[day - 1] !== 'FE') schedule[day - 1] = 'FD'; 
+
+    // FD (Domingo)
+    parseDayListForMonth(employeeData.FD, monthObj).forEach(day => {
+        if (schedule[day - 1] !== 'FE') schedule[day - 1] = 'FD';
     });
-    
-    // 5. Folga Sábado (FS) - Sobrescreve 'T' ou 'null'
-    // Prioridade menor que FE ou FD
-    parseDayList(employeeData.FS, totalDays).forEach(day => { 
-        if (schedule[day - 1] !== 'FE' && schedule[day - 1] !== 'FD') schedule[day - 1] = 'FS'; 
+
+    // FS (Sábado)
+    parseDayListForMonth(employeeData.FS, monthObj).forEach(day => {
+        if (schedule[day - 1] !== 'FE' && schedule[day - 1] !== 'FD') schedule[day - 1] = 'FS';
     });
-    
-    // 6. Folga Geral (F) - Sobrescreve 'T' ou 'null'
-    // Aplica apenas se não houver escala fixa (pois 'F' já é tratado na escala fixa)
+
+    // F (Folga geral) - só se não for escala fixa
     if (!isFixedSchedule) {
-        parseDayList(employeeData.F, totalDays).forEach(day => { 
-            // Não sobrescreve FE, FD ou FS
+        parseDayListForMonth(employeeData.F, monthObj).forEach(day => {
             if (schedule[day - 1] !== 'FE' && schedule[day - 1] !== 'FD' && schedule[day - 1] !== 'FS') {
                 schedule[day - 1] = 'F';
             }
         });
     }
 
-    // 7. Preenche o restante com 'T'
+    // Preenche restantes com 'T'
     for (let i = 0; i < totalDays; i++) {
-        if (schedule[i] === null) {
-            schedule[i] = 'T';
-        }
+        if (schedule[i] === null) schedule[i] = 'T';
     }
 
     return schedule;
 }
 
 
+// Reconstrói scheduleData para o mês selecionado
+function rebuildScheduleDataForSelectedMonth() {
+    const monthObj = { year: selectedMonthObj.year, month: selectedMonthObj.month };
+    const totalDays = new Date(monthObj.year, monthObj.month + 1, 0).getDate();
+
+    scheduleData = {};
+    Object.keys(employeeMetadata).forEach(name => {
+        const data = rawSchedule[name] || { T: 'segunda a sexta', F: 'fins de semana', FS: '', FD: '', FE: '' };
+        scheduleData[name] = {
+            info: employeeMetadata[name],
+            schedule: buildFinalScheduleForMonth(data, monthObj)
+        };
+    });
+
+    // Ajusta slider max e currentDay se necessário
+    const slider = document.getElementById('dateSlider');
+    if (slider) {
+        slider.max = totalDays;
+        const sliderMaxLabel = document.getElementById('sliderMaxLabel');
+        if (sliderMaxLabel) sliderMaxLabel.textContent = `Dia ${totalDays}`;
+        // Ajusta currentDay se extrapolar o mês
+        if (currentDay > totalDays) currentDay = totalDays;
+        slider.value = currentDay;
+    }
+}
+
+
 // ==========================================
-// 3. ESTRUTURA DE DADOS UNIFICADA (GLOBAL)
+// 3. LÓGICA DE VISUALIZAÇÃO E INTERAÇÃO (ATUALIZADA PARA MULTI-MÊS)
 // ==========================================
-const rawSchedule = processRawSchedule(rawDataFromEscala);
-
-// scheduleData: Objeto final que combina metadados (employeeMetadata) e a escala processada (rawSchedule).
-const scheduleData = {}; 
-Object.keys(employeeMetadata).forEach(name => {
-    // Tenta obter a escala bruta, senão usa o padrão 5x2
-    const data = rawSchedule[name] || { T: 'segunda a sexta', F: 'fins de semana', FS: '', FD: '', FE: '' }; 
-    
-    // Constrói a estrutura final para cada colaborador
-    scheduleData[name] = {
-        info: employeeMetadata[name],
-        // Usa daysInScheduleMonth para garantir que a escala gerada tenha 30 dias (Nov)
-        schedule: buildFinalSchedule(data, daysInScheduleMonth) 
-    };
-});
-
-
-// VARIÁVEIS GLOBAIS DE ESTADO
-const employeeNames = Object.keys(scheduleData);
-const daysOfWeek = ["Dom", "Seg", "Ter", "Qua", "Qui", "Sex", "Sáb"];
-const statusMap = { 'T': 'Trabalhando', 'F': 'Folga', 'FS': 'Folga Sáb', 'FD': 'Folga Dom', 'FE': 'Férias', 'OFF-SHIFT': 'Exp. Encerrado' };
-// currentDay já está definido no bloco 1 e será atualizado pelo slider
-let dailyChart = null;
-
-
-// ==========================================
-// 4. LÓGICA DE VISUALIZAÇÃO E INTERAÇÃO
-// ==========================================
-
 function pad(number) {
     return number < 10 ? '0' + number : number;
 }
 
-// Simulação de horário de trabalho (verifica se a hora atual está dentro do range)
 function isWorkingTime(timeRange) {
     if (!timeRange || timeRange.includes('12x36')) return true;
 
@@ -299,26 +350,21 @@ function isWorkingTime(timeRange) {
     const startTotal = startH * 60 + startM;
     const endTotal = endH * 60 + endM;
 
-    // Se o horário de fim for no dia seguinte (ex: 19:30 às 07:30)
     if (startTotal > endTotal) {
         return currentMinutes >= startTotal || currentMinutes <= endTotal;
     }
-    // Horário normal (ex: 8:00 às 17:48)
     return currentMinutes >= startTotal && currentMinutes <= endTotal;
 }
 
-// Atualiza o resumo diário (KPIs e listas)
 function updateDailyView() {
     const currentDateLabel = document.getElementById('currentDateLabel');
-    // **USANDO scheduleYear e scheduleMonth para a data da escala**
-    const dayOfWeekIndex = new Date(scheduleYear, scheduleMonth, currentDay).getDay(); 
+    const monthObj = { year: selectedMonthObj.year, month: selectedMonthObj.month };
+    const dayOfWeekIndex = new Date(monthObj.year, monthObj.month, currentDay).getDay();
     const now = new Date();
-    // **Verifica se o dia SELECIONADO é o dia atual do SISTEMA (para Expediente Encerrado)**
-    const isToday = (now.getDate() === currentDay && now.getMonth() === systemMonth && now.getFullYear() === systemYear); 
+    const isToday = (now.getDate() === currentDay && now.getMonth() === systemMonth && now.getFullYear() === systemYear);
     const dayString = currentDay < 10 ? '0' + currentDay : currentDay;
-    
-    // **Exibe a data da ESCALA (Novembro/2025)**
-    currentDateLabel.textContent = `${daysOfWeek[dayOfWeekIndex]}, ${dayString}/${scheduleMonth + 1}/${scheduleYear}`; 
+
+    currentDateLabel.textContent = `${daysOfWeek[dayOfWeekIndex]}, ${dayString}/${pad(monthObj.month + 1)}/${monthObj.year}`;
 
     let workingCount = 0;
     let offCount = 0;
@@ -342,33 +388,27 @@ function updateDailyView() {
         const employee = scheduleData[name];
         const scheduleIndex = currentDay - 1;
         const status = employee.schedule[scheduleIndex];
-        let kpiStatus = status;     
-        let displayStatus = status; 
+        let kpiStatus = status;
+        let displayStatus = status;
 
-        // 1. Prioridade Máxima: Férias (FE)
         if (kpiStatus === 'FE') {
             vacationCount++;
-            displayStatus = 'FE'; 
-        } 
-        // 2. Expediente Encerrado (Apenas se for hoje E se estiver Trabalhando)
-        else if (isToday && kpiStatus === 'T') {
+            displayStatus = 'FE';
+        } else if (isToday && kpiStatus === 'T') {
             const isWorking = isWorkingTime(employee.info.Horário);
             if (!isWorking) {
                 offShiftCount++;
-                displayStatus = 'OFF-SHIFT'; 
-                kpiStatus = 'F_EFFECTIVE';   
+                displayStatus = 'OFF-SHIFT';
+                kpiStatus = 'F_EFFECTIVE';
             } else {
-                workingCount++; 
+                workingCount++;
             }
-        } 
-        // 3. Status Normais: Trabalhando (T) ou Folga (F, FS, FD)
-        else if (kpiStatus === 'T') {
-            workingCount++; 
+        } else if (kpiStatus === 'T') {
+            workingCount++;
         } else if (kpiStatus === 'F' || kpiStatus === 'FS' || kpiStatus === 'FD') {
-            offCount++; 
+            offCount++;
         }
 
-        // Geração do HTML (após determinar o displayStatus final)
         let itemHtml = `
             <li class="flex justify-between items-center text-sm p-3 rounded hover:bg-indigo-50 border-b border-gray-100 last:border-0 transition-colors">
                 <div class="flex flex-col">
@@ -380,8 +420,7 @@ function updateDailyView() {
                 </span>
             </li>
         `;
-        
-        // Atribuição do HTML à lista correta
+
         if (kpiStatus === 'T') {
             workingHtml += itemHtml;
         } else if (kpiStatus === 'F_EFFECTIVE') {
@@ -393,23 +432,19 @@ function updateDailyView() {
         }
     });
 
-    // Atualiza KPIs
     kpiWorking.textContent = workingCount;
     kpiOffShift.textContent = offShiftCount;
     kpiOff.textContent = offCount;
     kpiVacation.textContent = vacationCount;
 
-    // Atualiza listas
     listWorking.innerHTML = workingHtml || '<li class="text-gray-400 text-sm text-center py-4">Ninguém em expediente no momento.</li>';
     listOffShift.innerHTML = offShiftHtml || '<li class="text-gray-400 text-sm text-center py-4">Ninguém fora de expediente no momento.</li>';
     listOff.innerHTML = offHtml || '<li class="text-gray-400 text-sm text-center py-4">Nenhuma folga programada.</li>';
     listVacation.innerHTML = vacationHtml || '<li class="text-gray-400 text-sm text-center py-4">Ninguém de férias.</li>';
 
-    // Atualiza o gráfico de pizza
     updateChart(workingCount, offCount, offShiftCount, vacationCount);
 }
 
-// Atualiza o gráfico de pizza (Chart.js)
 function updateChart(working, off, offShift, vacation) {
     const total = working + off + offShift + vacation;
     const dataPoints = [working, off, offShift, vacation];
@@ -420,19 +455,18 @@ function updateChart(working, off, offShift, vacation) {
         `Férias (${vacation})`
     ];
     const colors = [
-        '#10b981', // green-500 (Trabalhando)
-        '#fcd34d', // yellow-400 (Folga Programada)
-        '#6366f1', // indigo-500 (Exp. Encerrado)
-        '#ef4444'  // red-500 (Férias)
+        '#10b981',
+        '#fcd34d',
+        '#6366f1',
+        '#ef4444'
     ];
 
-    // Filtra pontos de dados zero
     const filteredData = [];
     const filteredLabels = [];
     const filteredColors = [];
 
     dataPoints.forEach((data, index) => {
-        if (data > 0 || total === 0) { 
+        if (data > 0 || total === 0) {
             filteredData.push(data);
             filteredLabels.push(labels[index]);
             filteredColors.push(colors[index]);
@@ -488,11 +522,11 @@ function updateChart(working, off, offShift, vacation) {
     dailyChart = new Chart(ctx, config);
 }
 
-
-// Preenche o <select> com os nomes dos colaboradores
+// Popula o select de nomes
 function initSelect() {
     const select = document.getElementById('employeeSelect');
-    employeeNames.sort().forEach(name => {
+    select.innerHTML = '<option value="">Selecione seu nome</option>';
+    Object.keys(scheduleData).sort().forEach(name => {
         const option = document.createElement('option');
         option.value = name;
         option.textContent = name;
@@ -507,7 +541,6 @@ function initSelect() {
         if (employeeName) {
             updatePersonalView(employeeName);
         } else {
-            // Lógica para esconder o card e o calendário
             infoCard.classList.remove('opacity-100');
             infoCard.classList.add('opacity-0');
             setTimeout(() => {
@@ -518,22 +551,18 @@ function initSelect() {
     });
 }
 
-// Atualiza a visualização da escala individual
 function updatePersonalView(employeeName) {
     const employee = scheduleData[employeeName];
     const infoCard = document.getElementById('personalInfoCard');
     const calendarContainer = document.getElementById('calendarContainer');
-    
-    // Cores e Ícones Dinâmicos para Líderes
+
     const isLeader = employee.info.Grupo === "Líder de Célula";
     const bgColor = isLeader ? 'bg-purple-700' : 'bg-indigo-600';
     const mainColor = isLeader ? 'text-purple-300' : 'text-indigo-300';
     const turnoDisplay = employee.info.Turno;
 
-    // Atualiza a classe do card de informações com a cor dinâmica
     infoCard.className = `hidden ${bgColor} p-6 rounded-2xl mb-6 shadow-xl text-white flex flex-col sm:flex-row justify-between items-center transition-opacity duration-300 opacity-0`;
 
-    // Atualiza o Card de Informação
     infoCard.innerHTML = `
         <div class="flex items-center space-x-4 w-full mb-4 sm:mb-0 pb-4 sm:pb-0 border-b sm:border-b-0 sm:border-r border-white/20">
             <svg class="h-10 w-10 ${mainColor} flex-shrink-0" fill="none" viewBox="0 0 24 24" stroke="currentColor">
@@ -563,38 +592,30 @@ function updatePersonalView(employeeName) {
         </div>
     `;
 
-    // Remove 'hidden' para o card de informações e adiciona opacidade (efeito de fade-in)
     infoCard.classList.remove('hidden', 'opacity-0');
     infoCard.classList.add('opacity-100');
 
-    // Remove 'hidden' para o container do calendário
     calendarContainer.classList.remove('hidden');
     updateCalendar(employee.schedule);
 }
 
-// Desenha o calendário da escala individual
 function updateCalendar(schedule) {
     const grid = document.getElementById('calendarGrid');
-    grid.innerHTML = ''; // Limpa o grid
+    grid.innerHTML = '';
 
-    // Insere células vazias para o preenchimento inicial (dias do mês anterior)
-    // **USANDO scheduleYear (2025) e scheduleMonth**
-    const firstDayOfMonth = new Date(scheduleYear, scheduleMonth, 1).getDay(); // 0=Dom, 1=Seg, ...
+    const monthObj = { year: selectedMonthObj.year, month: selectedMonthObj.month };
+    const firstDayOfMonth = new Date(monthObj.year, monthObj.month, 1).getDay();
     for (let i = 0; i < firstDayOfMonth; i++) {
         grid.insertAdjacentHTML('beforeend', '<div class="calendar-cell bg-gray-50 border-gray-100"></div>');
     }
 
-    // Insere as células dos dias do mês
-    const todayDay = systemDay; // Dia atual do sistema
-    // **Verifica se o mês da escala é o mês atual do sistema**
-    const isCurrentMonth = (systemMonth === scheduleMonth && systemYear === scheduleYear); 
+    const todayDay = systemDay;
+    const isCurrentMonth = (systemMonth === monthObj.month && systemYear === monthObj.year);
 
     for (let i = 0; i < schedule.length; i++) {
         const dayNumber = i + 1;
         const status = schedule[i];
         const displayStatus = statusMap[status] || status;
-        
-        // Verifica se é o dia atual (aplica a borda azul)
         const currentDayClass = isCurrentMonth && dayNumber === todayDay ? 'current-day' : '';
 
         const cellHtml = `
@@ -607,68 +628,54 @@ function updateCalendar(schedule) {
     }
 }
 
-// Adaptação para Plantão de Fim de Semana - Operador Noc
 function updateWeekendTable() {
     const container = document.getElementById('weekendPlantaoContainer');
     container.innerHTML = '';
     let hasResults = false;
 
-    // Loop pelos dias do MÊS DA ESCALA (Novembro/2025)
-    for (let day = 1; day <= daysInScheduleMonth; day++) {
-        const date = new Date(scheduleYear, scheduleMonth, day);
-        const dayOfWeek = date.getDay(); // 0=Dom, 6=Sáb
+    const monthObj = { year: selectedMonthObj.year, month: selectedMonthObj.month };
+    const totalDays = new Date(monthObj.year, monthObj.month + 1, 0).getDate();
 
-        // Checa se é Sábado (6) ou Domingo (0)
+    for (let day = 1; day <= totalDays; day++) {
+        const date = new Date(monthObj.year, monthObj.month, day);
+        const dayOfWeek = date.getDay();
+
         if (dayOfWeek === 6 || dayOfWeek === 0) {
             const satDay = dayOfWeek === 6 ? day : (day - 1);
             const sunDay = dayOfWeek === 0 ? day : (day + 1);
 
-            // Processa apenas o sábado para evitar duplicidade (ou o dia 1 se cair no domingo)
             if (dayOfWeek === 6 || (dayOfWeek === 0 && day === 1)) {
                 let satWorkers = [];
                 let sunWorkers = [];
 
                 Object.keys(scheduleData).forEach(name => {
                     const employee = scheduleData[name];
-                    // Filtra apenas Operador Noc e Líder de Célula
                     if (employee.info.Grupo === "Operador Noc" || employee.info.Grupo === "Líder de Célula") {
-                        // Plantão de Sábado
-                        if (satDay > 0 && satDay <= daysInScheduleMonth) {
-                            if (employee.schedule[satDay - 1] === 'T') {
-                                satWorkers.push(name);
-                            }
+                        if (satDay > 0 && satDay <= totalDays) {
+                            if (employee.schedule[satDay - 1] === 'T') satWorkers.push(name);
                         }
-                        // Plantão de Domingo
-                        if (sunDay > 0 && sunDay <= daysInScheduleMonth) {
-                            if (employee.schedule[sunDay - 1] === 'T') {
-                                sunWorkers.push(name);
-                            }
+                        if (sunDay > 0 && sunDay <= totalDays) {
+                            if (employee.schedule[sunDay - 1] === 'T') sunWorkers.push(name);
                         }
                     }
                 });
 
-                // Verifica se há pelo menos um dia de fim de semana para exibir
-                const hasSaturday = satWorkers.length > 0 && satDay <= daysInScheduleMonth;
-                const hasSunday = sunWorkers.length > 0 && sunDay <= daysInScheduleMonth;
+                const hasSaturday = satWorkers.length > 0 && satDay <= totalDays;
+                const hasSunday = sunWorkers.length > 0 && sunDay <= totalDays;
 
                 if (hasSaturday || hasSunday) {
                     hasResults = true;
 
-                    const formatDate = (day) => {
-                        return `${pad(day)}/${pad(scheduleMonth + 1)}`;
-                    };
+                    const formatDate = (d) => `${pad(d)}/${pad(monthObj.month + 1)}`;
 
-                    // *** ALTERAÇÃO: FUNÇÃO formatBadge AJUSTADA ***
                     const formatBadge = (name) => {
                         const employee = scheduleData[name];
                         const isLeader = employee.info.Grupo === "Líder de Célula";
-                        // Mantém apenas Nome e Sobrenome (sem a Célula)
                         const badgeClass = isLeader ? 'bg-purple-100 text-purple-800 border-purple-300' : 'bg-blue-100 text-blue-800 border-blue-300';
-                        return `<span class="text-sm font-semibold px-3 py-1 rounded-full border ${badgeClass} shadow-sm">${name}</span>`; // Removido o "(Célula)"
+                        return `<span class="text-sm font-semibold px-3 py-1 rounded-full border ${badgeClass} shadow-sm">${name}</span>`;
                     };
                     const formatSatBadge = (workers) => workers.map(formatBadge).join('');
                     const formatSunBadge = (workers) => workers.map(formatBadge).join('');
-
 
                     const cardHtml = `
                         <div class="bg-white p-5 rounded-2xl shadow-xl border border-gray-200 flex flex-col min-h-full">
@@ -680,8 +687,7 @@ function updateWeekendTable() {
                                 </h3>
                             </div>
                             <div class="flex-1 flex flex-col justify-start space-y-6">
-                                ${hasSaturday ?
-                                    `
+                                ${hasSaturday ? `
                                     <div class="flex gap-4">
                                         <div class="w-1.5 bg-blue-500 rounded-full shrink-0"></div>
                                         <div class="flex-1">
@@ -692,10 +698,8 @@ function updateWeekendTable() {
                                                 ${formatSatBadge(satWorkers) || '<span class="text-gray-400 text-sm italic">Ninguém escalado</span>'}
                                             </div>
                                         </div>
-                                    </div>
-                                    ` : ''}
-                                ${hasSunday ?
-                                    `
+                                    </div>` : ''}
+                                ${hasSunday ? `
                                     <div class="flex gap-4">
                                         <div class="w-1.5 bg-purple-500 rounded-full shrink-0"></div>
                                         <div class="flex-1">
@@ -706,8 +710,7 @@ function updateWeekendTable() {
                                                 ${formatSunBadge(sunWorkers) || '<span class="text-gray-400 text-sm italic">Ninguém escalado</span>'}
                                             </div>
                                         </div>
-                                    </div>
-                                    ` : ''}
+                                    </div>` : ''}
                             </div>
                         </div>
                     `;
@@ -723,7 +726,7 @@ function updateWeekendTable() {
 }
 
 
-// Lógica de troca de abas
+// Inicializa abas
 function initTabs() {
     const tabButtons = document.querySelectorAll('.tab-button:not(.turno-filter)');
     const tabContents = document.querySelectorAll('.tab-content');
@@ -738,7 +741,7 @@ function initTabs() {
                 if (content.id === `${targetTab}View`) {
                     content.classList.remove('hidden');
                     if (targetTab === 'personal') {
-                        updateWeekendTable(); // Garante que a tabela de plantão seja atualizada ao mudar para a aba
+                        updateWeekendTable();
                     }
                 } else {
                     content.classList.add('hidden');
@@ -748,41 +751,84 @@ function initTabs() {
     });
 }
 
-// Inicializa a visualização diária
+// Inicia visão diária (slider)
 function initDailyView() {
     const slider = document.getElementById('dateSlider');
     slider.addEventListener('input', (e) => {
-        // Atualiza a variável global do dia selecionado
-        currentDay = parseInt(e.target.value); 
+        currentDay = parseInt(e.target.value, 10);
         updateDailyView();
     });
-    
-    // Define o valor inicial do slider para o dia atual do sistema (limitado aos dias de Novembro)
-    const initialDay = Math.min(systemDay, daysInScheduleMonth); 
-    slider.value = initialDay;
-    currentDay = initialDay; // Garante que a variável de estado corresponda ao valor inicial
 
-    // Inicia o gráfico (será atualizado no updateDailyView inicial)
+    // Inicializa chart
     const ctx = document.getElementById('dailyChart').getContext('2d');
     dailyChart = new Chart(ctx, { type: 'doughnut', data: { datasets: [{ data: [0, 0, 0, 0] }] }, options: { responsive: true, maintainAspectRatio: false } });
 }
 
 
 // ==========================================
-// 5. INICIALIZAÇÃO
+// 4. MÊS SELECT (DROPDOWN) E INICIALIZAÇÃO GLOBAL
 // ==========================================
+function initMonthSelect() {
+    const select = document.createElement('select');
+    select.id = 'monthSelect';
+    select.className = 'appearance-none w-56 p-3 bg-indigo-50 border border-indigo-200 rounded-xl focus:ring-4 focus:ring-indigo-100 focus:border-indigo-500 text-gray-900 text-sm font-semibold transition-all shadow-lg';
+    // Popula opções
+    availableMonths.forEach(m => {
+        const opt = document.createElement('option');
+        opt.value = `${m.year}-${m.month}`;
+        opt.textContent = `${monthNames[m.month]} / ${m.year}`;
+        if (m.year === selectedMonthObj.year && m.month === selectedMonthObj.month) opt.selected = true;
+        select.appendChild(opt);
+    });
+
+    // Insere no header (logo / date)
+    const header = document.querySelector('header');
+    const container = document.createElement('div');
+    container.className = 'mt-3';
+    container.appendChild(select);
+    header.appendChild(container);
+
+    select.addEventListener('change', (e) => {
+        const [y, mo] = e.target.value.split('-').map(Number);
+        selectedMonthObj = { year: y, month: mo };
+        // rebuild scheduleData and UI
+        rebuildScheduleDataForSelectedMonth();
+        initSelect();
+        updateDailyView();
+        updateWeekendTable();
+        // update header label
+        const headerDate = document.getElementById('headerDate');
+        headerDate.textContent = `Mês de Referência: ${monthNames[selectedMonthObj.month]} de ${selectedMonthObj.year}`;
+    });
+}
+
+
 function initGlobal() {
-    // Exibe o Mês de Referência da ESCALA (Novembro/2025)
-    document.getElementById('headerDate').textContent = `Mês de Referência: ${monthNames[scheduleMonth]} de ${scheduleYear}`;
-    
-    // Configura o slider para o Mês de Novembro (30 dias)
-    document.getElementById('dateSlider').max = daysInScheduleMonth;
-    document.getElementById('sliderMaxLabel').textContent = `Dia ${daysInScheduleMonth}`;
-    
+    // parse raw schedule once
+    rawSchedule = processRawSchedule(rawDataFromEscala);
+
+    // initialize month select, rebuild schedule for initial month
+    initMonthSelect();
+    rebuildScheduleDataForSelectedMonth();
+
+    // Exibe mês
+    document.getElementById('headerDate').textContent = `Mês de Referência: ${monthNames[selectedMonthObj.month]} de ${selectedMonthObj.year}`;
+
+    // configura slider max label conforme mês
+    const monthObj = { year: selectedMonthObj.year, month: selectedMonthObj.month };
+    const totalDays = new Date(monthObj.year, monthObj.month + 1, 0).getDate();
+    const slider = document.getElementById('dateSlider');
+    slider.max = totalDays;
+    const sliderMaxLabel = document.getElementById('sliderMaxLabel');
+    if (sliderMaxLabel) sliderMaxLabel.textContent = `Dia ${totalDays}`;
+
     initTabs();
     initSelect();
-    initDailyView(); // Agora define o slider no dia atual do sistema
-    updateDailyView(); // Usa o dia atual do sistema para a primeira visualização
+    initDailyView();
+    // set default day
+    currentDay = Math.min(systemDay, totalDays);
+    document.getElementById('dateSlider').value = currentDay;
+    updateDailyView();
     scheduleMidnightUpdate();
     updateWeekendTable();
 }
@@ -790,14 +836,13 @@ function initGlobal() {
 function scheduleMidnightUpdate() {
     const now = new Date();
     const midnight = new Date(now);
-    midnight.setHours(24, 0, 0, 0); 
+    midnight.setHours(24, 0, 0, 0);
     const timeToMidnight = midnight.getTime() - now.getTime();
-    
+
     setTimeout(() => {
         updateDailyView();
-        // Agenda a próxima atualização para 24 horas depois
         setInterval(updateDailyView, 24 * 60 * 60 * 1000);
-    }, timeToMidnight + 1000); // Adiciona 1 segundo para garantir que seja após a meia-noite
+    }, timeToMidnight + 1000);
 }
 
 document.addEventListener('DOMContentLoaded', initGlobal);
