@@ -6,6 +6,7 @@
     "FD": [],
     "FE": []
   },
+
   "Carlos Diego": {
     "T": [],
     "F": [],
@@ -13,6 +14,7 @@
     "FD": [],
     "FE": []
   },
+
   "Bruno Capone": {
     "T": [],
     "F": [],
@@ -20,6 +22,7 @@
     "FD": [],
     "FE": []
   },
+
   "Leandra Moura": {
     "T": [],
     "F": [],
@@ -27,6 +30,7 @@
     "FD": [],
     "FE": []
   },
+
   "Carlos Magno": {
     "T": [],
     "F": [],
@@ -34,13 +38,15 @@
     "FD": [],
     "FE": []
   },
+
   "Karina Krisan": {
     "T": [],
     "F": [],
     "FS": [],
     "FD": [],
-    "FE": ["18/12 a 01/01"]
+    "FE": [18/12 a 01/01]
   },
+
   "Gabriel Procópio": {
     "T": [],
     "F": [],
@@ -48,6 +54,7 @@
     "FD": [],
     "FE": []
   },
+
   "Bruno Roque": {
     "T": [],
     "F": [],
@@ -55,6 +62,7 @@
     "FD": [],
     "FE": []
   },
+
   "Johnny Collins": {
     "T": [],
     "F": [],
@@ -62,14 +70,84 @@
     "FD": [],
     "FE": []
   },
+
   "Robervan Brahian": {
     "T": "fins de semana",
     "F": "segunda a sexta",
-    "FE": [""]
+    "FE": []
   },
+
+  "Emanuel Pereira": {
+    "T": [],
+    "F": [],
+    "FS": [],
+    "FD": [],
+    "FE": []
+  },
+
+  "Felipe Pena": {
+    "T": [],
+    "F": [],
+    "FS": [],
+    "FD": [],
+    "FE": []
+  },
+
+  "Bruni Cipola": {
+    "escala": "12x36",
+    "inicio": "continua do ciclo de dezembro",
+    "T": [],
+    "F": [],
+    "FE": []
+  },
+
+  "Leandro Alves": {
+    "escala": "12x36",
+    "inicio": "continua do ciclo de dezembro",
+    "T": [],
+    "F": [],
+    "FE": []
+  },
+
   "Patricia Oliveira": {
     "T": "segunda a sexta",
     "F": "fins de semana",
-    "FE": [""]
+    "FE": []
+  },
+
+  "Aidan Candido": {
+    "T": "segunda a sexta",
+    "F": "fins de semana",
+    "FE": []
+  },
+
+  "Samile Chaga": {
+    "T": "segunda a sexta",
+    "F": "fins de semana",
+    "FE": []
+  },
+
+  "Joab Santos": {
+    "T": "segunda a sexta",
+    "F": "fins de semana",
+    "FE": []
+  },
+
+  "Lucas Keller": {
+    "T": "segunda a sexta",
+    "F": "fins de semana",
+    "FE": []
+  },
+
+  "André Luiz": {
+    "T": "segunda a sexta",
+    "F": "fins de semana",
+    "FE": []
+  },
+
+  "Tadeu Sidnei": {
+    "T": "segunda a sexta",
+    "F": "fins de semana",
+    "FE": []
   }
 }
