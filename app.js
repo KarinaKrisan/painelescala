@@ -4,11 +4,19 @@
 // 1. CONFIGURAÇÃO DE DATA
 // ==========================================
 const currentDateObj = new Date();
-const currentYear = currentDateObj.getFullYear();
-// Forcing to November (index 10) for data consistency with rawDataFromEscala
-const currentMonth = 10; 
-const daysInCurrentMonth = new Date(currentYear, currentMonth + 1, 0).getDate();
 const monthNames = ["Janeiro", "Fevereiro", "Março", "Abril", "Maio", "Junho", "Julho", "Agosto", "Setembro", "Outubro", "Novembro", "Dezembro"];
+
+// Variáveis para a DATA DO SISTEMA (para iniciar o slider no dia e mês atual real)
+const systemYear = currentDateObj.getFullYear();
+const systemMonth = currentDateObj.getMonth(); // Mês atual real (0=Jan, 10=Nov)
+const systemDay = currentDateObj.getDate();
+
+// Variáveis para a ESCALA (Fixas em Novembro/2023, conforme rawDataFromEscala)
+const scheduleYear = 2023; 
+const scheduleMonth = 10; // Novembro (index 10)
+const daysInScheduleMonth = new Date(scheduleYear, scheduleMonth + 1, 0).getDate(); // 30 dias para Nov
+let currentDay = systemDay; // Variável para o dia atualmente selecionado no slider
+
 
 // ==========================================
 // 2. FUNÇÕES DE PARSE E GERAÇÃO DA ESCALA
@@ -87,7 +95,8 @@ function generate12x36ScheduleNov(startWorkingDay, totalDays) {
 function generate5x2ScheduleDefault(totalDays) {
     let schedule = [];
     for (let day = 1; day <= totalDays; day++) {
-        let date = new Date(currentYear, currentMonth, day);
+        // Usa o scheduleYear e scheduleMonth para calcular o dia da semana CORRETO
+        let date = new Date(scheduleYear, scheduleMonth, day); 
         let dayOfWeek = date.getDay(); // 0=Dom, 6=Sáb
         if (dayOfWeek === 0 || dayOfWeek === 6) schedule.push("F");
         else schedule.push("T");
@@ -134,9 +143,9 @@ function parseDayList(dayString, totalDays) {
             const endDay = parseInt(dateRangeMatch[3]);
             const endMonth = parseInt(dateRangeMatch[4]) - 1;
 
-            if (startMonth <= currentMonth && endMonth >= currentMonth) {
-                const effectiveStartDay = startMonth === currentMonth ? startDay : 1;
-                const effectiveEndDay = endMonth === currentMonth ? endDay : totalDays;
+            if (startMonth <= scheduleMonth && endMonth >= scheduleMonth) { // Usar scheduleMonth
+                const effectiveStartDay = startMonth === scheduleMonth ? startDay : 1;
+                const effectiveEndDay = endMonth === scheduleMonth ? endDay : totalDays;
 
                 for (let day = Math.max(1, effectiveStartDay); day <= Math.min(totalDays, effectiveEndDay); day++) {
                     days.add(day);
@@ -233,7 +242,8 @@ Object.keys(employeeMetadata).forEach(name => {
     // Constrói a estrutura final para cada colaborador
     scheduleData[name] = {
         info: employeeMetadata[name],
-        schedule: buildFinalSchedule(data, daysInCurrentMonth)
+        // Usa daysInScheduleMonth para garantir que a escala gerada tenha 30 dias (Nov)
+        schedule: buildFinalSchedule(data, daysInScheduleMonth) 
     };
 });
 
@@ -242,7 +252,7 @@ Object.keys(employeeMetadata).forEach(name => {
 const employeeNames = Object.keys(scheduleData);
 const daysOfWeek = ["Dom", "Seg", "Ter", "Qua", "Qui", "Sex", "Sáb"];
 const statusMap = { 'T': 'Trabalhando', 'F': 'Folga', 'FS': 'Folga Sáb', 'FD': 'Folga Dom', 'FE': 'Férias', 'OFF-SHIFT': 'Exp. Encerrado' };
-let currentDay = currentDateObj.getDate();
+// currentDay já está definido no bloco 1 e será atualizado pelo slider
 let dailyChart = null;
 
 
@@ -279,11 +289,15 @@ function isWorkingTime(timeRange) {
 // Atualiza o resumo diário (KPIs e listas)
 function updateDailyView() {
     const currentDateLabel = document.getElementById('currentDateLabel');
-    const dayOfWeekIndex = new Date(currentYear, currentMonth, currentDay).getDay();
+    // **USANDO scheduleYear e scheduleMonth para a data da escala**
+    const dayOfWeekIndex = new Date(scheduleYear, scheduleMonth, currentDay).getDay(); 
     const now = new Date();
-    const isToday = (now.getDate() === currentDay && now.getMonth() === currentMonth && now.getFullYear() === currentYear);
+    // **Verifica se o dia SELECIONADO é o dia atual do SISTEMA (para Expediente Encerrado)**
+    const isToday = (now.getDate() === currentDay && now.getMonth() === systemMonth && now.getFullYear() === systemYear); 
     const dayString = currentDay < 10 ? '0' + currentDay : currentDay;
-    currentDateLabel.textContent = `${daysOfWeek[dayOfWeekIndex]}, ${dayString}/${currentMonth + 1}/${currentYear}`;
+    
+    // **Exibe a data da ESCALA (Novembro)**
+    currentDateLabel.textContent = `${daysOfWeek[dayOfWeekIndex]}, ${dayString}/${scheduleMonth + 1}/${scheduleYear}`; 
 
     let workingCount = 0;
     let offCount = 0;
@@ -543,14 +557,16 @@ function updateCalendar(schedule) {
     grid.innerHTML = ''; // Limpa o grid
 
     // Insere células vazias para o preenchimento inicial (dias do mês anterior)
-    const firstDayOfMonth = new Date(currentYear, currentMonth, 1).getDay(); // 0=Dom, 1=Seg, ...
+    // **USANDO scheduleYear e scheduleMonth**
+    const firstDayOfMonth = new Date(scheduleYear, scheduleMonth, 1).getDay(); // 0=Dom, 1=Seg, ...
     for (let i = 0; i < firstDayOfMonth; i++) {
         grid.insertAdjacentHTML('beforeend', '<div class="calendar-cell bg-gray-50 border-gray-100"></div>');
     }
 
     // Insere as células dos dias do mês
-    const todayDay = currentDateObj.getDate();
-    const isCurrentMonth = (currentDateObj.getMonth() === currentMonth && currentDateObj.getFullYear() === currentYear);
+    const todayDay = systemDay; // Dia atual do sistema
+    // **Verifica se o mês da escala é o mês atual do sistema**
+    const isCurrentMonth = (systemMonth === scheduleMonth && systemYear === scheduleYear); 
 
     for (let i = 0; i < schedule.length; i++) {
         const dayNumber = i + 1;
@@ -576,9 +592,9 @@ function updateWeekendTable() {
     container.innerHTML = '';
     let hasResults = false;
 
-    // Loop pelos 30 dias de Novembro
-    for (let day = 1; day <= daysInCurrentMonth; day++) {
-        const date = new Date(currentYear, currentMonth, day);
+    // Loop pelos dias do MÊS DA ESCALA (Novembro)
+    for (let day = 1; day <= daysInScheduleMonth; day++) {
+        const date = new Date(scheduleYear, scheduleMonth, day);
         const dayOfWeek = date.getDay(); // 0=Dom, 6=Sáb
 
         // Checa se é Sábado (6) ou Domingo (0)
@@ -596,13 +612,13 @@ function updateWeekendTable() {
                     // Filtra apenas Operador Noc e Líder de Célula
                     if (employee.info.Grupo === "Operador Noc" || employee.info.Grupo === "Líder de Célula") {
                         // Plantão de Sábado
-                        if (satDay > 0 && satDay <= daysInCurrentMonth) {
+                        if (satDay > 0 && satDay <= daysInScheduleMonth) {
                             if (employee.schedule[satDay - 1] === 'T') {
                                 satWorkers.push(name);
                             }
                         }
                         // Plantão de Domingo
-                        if (sunDay > 0 && sunDay <= daysInCurrentMonth) {
+                        if (sunDay > 0 && sunDay <= daysInScheduleMonth) {
                             if (employee.schedule[sunDay - 1] === 'T') {
                                 sunWorkers.push(name);
                             }
@@ -611,14 +627,14 @@ function updateWeekendTable() {
                 });
 
                 // Verifica se há pelo menos um dia de fim de semana para exibir
-                const hasSaturday = satWorkers.length > 0 && satDay <= daysInCurrentMonth;
-                const hasSunday = sunWorkers.length > 0 && sunDay <= daysInCurrentMonth;
+                const hasSaturday = satWorkers.length > 0 && satDay <= daysInScheduleMonth;
+                const hasSunday = sunWorkers.length > 0 && sunDay <= daysInScheduleMonth;
 
                 if (hasSaturday || hasSunday) {
                     hasResults = true;
 
                     const formatDate = (day) => {
-                        return `${pad(day)}/${pad(currentMonth + 1)}`;
+                        return `${pad(day)}/${pad(scheduleMonth + 1)}`;
                     };
 
                     const formatBadge = (name) => {
@@ -715,9 +731,15 @@ function initTabs() {
 function initDailyView() {
     const slider = document.getElementById('dateSlider');
     slider.addEventListener('input', (e) => {
-        currentDay = parseInt(e.target.value);
+        // Atualiza a variável global do dia selecionado
+        currentDay = parseInt(e.target.value); 
         updateDailyView();
     });
+    
+    // Define o valor inicial do slider para o dia atual do sistema (limitado aos dias de Novembro)
+    const initialDay = Math.min(systemDay, daysInScheduleMonth); 
+    slider.value = initialDay;
+    currentDay = initialDay; // Garante que a variável de estado corresponda ao valor inicial
 
     // Inicia o gráfico (será atualizado no updateDailyView inicial)
     const ctx = document.getElementById('dailyChart').getContext('2d');
@@ -729,14 +751,17 @@ function initDailyView() {
 // 5. INICIALIZAÇÃO
 // ==========================================
 function initGlobal() {
-    document.getElementById('headerDate').textContent = `Mês de Referência: ${monthNames[currentMonth]} de ${currentYear}`;
-    document.getElementById('dateSlider').max = daysInCurrentMonth;
-    document.getElementById('sliderMaxLabel').textContent = `Dia ${daysInCurrentMonth}`;
+    // Exibe o Mês de Referência da ESCALA (Novembro)
+    document.getElementById('headerDate').textContent = `Mês de Referência: ${monthNames[scheduleMonth]} de ${scheduleYear}`;
+    
+    // Configura o slider para o Mês de Novembro (30 dias)
+    document.getElementById('dateSlider').max = daysInScheduleMonth;
+    document.getElementById('sliderMaxLabel').textContent = `Dia ${daysInScheduleMonth}`;
     
     initTabs();
     initSelect();
-    initDailyView();
-    updateDailyView();
+    initDailyView(); // Agora define o slider no dia atual do sistema
+    updateDailyView(); // Usa o dia atual do sistema para a primeira visualização
     scheduleMidnightUpdate();
     updateWeekendTable();
     // Se o plantão for atualizado em initGlobal, não é necessário um setInterval tão rápido
