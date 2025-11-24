@@ -72,7 +72,7 @@ Dias trabalhados:3,4,5,6,7,10,11,12,13,14,17,18,19,20,21,
 F:fins de semana
 FS:
 FD:
-FE:24,25,26,27,28,29,30
+FE:24/11 até 08/12
 **/*******************************
 Nome do colaborador: Emanuel Pereira
 Dias trabalhados:3,4,5,6,7,10,11,12,13,14,17,18,19,20,21,24,25,27,28,29,30
@@ -109,13 +109,12 @@ FS:
 FD:
 FE:
 *********************************
-Nome do colaborador: Patricia 
-Oliveira
+Nome do colaborador: Patricia Oliveira
 Dias trabalhados:segunda a sexta
 F:fins de semana
 FS:
 FD:
-FE:3,4,5,6,7,10,11,12,13,14,15,16,17,18,19,20,21,22,23,24,25,26,27,28,29,30
+FE:03/11 até 03/12
 *********************************
 Nome do colaborador: Samile Chaga
 Dias trabalhados:segunda a sexta
@@ -178,4 +177,5 @@ const employeeMetadata = {
     "André Luiz": { Grupo: "Suporte Avançado", Célula: "N2", Horário: "08:30 às 18:18", Turno: "Comercial" },
     "Tadeu Sidney": { Grupo: "Gestor Técnico Geral", Célula: "-", Horário: "08:30 às 18:18", Turno: "Comercial" },
 };
+
 
