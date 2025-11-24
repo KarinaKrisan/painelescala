@@ -135,7 +135,7 @@ function parseDayList(dayString, totalDays) {
             return;
         }
 
-        // Trata ranges de data/mês
+        // Trata ranges de data/mês (Embora a escala seja fixa, este parser é mais robusto)
         const dateRangeMatch = part.match(/(\d{1,2})\/(\d{1,2})\s*a\s*(\d{1,2})\/(\d{1,2})/);
         if (dateRangeMatch) {
             const startDay = parseInt(dateRangeMatch[1]);
@@ -160,6 +160,7 @@ function parseDayList(dayString, totalDays) {
 
 // Função principal que constrói a escala final a partir dos dados de texto
 function buildFinalSchedule(employeeData, totalDays) {
+    // Inicializa a agenda com o status de "indefinido" (null)
     let schedule = new Array(totalDays).fill(null);
     
     // Função auxiliar para determinar se deve usar a escala fixa ou a lista de dias
@@ -174,7 +175,7 @@ function buildFinalSchedule(employeeData, totalDays) {
         return parseDayList(dayString, totalDays); 
     };
 
-    // 1. Preenche Férias (FE) - Prioridade Máxima
+    // 1. Prioridade Máxima: Férias (FE)
     const vacationDays = parseDayList(employeeData.FE, totalDays);
     vacationDays.forEach(day => {
         if (day > 0 && day <= totalDays) {
@@ -183,44 +184,64 @@ function buildFinalSchedule(employeeData, totalDays) {
     });
 
 
-    // 2. Dias Trabalhados (T) - Preenche o que não é Férias
-    const workingStatusOrDays = parseDaysOrSchedule(employeeData.T);
+    // 2. Escala Fixa (12x36 ou 5x2) - Definida em 'T' ou 'F'
+    let isFixedSchedule = false;
+    let fixedScheduleDays = [];
     
+    // Verifica se a escala fixa foi definida no campo 'T'
+    const workingStatusOrDays = parseDaysOrSchedule(employeeData.T);
     if (Array.isArray(workingStatusOrDays) && workingStatusOrDays.length === totalDays && typeof workingStatusOrDays[0] === 'string') {
-        // Se o resultado for um array de T/F/T/F (escala 12x36 ou 5x2)
-        schedule = workingStatusOrDays.map((status, index) => schedule[index] === 'FE' ? 'FE' : status);
-    } else if (Array.isArray(workingStatusOrDays)) {
-        // Se for apenas uma lista de dias (T)
-        workingStatusOrDays.forEach(day => { if (schedule[day - 1] === null) schedule[day - 1] = 'T'; });
+        // É uma escala fixa (ex: 12x36 ou 5x2)
+        fixedScheduleDays = workingStatusOrDays;
+        isFixedSchedule = true;
+    } 
+    // Se não estiver em 'T', verifica se está em 'F' (ex: "Folga fins de semana" para 5x2)
+    else if (employeeData.F.includes('fins de semana')) {
+         fixedScheduleDays = generate5x2ScheduleDefault(totalDays);
+         isFixedSchedule = true;
+    }
+
+
+    if (isFixedSchedule) {
+        // Aplica a escala fixa, mas *mantém* as Férias (FE)
+        schedule = fixedScheduleDays.map((status, index) => schedule[index] === 'FE' ? 'FE' : status);
+    } else {
+        // 3. Aplica Dias Trabalhados (T) se não houver escala fixa
+        // Se o resultado de workingStatusOrDays é uma lista de dias (números), aplica 'T'
+        if (Array.isArray(workingStatusOrDays)) {
+            workingStatusOrDays.forEach(day => { 
+                if (schedule[day - 1] === null) schedule[day - 1] = 'T'; 
+            });
+        }
     }
     
-    // 3. Folga Domingo (FD) - Não sobrescreve FE nem T
+    // 4. Folga Domingo (FD) - Sobrescreve 'T' ou 'null'
+    // Prioridade maior que 'T' e Folgas genéricas, mas menor que FE
     parseDayList(employeeData.FD, totalDays).forEach(day => { 
-        // Sobrescreve 'null' ou 'F' (do 12x36/5x2)
-        if (schedule[day - 1] === null || schedule[day - 1] === 'F') schedule[day - 1] = 'FD'; 
+        if (schedule[day - 1] !== 'FE') schedule[day - 1] = 'FD'; 
     });
     
-    // 4. Folga Sábado (FS) - Não sobrescreve FE nem T
+    // 5. Folga Sábado (FS) - Sobrescreve 'T' ou 'null'
+    // Prioridade menor que FE ou FD
     parseDayList(employeeData.FS, totalDays).forEach(day => { 
-        // Sobrescreve 'null' ou 'F' (do 12x36/5x2)
-        if (schedule[day - 1] === null || schedule[day - 1] === 'F') schedule[day - 1] = 'FS'; 
+        if (schedule[day - 1] !== 'FE' && schedule[day - 1] !== 'FD') schedule[day - 1] = 'FS'; 
     });
     
-    // 5. Folga Fim de Semana / Geral (F) - Não sobrescreve FE
-    // Se a agenda não for 12x36 nem 5x2 (já tratado em T) e não for um valor especial
-    if (!employeeData.T.includes('12x36') && !employeeData.T.includes('segunda a sexta') && !employeeData.F.includes('fins de semana')) {
+    // 6. Folga Geral (F) - Sobrescreve 'T' ou 'null'
+    // Aplica apenas se não houver escala fixa (pois 'F' já é tratado na escala fixa)
+    if (!isFixedSchedule) {
         parseDayList(employeeData.F, totalDays).forEach(day => { 
-            if (schedule[day - 1] === null) schedule[day - 1] = 'F'; 
+            // Não sobrescreve FE, FD ou FS
+            if (schedule[day - 1] !== 'FE' && schedule[day - 1] !== 'FD' && schedule[day - 1] !== 'FS') {
+                schedule[day - 1] = 'F';
+            }
         });
     }
 
-    // 6. Preenche o restante:
+    // 7. Preenche o restante com 'T'
     for (let i = 0; i < totalDays; i++) {
         if (schedule[i] === null) {
-            // Se ainda for nulo, deve ser Trabalhado (T) se não for folga (que já deveria ter sido preenchida em 5)
             schedule[i] = 'T';
-        } else if (schedule[i] === 'F' && (employeeData.T.includes('12x36') || employeeData.T.includes('segunda a sexta'))) {
-            // Mantém F para escalas 12x36 e 5x2 (F aqui já significa folga)
         }
     }
 
@@ -764,8 +785,6 @@ function initGlobal() {
     updateDailyView(); // Usa o dia atual do sistema para a primeira visualização
     scheduleMidnightUpdate();
     updateWeekendTable();
-    // Se o plantão for atualizado em initGlobal, não é necessário um setInterval tão rápido
-    // setInterval(updateWeekendTable, 5 * 60 * 1000); // Manter se necessário
 }
 
 function scheduleMidnightUpdate() {
