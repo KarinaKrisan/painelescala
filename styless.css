@@ -29,7 +29,8 @@ body {
 }
 .calendar-cell {
     background-color: white;
-    min-height: 100px;
+    /* AJUSTE: Altura mínima para que as células fiquem uniformes */
+    min-height: 80px; 
     padding: 8px;
     display: flex;
     flex-direction: column;
@@ -45,10 +46,11 @@ body {
 .calendar-status {
     font-size: 0.75rem; /* text-xs */
     font-weight: 600;
-    padding: 2px 4px;
+    /* Adiciona padding e borda padrão para visibilidade */
+    padding: 2px 4px; 
     border-radius: 4px;
     text-align: center;
-    border: 1px solid transparent;
+    border: 1px solid transparent; 
 }
 .calendar-cell:hover {
     background-color: #f9fafb; /* Gray 50 */
@@ -68,12 +70,12 @@ body {
     background-color: #fef9c3;
     color: #a16207;
     border: 1px solid #fde047;
-} /* Yellow - Folga */
+} /* Yellow - Folga (F) */
 .status-FE {
     background-color: #fee2e2;
     color: #b91c1c;
     border: 1px solid #fca5a5;
-} /* Red - Férias */
+} /* Red - Férias (FE) */
 .status-OFF-SHIFT {
     background-color: #f3e8ff;
     color: #6b21a8;
@@ -85,12 +87,12 @@ body {
     background-color: #fce7f3;
     color: #a21235;
     border: 1px solid #f9a8d4;
-} /* Pink-ish for Sunday Off */
+} /* Pink-ish for Sunday Off (FD) */
 .status-FS {
     background-color: #e0f2fe;
     color: #0284c7;
     border: 1px solid #7dd3fc;
-} /* Light Blue for Saturday Off */
+} /* Light Blue for Saturday Off (FS) */
 
 .chart-container {
     position: relative;
