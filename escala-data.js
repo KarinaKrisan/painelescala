@@ -68,12 +68,12 @@ FD:11
 FE:
 *********************************
 Nome do colaborador: Robervan Brahian
-Dias trabalhados:3,4,5,6,7,10,11,12,13,14,17,18,19,20,21,
+Dias trabalhados:3,4,5,6,7,10,11,12,13,14,17,18,19,20,21
 F:fins de semana
 FS:
 FD:
-FE:24/11 até 08/12
-**/*******************************
+FE:24/11 a 08/12
+*********************************
 Nome do colaborador: Emanuel Pereira
 Dias trabalhados:3,4,5,6,7,10,11,12,13,14,17,18,19,20,21,24,25,27,28,29,30
 F:1,2,8,9,15,16,22,23
@@ -114,7 +114,7 @@ Dias trabalhados:segunda a sexta
 F:fins de semana
 FS:
 FD:
-FE:03/11 até 03/12
+FE:03/11 a 03/12
 *********************************
 Nome do colaborador: Samile Chaga
 Dias trabalhados:segunda a sexta
@@ -168,14 +168,15 @@ const employeeMetadata = {
     "Bruno Roque": { Grupo: "Operador Noc", Célula: "Claro/ Telmex", Horário: "8:30 às 18:18", Turno: "Manhã" },
     "Bruno Cipola": { Grupo: "Operador Noc", Célula: "Atendimento", Horário: "19:30 às 07:30", Turno: "Noturno (12x36)" },
     "Leandro Alves": { Grupo: "Operador Noc", Célula: "Atendimento ", Horário: "19:30 às 07:30", Turno: "Noturno (12x36)" },
-    // NOVOS LÍDERES DE CÉLULA
+
+    // LÍDERES
     "Aidan Candido": { Grupo: "Líder de Célula", Célula: "Claro/ Telmex/ Sitelbra/ B2B", Horário: "08:30 às 18:18", Turno: "Comercial" },
     "Samile Chaga": { Grupo: "Líder de Célula", Célula: "Oi", Horário: "08:00 às 17:48", Turno: "Comercial" },
     "Patricia Oliveira": { Grupo: "Líder de Célula", Célula: "Outras Operadoras", Horário: "8:00 às 17:48", Turno: "Comercial" },
+
+    // SUPORTE / GESTÃO
     "Joab Santos": { Grupo: "Líder de Célula", Célula: "Cirion/ Vivo/ Telebras", Horário: "08:00 às 17:48", Turno: "Comercial" },
     "Lucas Keller": { Grupo: "Suporte Avançado", Célula: "N2", Horário: "08:30 às 18:18", Turno: "Comercial" },
     "André Luiz": { Grupo: "Suporte Avançado", Célula: "N2", Horário: "08:30 às 18:18", Turno: "Comercial" },
     "Tadeu Sidney": { Grupo: "Gestor Técnico Geral", Célula: "-", Horário: "08:30 às 18:18", Turno: "Comercial" },
 };
-
-
