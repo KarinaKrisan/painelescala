@@ -168,13 +168,10 @@ const employeeMetadata = {
     "Bruno Roque": { Grupo: "Operador Noc", Célula: "Claro/ Telmex", Horário: "8:30 às 18:18", Turno: "Manhã" },
     "Bruno Cipola": { Grupo: "Operador Noc", Célula: "Atendimento", Horário: "19:30 às 07:30", Turno: "Noturno (12x36)" },
     "Leandro Alves": { Grupo: "Operador Noc", Célula: "Atendimento ", Horário: "19:30 às 07:30", Turno: "Noturno (12x36)" },
-
-    // LÍDERES
+    // NOVOS LÍDERES DE CÉLULA
     "Aidan Candido": { Grupo: "Líder de Célula", Célula: "Claro/ Telmex/ Sitelbra/ B2B", Horário: "08:30 às 18:18", Turno: "Comercial" },
     "Samile Chaga": { Grupo: "Líder de Célula", Célula: "Oi", Horário: "08:00 às 17:48", Turno: "Comercial" },
     "Patricia Oliveira": { Grupo: "Líder de Célula", Célula: "Outras Operadoras", Horário: "8:00 às 17:48", Turno: "Comercial" },
-
-    // SUPORTE / GESTÃO
     "Joab Santos": { Grupo: "Líder de Célula", Célula: "Cirion/ Vivo/ Telebras", Horário: "08:00 às 17:48", Turno: "Comercial" },
     "Lucas Keller": { Grupo: "Suporte Avançado", Célula: "N2", Horário: "08:30 às 18:18", Turno: "Comercial" },
     "André Luiz": { Grupo: "Suporte Avançado", Célula: "N2", Horário: "08:30 às 18:18", Turno: "Comercial" },
