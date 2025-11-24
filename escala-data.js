@@ -29,4 +29,3 @@ const employeeMetadata = {
     "André Luiz": { Grupo: "Suporte Avançado", Célula: "N2", Horário: "08:30 às 18:18", Turno: "Comercial" },
     "Tadeu Sidney": { Grupo: "Gestor Técnico Geral", Célula: "-", Horário: "08:30 às 18:18", Turno: "Comercial" }
 };
-
