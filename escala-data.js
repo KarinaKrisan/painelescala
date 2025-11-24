@@ -44,7 +44,7 @@ Dias trabalhados:3,4,5,6,7,10,11,12,13,14,17,18,19,20,22,23,24,25,26,27
 F:1,2,8,9,15,16,29,30
 FS:21
 FD:28
-FE:
+FE:18/12 a 01/01
 *********************************
 Nome do colaborador: Gabriel Procópio
 Dias trabalhados:3,4,5,6,8,9,10,11,12,13,17,18,19,20,21,24,25,26,27,28
@@ -177,3 +177,4 @@ const employeeMetadata = {
     "André Luiz": { Grupo: "Suporte Avançado", Célula: "N2", Horário: "08:30 às 18:18", Turno: "Comercial" },
     "Tadeu Sidney": { Grupo: "Gestor Técnico Geral", Célula: "-", Horário: "08:30 às 18:18", Turno: "Comercial" },
 };
+
