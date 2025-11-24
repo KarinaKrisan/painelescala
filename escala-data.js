@@ -21,16 +21,16 @@ FE:
 Nome do colaborador: Bruno Capone
 Dias trabalhados:1,2,3,4,6,7,10,11,12,13,14,17,18,19,20,21,24,25,26,27,28
 F:8,9,15,16,22,23,29,30
-FS:5
-FD:
+FS:
+FD:5
 FE:
 *********************************
 Nome do colaborador: Leandra Moura
 Dias trabalhados:1,2,3,5,6,7,10,11,12,13,14,17,18,19,20,21,24,25,26,27,28
 F:8,9,15,16,22,23,29,30
 FE:
-FS:4
-FD:
+FS:
+FD:4
 *********************************
 Nome do colaborador: Carlos Magno
 Dias trabalhados:3,4,5,6,7,10,11,12,13,15,16,18,19,20,21,24,25,26,27,28
@@ -178,3 +178,4 @@ const employeeMetadata = {
     "André Luiz": { Grupo: "Suporte Avançado", Célula: "N2", Horário: "08:30 às 18:18", Turno: "Comercial" },
     "Tadeu Sidney": { Grupo: "Gestor Técnico Geral", Célula: "-", Horário: "08:30 às 18:18", Turno: "Comercial" },
 };
+
