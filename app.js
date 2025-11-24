@@ -673,4 +673,16 @@ function initGlobal() {
         rebuildScheduleDataForSelectedMonth();
         document.getElementById('headerDate').textContent = `Mês de Referência: ${monthNames[selectedMonthObj.month]} de ${selectedMonthObj.year}`;
         const monthObj = { year: selectedMonthObj.year, month: selectedMonthObj.month };
-        const totalDays = new Date(monthObj.year, month
+        const totalDays = new Date(monthObj.year, monthObj.month+1, 0).getDate();
+        const slider = document.getElementById('dateSlider'); if (slider) slider.max = totalDays;
+        const sliderMaxLabel = document.getElementById('sliderMaxLabel'); if (sliderMaxLabel) sliderMaxLabel.textContent = `Dia ${totalDays}`;
+        initTabs(); initSelect(); initDailyView();
+        currentDay = Math.min(systemDay, totalDays);
+        const ds = document.getElementById('dateSlider'); if (ds) ds.value = currentDay;
+        updateDailyView();
+        scheduleMidnightUpdate();
+        updateWeekendTable(); // Carrega a tabela na inicialização se a aba padrão for 'daily' (ou para evitar vazios)
+    });
+}
+
+document.addEventListener('DOMContentLoaded', initGlobal);
