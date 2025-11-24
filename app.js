@@ -11,8 +11,8 @@ const systemYear = currentDateObj.getFullYear();
 const systemMonth = currentDateObj.getMonth(); // Mês atual real (0=Jan, 10=Nov)
 const systemDay = currentDateObj.getDate();
 
-// Variáveis para a ESCALA (Fixas em Novembro/2023, conforme rawDataFromEscala)
-const scheduleYear = 2023; 
+// Variáveis para a ESCALA (Fixas em Novembro/2025, conforme solicitação)
+const scheduleYear = 2025; // <--- ALTERAÇÃO PRINCIPAL (AGORA É 2025)
 const scheduleMonth = 10; // Novembro (index 10)
 const daysInScheduleMonth = new Date(scheduleYear, scheduleMonth + 1, 0).getDate(); // 30 dias para Nov
 let currentDay = systemDay; // Variável para o dia atualmente selecionado no slider
@@ -95,7 +95,7 @@ function generate12x36ScheduleNov(startWorkingDay, totalDays) {
 function generate5x2ScheduleDefault(totalDays) {
     let schedule = [];
     for (let day = 1; day <= totalDays; day++) {
-        // Usa o scheduleYear e scheduleMonth para calcular o dia da semana CORRETO
+        // Usa o scheduleYear (AGORA 2025) e scheduleMonth para calcular o dia da semana CORRETO
         let date = new Date(scheduleYear, scheduleMonth, day); 
         let dayOfWeek = date.getDay(); // 0=Dom, 6=Sáb
         if (dayOfWeek === 0 || dayOfWeek === 6) schedule.push("F");
@@ -317,7 +317,7 @@ function updateDailyView() {
     const isToday = (now.getDate() === currentDay && now.getMonth() === systemMonth && now.getFullYear() === systemYear); 
     const dayString = currentDay < 10 ? '0' + currentDay : currentDay;
     
-    // **Exibe a data da ESCALA (Novembro)**
+    // **Exibe a data da ESCALA (Novembro/2025)**
     currentDateLabel.textContent = `${daysOfWeek[dayOfWeekIndex]}, ${dayString}/${scheduleMonth + 1}/${scheduleYear}`; 
 
     let workingCount = 0;
@@ -578,7 +578,7 @@ function updateCalendar(schedule) {
     grid.innerHTML = ''; // Limpa o grid
 
     // Insere células vazias para o preenchimento inicial (dias do mês anterior)
-    // **USANDO scheduleYear e scheduleMonth**
+    // **USANDO scheduleYear (2025) e scheduleMonth**
     const firstDayOfMonth = new Date(scheduleYear, scheduleMonth, 1).getDay(); // 0=Dom, 1=Seg, ...
     for (let i = 0; i < firstDayOfMonth; i++) {
         grid.insertAdjacentHTML('beforeend', '<div class="calendar-cell bg-gray-50 border-gray-100"></div>');
@@ -613,7 +613,7 @@ function updateWeekendTable() {
     container.innerHTML = '';
     let hasResults = false;
 
-    // Loop pelos dias do MÊS DA ESCALA (Novembro)
+    // Loop pelos dias do MÊS DA ESCALA (Novembro/2025)
     for (let day = 1; day <= daysInScheduleMonth; day++) {
         const date = new Date(scheduleYear, scheduleMonth, day);
         const dayOfWeek = date.getDay(); // 0=Dom, 6=Sáb
@@ -772,7 +772,7 @@ function initDailyView() {
 // 5. INICIALIZAÇÃO
 // ==========================================
 function initGlobal() {
-    // Exibe o Mês de Referência da ESCALA (Novembro)
+    // Exibe o Mês de Referência da ESCALA (Novembro/2025)
     document.getElementById('headerDate').textContent = `Mês de Referência: ${monthNames[scheduleMonth]} de ${scheduleYear}`;
     
     // Configura o slider para o Mês de Novembro (30 dias)
