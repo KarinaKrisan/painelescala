@@ -12,7 +12,7 @@ const systemMonth = currentDateObj.getMonth(); // Mês atual real (0=Jan, 10=Nov
 const systemDay = currentDateObj.getDate();
 
 // Variáveis para a ESCALA (Fixas em Novembro/2025, conforme solicitação)
-const scheduleYear = 2025; // <--- ALTERAÇÃO PRINCIPAL (AGORA É 2025)
+const scheduleYear = 2025; 
 const scheduleMonth = 10; // Novembro (index 10)
 const daysInScheduleMonth = new Date(scheduleYear, scheduleMonth + 1, 0).getDate(); // 30 dias para Nov
 let currentDay = systemDay; // Variável para o dia atualmente selecionado no slider
@@ -95,7 +95,7 @@ function generate12x36ScheduleNov(startWorkingDay, totalDays) {
 function generate5x2ScheduleDefault(totalDays) {
     let schedule = [];
     for (let day = 1; day <= totalDays; day++) {
-        // Usa o scheduleYear (AGORA 2025) e scheduleMonth para calcular o dia da semana CORRETO
+        // Usa o scheduleYear (2025) e scheduleMonth para calcular o dia da semana CORRETO
         let date = new Date(scheduleYear, scheduleMonth, day); 
         let dayOfWeek = date.getDay(); // 0=Dom, 6=Sáb
         if (dayOfWeek === 0 || dayOfWeek === 6) schedule.push("F");
@@ -658,12 +658,13 @@ function updateWeekendTable() {
                         return `${pad(day)}/${pad(scheduleMonth + 1)}`;
                     };
 
+                    // *** ALTERAÇÃO: FUNÇÃO formatBadge AJUSTADA ***
                     const formatBadge = (name) => {
                         const employee = scheduleData[name];
-                        const cell = employee.info.Célula.split('/')[0].trim();
                         const isLeader = employee.info.Grupo === "Líder de Célula";
+                        // Mantém apenas Nome e Sobrenome (sem a Célula)
                         const badgeClass = isLeader ? 'bg-purple-100 text-purple-800 border-purple-300' : 'bg-blue-100 text-blue-800 border-blue-300';
-                        return `<span class="text-xs font-semibold px-3 py-1 rounded-full border ${badgeClass} shadow-sm">${name} (${cell})</span>`;
+                        return `<span class="text-sm font-semibold px-3 py-1 rounded-full border ${badgeClass} shadow-sm">${name}</span>`; // Removido o "(Célula)"
                     };
                     const formatSatBadge = (workers) => workers.map(formatBadge).join('');
                     const formatSunBadge = (workers) => workers.map(formatBadge).join('');
@@ -672,11 +673,10 @@ function updateWeekendTable() {
                     const cardHtml = `
                         <div class="bg-white p-5 rounded-2xl shadow-xl border border-gray-200 flex flex-col min-h-full">
                             <div class="bg-indigo-700 text-white p-4 -m-5 mb-5 rounded-t-xl flex justify-center items-center">
-                                <svg xmlns="http://www.w3.org/2000/svg" class="h-6 w-6 mr-2" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                                <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5 mr-2" fill="none" viewBox="0 0 24 24" stroke="currentColor">
                                     <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8 7V3m8 4V3m-9 8h10M5 21h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z" />
                                 </svg>
-                                <h3 class="text-white font-bold text-lg tracking-wide">
-                                    Fim de Semana ${formatDate(satDay)} - ${formatDate(sunDay)}
+                                <h3 class="text-white font-bold text-base"> Fim de Semana ${formatDate(satDay)} - ${formatDate(sunDay)}
                                 </h3>
                             </div>
                             <div class="flex-1 flex flex-col justify-start space-y-6">
