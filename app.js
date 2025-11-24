@@ -11,8 +11,9 @@ const daysInCurrentMonth = new Date(currentYear, currentMonth + 1, 0).getDate();
 const monthNames = ["Janeiro", "Fevereiro", "Março", "Abril", "Maio", "Junho", "Julho", "Agosto", "Setembro", "Outubro", "Novembro", "Dezembro"];
 
 // Variável para armazenar o dia atualmente selecionado/exibido
-// ALTERAÇÃO AQUI: Define o dia inicial como o dia de hoje (currentDateObj.getDate())
-let currentDay = currentDateObj.getDate(); 
+// ATUALIZAÇÃO CRÍTICA: Define o dia inicial como o dia de hoje, mas limita ao número máximo de dias do mês de referência.
+// Se hoje é dia 31, mas o mês de referência (Novembro) tem 30 dias, o dia inicial será 30.
+let currentDay = Math.min(currentDateObj.getDate(), daysInCurrentMonth); 
 
 // ==========================================
 // 2. FUNÇÕES DE PARSE E GERAÇÃO DA ESCALA
@@ -98,7 +99,7 @@ function updateDailyView() {
     // 1. Atualiza o cabeçalho do dia
     document.getElementById('currentDayHeader').textContent = `Dia ${currentDay} de ${monthNames[currentMonth]}`;
     
-    // 2. Atualiza o slider (se existir)
+    // 2. Atualiza o slider
     const dateSlider = document.getElementById('dateSlider');
     if (dateSlider) {
         dateSlider.value = currentDay;
@@ -196,19 +197,182 @@ function initDailyView() {
 
 // Funções de manipulação do DOM e eventos
 function initTabs() {
-    // ... (código para inicializar as abas - não alterado)
+    const tabButtons = document.querySelectorAll('.tab-button');
+    const tabContents = document.querySelectorAll('.tab-content');
+
+    tabButtons.forEach(button => {
+        button.addEventListener('click', () => {
+            const targetTab = button.dataset.tab;
+            
+            tabButtons.forEach(btn => btn.classList.remove('active'));
+            button.classList.add('active');
+
+            tabContents.forEach(content => {
+                content.classList.remove('active');
+                if (content.id === `${targetTab}View`) {
+                    content.classList.add('active');
+                }
+            });
+            // Quando muda para a visualização de calendário ou fim de semana, garante a atualização
+            if (targetTab === 'calendar') {
+                updateCalendarHighlight();
+            } else if (targetTab === 'weekend') {
+                updateWeekendTable();
+            }
+        });
+    });
 }
 function initSelect() {
-    // ... (código para inicializar a seleção - não alterado)
+    const select = document.getElementById('daySelect');
+    if (select) {
+        // Popula o select com os dias do mês
+        for (let i = 1; i <= daysInCurrentMonth; i++) {
+            const option = document.createElement('option');
+            option.value = i;
+            option.textContent = `Dia ${i}`;
+            select.appendChild(option);
+        }
+
+        // Define a seleção inicial para o currentDay
+        select.value = currentDay; 
+
+        // Adiciona o listener para o select
+        select.addEventListener('change', (event) => {
+            currentDay = parseInt(event.target.value);
+            updateDailyView();
+        });
+    }
 }
 function updateCalendarHighlight() {
-    // ... (código para realçar o dia - não alterado)
+    const dayCells = document.querySelectorAll('.calendar-cell');
+    dayCells.forEach(cell => {
+        cell.classList.remove('current-day');
+        if (parseInt(cell.dataset.day) === currentDay) {
+            cell.classList.add('current-day');
+        }
+    });
 }
 function updateWeekendTable() {
-    // ... (código para atualizar a tabela de fim de semana - não alterado)
+    const container = document.getElementById('weekendPlantaoContainer');
+    container.innerHTML = ''; // Limpa o conteúdo anterior
+
+    // Determina os fins de semana do mês
+    const weekends = [];
+    for (let i = 1; i <= daysInCurrentMonth; i++) {
+        const date = new Date(currentYear, currentMonth, i);
+        const dayOfWeek = date.getDay(); // 0 = Domingo, 6 = Sábado
+        if (dayOfWeek === 0 || dayOfWeek === 6) {
+            // Verifica se o dia seguinte também está no mês para agrupar Sábado e Domingo
+            if (dayOfWeek === 6 && (i + 1) <= daysInCurrentMonth) {
+                weekends.push({ saturday: i, sunday: i + 1 });
+                i++; // Pula o domingo
+            } else if (dayOfWeek === 0) {
+                 // Trata domingos que não foram agrupados (ex: dia 1 é domingo)
+                 weekends.push({ sunday: i, saturday: i - 1 });
+            }
+        }
+    }
+    
+    // Filtra e agrega os dados por fim de semana
+    weekends.forEach(({ saturday, sunday }) => {
+        
+        // 1. Dados do Sábado
+        const satEmployees = { T: [], FS: [], FD: [] };
+        // 2. Dados do Domingo
+        const sunEmployees = { T: [], FS: [], FD: [] };
+        
+        // Função auxiliar para preencher os dados de um dia
+        const getDayEmployees = (day, employeeMap) => {
+            const dayMap = { T: [], FS: [], FD: [] };
+            Object.keys(processedSchedule).filter(name => 
+                employeeMetadata[name] && employeeMetadata[name].Grupo === 'Operador Noc'
+            ).forEach(name => {
+                const schedule = processedSchedule[name];
+                ['T', 'FS', 'FD'].forEach(status => {
+                    if (schedule[status].includes(day)) {
+                        dayMap[status].push({ name, ...employeeMetadata[name] });
+                    }
+                });
+            });
+            return dayMap;
+        };
+
+        const satData = getDayEmployees(saturday, satEmployees);
+        const sunData = getDayEmployees(sunday, sunEmployees);
+        
+        // Agrega todos os colaboradores que trabalharam (T) no Sábado
+        const satWorking = satData.T.sort((a, b) => a.name.localeCompare(b.name));
+        // Agrega todos os colaboradores que trabalharam (T) no Domingo
+        const sunWorking = sunData.T.sort((a, b) => a.name.localeCompare(b.name));
+        
+        // Cria o card do fim de semana
+        const card = document.createElement('div');
+        card.className = 'bg-white p-5 rounded-xl shadow-lg border border-gray-200 transition-all duration-300 hover:shadow-xl';
+        
+        // Formata os nomes dos dias para exibição
+        const satLabel = saturday ? `Sáb. ${saturday}` : '';
+        const sunLabel = sunday ? `Dom. ${sunday}` : '';
+        const dateRange = `${satLabel} / ${sunLabel}`.trim().replace(/^\/ /g, '').replace(/ \/$/g, '');
+
+        card.innerHTML = `
+            <h3 class="text-lg font-bold text-indigo-700 mb-4 border-b pb-2">${dateRange}</h3>
+            
+            ${saturday ? `
+            <div class="mb-5">
+                <p class="font-semibold text-gray-700 mb-2 flex items-center">
+                    Sábado (${saturday}) - <span class="text-green-600 ml-1">${satWorking.length} Trabalhando</span>
+                </p>
+                <ul class="space-y-1">
+                    ${satWorking.map(emp => `
+                        <li class="flex justify-between text-sm text-gray-600 border-b border-gray-100 last:border-b-0 py-0.5">
+                            <span class="font-medium">${emp.name}</span>
+                            <span class="text-xs text-gray-400">${emp.Célula}</span>
+                        </li>
+                    `).join('') || '<li class="text-sm text-gray-400">Nenhum operador Noc escalado para trabalhar.</li>'}
+                </ul>
+            </div>
+            ` : ''}
+
+            ${sunday ? `
+            <div class="mb-0">
+                <p class="font-semibold text-gray-700 mb-2 flex items-center">
+                    Domingo (${sunday}) - <span class="text-green-600 ml-1">${sunWorking.length} Trabalhando</span>
+                </p>
+                <ul class="space-y-1">
+                    ${sunWorking.map(emp => `
+                        <li class="flex justify-between text-sm text-gray-600 border-b border-gray-100 last:border-b-0 py-0.5">
+                            <span class="font-medium">${emp.name}</span>
+                            <span class="text-xs text-gray-400">${emp.Célula}</span>
+                        </li>
+                    `).join('') || '<li class="text-sm text-gray-400">Nenhum operador Noc escalado para trabalhar.</li>'}
+                </ul>
+            </div>
+            ` : ''}
+        `;
+        container.appendChild(card);
+    });
 }
 function scheduleMidnightUpdate() {
-    // ... (código para agendar a atualização da meia-noite - não alterado)
+    const now = new Date();
+    // Configura para a próxima meia-noite (24:00 do dia atual)
+    const midnight = new Date(now);
+    midnight.setDate(now.getDate() + 1); 
+    midnight.setHours(0, 0, 0, 0); 
+    const timeToMidnight = midnight.getTime() - now.getTime();
+    
+    setTimeout(() => {
+        // Atualiza a visualização no início do novo dia
+        // Recarrega o script ou chama a função de inicialização se a data mudar
+        // Para simplificar, vamos forçar uma atualização da visualização diária
+        // Mas o correto seria recalcular currentDay e daysInCurrentMonth, o que requer um reload.
+        
+        // Simplesmente chama o updateDailyView, mas o currentDay permanecerá estático
+        // A melhor prática seria forçar o recálculo do currentDay
+        location.reload(); 
+        
+        // Agenda a próxima atualização para 24 horas depois
+        setInterval(() => location.reload(), 24 * 60 * 60 * 1000);
+    }, timeToMidnight);
 }
 
 // ==========================================
@@ -220,7 +384,7 @@ function initGlobal() {
     const dateSlider = document.getElementById('dateSlider');
     if (dateSlider) {
         dateSlider.max = daysInCurrentMonth;
-        // ALTERAÇÃO AQUI: Define o valor inicial do slider para o dia atual (currentDay)
+        // ATUALIZAÇÃO: Define o valor inicial do slider para o dia atual (currentDay)
         dateSlider.value = currentDay; 
         document.getElementById('sliderMaxLabel').textContent = `Dia ${daysInCurrentMonth}`;
         
