@@ -93,18 +93,15 @@
     "FE": []
   },
 
-  "Bruni Cipola": {
-    "escala": "12x36",
-    "inicio": 2,
-    "T": [],
+  "Bruno Cipola": { 
+    // Corrigido para "Bruno Cipola" para coincidir com escala-data.js
+    "T": "12x36 iniciado no dia 2",
     "F": [],
     "FE": []
   },
 
   "Leandro Alves": {
-    "escala": "12x36",
-    "inicio": 1,
-    "T": [],
+    "T": "12x36 iniciado no dia 1",
     "F": [],
     "FE": []
   },
