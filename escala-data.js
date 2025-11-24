@@ -16,7 +16,7 @@ const employeeMetadata = {
     "Karina Krisan": { Grupo: "Operador Noc", Célula: "Oi", Horário: "08:00 às 17:48", Turno: "Manhã" },
     "Felipe Pena": { Grupo: "Operador Noc", Célula: "Cirion / Vivo / Telebras", Horário: "12:12 às 22:00", Turno: "Tarde" },
     "Robervan Brahian": { Grupo: "Operador Noc", Célula: "Oi", Horário: "8:30 às 18:18", Turno: "Manhã" },
-    "Johnny Collins": { Grupo: "Operador Noc", Célula: "Cirion / Vivo / Telebras", Horário: "7:00 às 17:18", Turno: "Manhã" },
+    "Johnny Collins": { Grupo: "Operador Noc", Célula: "Cirion / Vivo / Telebras", Horário: "7:30 às 17:18", Turno: "Manhã" },
     "Gabriel Procópio": { Grupo: "Operador Noc", Célula: "Oi", Horário: "7:30 às 17:18", Turno: "Manhã" },
     "Bruno Roque": { Grupo: "Operador Noc", Célula: "Claro/ Telmex", Horário: "7:30 às 17:18", Turno: "Manhã" },
     "Bruno Cipola": { Grupo: "Operador Noc", Célula: "Atendimento", Horário: "19:30 às 07:30", Turno: "Noturno (12x36)" },
@@ -29,3 +29,4 @@ const employeeMetadata = {
     "André Luiz": { Grupo: "Suporte Avançado", Célula: "N2", Horário: "08:30 às 18:18", Turno: "Comercial" },
     "Tadeu Sidney": { Grupo: "Gestor Técnico Geral", Célula: "-", Horário: "08:30 às 18:18", Turno: "Comercial" }
 };
+
