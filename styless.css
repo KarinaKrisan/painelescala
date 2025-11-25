@@ -92,6 +92,8 @@ body {
 } /* Red - Férias (FE) */
 
 /* EXPEDIENTE ENCERRADO — cor solicitada: #b50273 */
+/* EXPEDIENTE ENCERRADO – voltar cor antiga */
+/* EXPEDIENTE ENCERRADO — cor solicitada: #b50273 */
 .status-OFF-SHIFT {
     background-color: #f7e6f1; /* Rosa claro para o fundo */
     color: #b50273;             /* Rosa escuro para o texto (cor principal solicitada) */
@@ -123,7 +125,7 @@ body {
 
 /* ==== MOBILE CALENDAR FIX ==== */
 @media (max-width: 640px) {
-    /* Retorno do calendário original */
+    /* Reverter totalmente para a primeira versão mobile (igual ao desktop) */
     .calendar-grid {
         display: grid;
         grid-template-columns: repeat(7, 1fr);
@@ -133,6 +135,11 @@ body {
         border-radius: 8px;
         overflow: hidden;
     }
+    .calendar-cell {
+        min-width: unset;
+        min-height: 80px;
+    }
+}
     .calendar-cell {
         min-width: unset;
         min-height: 80px;
@@ -167,4 +174,3 @@ body {
     }
 }
 }
-
