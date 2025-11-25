@@ -452,16 +452,16 @@ function updatePersonalView(employeeName) {
                 <p class="text-sm font-semibold">${employee.info.Grupo}</p>
             </div>
         </div>
-        <div class="grid grid-cols-2 sm:grid-cols-3 gap-4 w-full sm:w-auto mt-4 sm:mt-0 sm:pl-6">
-            <div class="col-span-1">
+        <div class="grid grid-cols-2 gap-4 w-full sm:w-auto mt-4 sm:mt-0 sm:pl-6">
+            <div class="md:col-span-1">
                 <p class="text-xs font-medium ${mainColor}">Célula</p>
                 <p class="font-bold text-sm">${employee.info.Célula || '-'}</p>
             </div>
-            <div class="col-span-1">
+            <div class="md:col-span-1">
                 <p class="text-xs font-medium ${mainColor}">Horário</p>
                 <p class="font-bold text-sm">${employee.info.Horário || employee.info.Horario || '-'}</p>
             </div>
-            <div class="col-span-2 sm:col-span-1">
+            <div class="md:col-span-1">
                 <p class="text-xs font-medium ${mainColor}">Turno</p>
                 <p class="font-bold text-sm">${turnoDisplay}</p>
             </div>
@@ -611,4 +611,42 @@ function initMonthSelect() {
         const [y, mo] = e.target.value.split('-').map(Number);
         selectedMonthObj = { year: y, month: mo };
         // load JSON for month and rebuild
-        loadMonthlyJson(y,
+        loadMonthlyJson(y, mo).then(json=>{
+            rawSchedule = json || {};
+            rebuildScheduleDataForSelectedMonth();
+            initSelect();
+            updateDailyView();
+            updateWeekendTable();
+            document.getElementById('headerDate').textContent = `Mês de Referência: ${monthNames[selectedMonthObj.month]} de ${selectedMonthObj.year}`;
+        });
+    });
+}
+
+function scheduleMidnightUpdate() {
+    const now = new Date();
+    const midnight = new Date(now);
+    midnight.setHours(24,0,0,0);
+    const timeToMidnight = midnight.getTime() - now.getTime();
+    setTimeout(()=>{ updateDailyView(); setInterval(updateDailyView, 24*60*60*1000); }, timeToMidnight+1000);
+}
+
+function initGlobal() {
+    loadMonthlyJson(selectedMonthObj.year, selectedMonthObj.month).then(json=>{
+        rawSchedule = json || {};
+        initMonthSelect();
+        rebuildScheduleDataForSelectedMonth();
+        document.getElementById('headerDate').textContent = `Mês de Referência: ${monthNames[selectedMonthObj.month]} de ${selectedMonthObj.year}`;
+        const monthObj = { year: selectedMonthObj.year, month: selectedMonthObj.month };
+        const totalDays = new Date(monthObj.year, monthObj.month+1, 0).getDate();
+        const slider = document.getElementById('dateSlider'); if (slider) slider.max = totalDays;
+        const sliderMaxLabel = document.getElementById('sliderMaxLabel'); if (sliderMaxLabel) sliderMaxLabel.textContent = `Dia ${totalDays}`;
+        initTabs(); initSelect(); initDailyView();
+        currentDay = Math.min(systemDay, totalDays);
+        const ds = document.getElementById('dateSlider'); if (ds) ds.value = currentDay;
+        updateDailyView();
+        scheduleMidnightUpdate();
+        updateWeekendTable();
+    });
+}
+
+document.addEventListener('DOMContentLoaded', initGlobal);
