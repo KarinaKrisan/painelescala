@@ -437,32 +437,34 @@ function updatePersonalView(employeeName) {
     const mainColor = isLeader ? 'text-purple-300' : 'text-indigo-300';
     const turnoDisplay = employee.info.Turno || '';
 
-    infoCard.className = `hidden ${bgColor} p-6 rounded-2xl mb-6 shadow-xl text-white flex flex-col sm:flex-row justify-between items-center transition-opacity duration-300 opacity-0`;
+    // NOVA ESTRUTURA COMPACTA DO CARD DE PERFIL (Mobile-First)
+    infoCard.className = `hidden ${bgColor} p-4 rounded-xl mb-6 shadow-lg text-white flex flex-col transition-opacity duration-300 opacity-0`;
     infoCard.innerHTML = `
-        <div class="flex items-center space-x-4 w-full mb-4 sm:mb-0 pb-4 sm:pb-0 border-b sm:border-b-0 sm:border-r border-white/20">
-            <svg class="h-10 w-10 ${mainColor} flex-shrink-0" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                ${isLeader ? '<path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M17 20h5v-2a3 3 0 00-5.356-1.857M17 20v-2c0-.656-.126-1.283-.356-1.857M9 20l3-3m0 0l-3-3m3 3h6m-3 3v-2.5M10 9a2 2 0 012-2h4a2 2 0 012 2v4a2 2 0 01-2 2h-4a2 2 0 01-2-2v-4zm-9 3a2 2 0 012-2h4a2 2 0 012 2v4a2 2 0 01-2 2H3a2 2 0 01-2-2v-4z" />' : '<path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M16 7a4 4 0 11-8 0 4 4 0 018 0zM12 14a7 7 0 00-7 7h14a7 7 0 00-7-7z" />'}
+        <div class="flex items-center space-x-3 mb-3 border-b border-white/20 pb-2">
+            <svg class="h-8 w-8 ${mainColor} flex-shrink-0" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                 ${isLeader ? '<path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M17 20h5v-2a3 3 0 00-5.356-1.857M17 20v-2c0-.656-.126-1.283-.356-1.857M9 20l3-3m0 0l-3-3m3 3h6m-3 3v-2.5M10 9a2 2 0 012-2h4a2 2 0 012 2v4a2 2 0 01-2 2h-4a2 2 0 01-2-2v-4zm-9 3a2 2 0 012-2h4a2 2 0 012 2v4a2 2 0 01-2 2H3a2 2 0 01-2-2v-4z" />' : '<path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M16 7a4 4 0 11-8 0 4 4 0 018 0zM12 14a7 7 0 00-7 7h14a7 7 0 00-7-7z" />'}
             </svg>
             <div class="flex-1 min-w-0">
-                <p class="text-xl sm:text-2xl font-extrabold">${employeeName}</p>
-                <p class="text-sm font-semibold">${employee.info.Grupo}</p>
+                <p class="text-lg font-extrabold">${employeeName}</p>
+                <p class="text-xs font-semibold ${mainColor}">${employee.info.Grupo}</p>
             </div>
         </div>
-        <div class="grid grid-cols-2 gap-4 w-full sm:w-auto mt-4 sm:mt-0 sm:pl-6">
-            <div class="md:col-span-1">
-                <p class="text-xs font-medium ${mainColor}">Célula</p>
-                <p class="font-bold text-sm">${employee.info.Célula || '-'}</p>
+        <div class="flex justify-between items-center text-xs font-semibold">
+            <div class="flex-1 text-center border-r border-white/20">
+                <p class="${mainColor}">Célula</p>
+                <p class="font-bold">${employee.info.Célula || '-'}</p>
             </div>
-            <div class="md:col-span-1">
-                <p class="text-xs font-medium ${mainColor}">Horário</p>
-                <p class="font-bold text-sm">${employee.info.Horário || employee.info.Horario || '-'}</p>
+            <div class="flex-1 text-center border-r border-white/20">
+                <p class="${mainColor}">Turno</p>
+                <p class="font-bold">${turnoDisplay}</p>
             </div>
-            <div class="md:col-span-1">
-                <p class="text-xs font-medium ${mainColor}">Turno</p>
-                <p class="font-bold text-sm">${turnoDisplay}</p>
+            <div class="flex-1 text-center">
+                <p class="${mainColor}">Horário</p>
+                <p class="font-bold">${employee.info.Horário || employee.info.Horario || '-'}</p>
             </div>
         </div>
     `;
+
     infoCard.classList.remove('hidden','opacity-0'); infoCard.classList.add('opacity-100');
     calendarContainer.classList.remove('hidden');
     updateCalendar(employee.schedule);
@@ -471,6 +473,7 @@ function updatePersonalView(employeeName) {
 // Novo: renderiza calendário COMO GRID (desktop) OU COMO LISTA (mobile)
 function updateCalendar(schedule) {
     const grid = document.getElementById('calendarGrid');
+    const dowHeader = grid.previousElementSibling; // A div com Dom, Seg, Ter...
     if (!grid) return;
     grid.innerHTML = '';
     const monthObj = { year: selectedMonthObj.year, month: selectedMonthObj.month };
@@ -478,46 +481,66 @@ function updateCalendar(schedule) {
     const totalDays = schedule.length;
     const todayDay = systemDay;
     const isCurrentMonth = (systemMonth === monthObj.month && systemYear === monthObj.year);
-    const isMobile = window.innerWidth <= 640;
+    const isMobile = window.innerWidth <= 767; // Usando 767px para corresponder ao md do Tailwind
 
     if (isMobile) {
-        // LIST VIEW for mobile
+        // MOBILE: LIST VIEW
+        // Esconde o cabeçalho de Dom, Seg, Ter...
+        if (dowHeader) dowHeader.classList.add('hidden');
+        grid.classList.remove('calendar-grid-container'); // Garante que o grid não seja aplicado
+        
         const listWrapper = document.createElement('div');
-        listWrapper.className = 'space-y-2 p-2';
+        listWrapper.className = 'space-y-3'; // Aumentado o espaçamento para mobile
+
         for (let d=1; d<=totalDays; d++) {
             const status = schedule[d-1];
             const displayStatus = statusMap[status] || status;
+            const isToday = isCurrentMonth && d === todayDay;
+
             const li = document.createElement('div');
-            li.className = 'flex items-center justify-between bg-white p-3 rounded shadow-sm border border-gray-100';
+            // Usamos a classe 'current-day' no desktop para a borda. Aqui, usamos para a sombra/cor.
+            const todayClass = isToday ? 'border-2 border-indigo-500 shadow-md' : 'border border-gray-100';
+            
+            li.className = `flex items-center justify-between bg-white p-3 rounded-xl shadow-sm transition-shadow ${todayClass}`;
+            
             const left = document.createElement('div');
-            left.innerHTML = `<div class="text-sm font-bold">${pad(d)} / ${pad(monthObj.month+1)}</div><div class="text-xs text-gray-500">${daysOfWeek[new Date(monthObj.year, monthObj.month, d).getDay()]}</div>`;
-            const right = document.createElement('div');
+            const dayOfWeekIndex = new Date(monthObj.year, monthObj.month, d).getDay();
+
+            left.innerHTML = `
+                <div class="text-sm font-extrabold text-gray-800">${pad(d)} / ${pad(monthObj.month+1)}</div>
+                <div class="text-xs text-gray-500">${daysOfWeek[dayOfWeekIndex]}</div>
+            `;
+            
             const badge = document.createElement('span');
             badge.className = `day-status status-${status}`;
             badge.textContent = displayStatus;
-            right.appendChild(badge);
+            
             li.appendChild(left);
-            li.appendChild(right);
+            li.appendChild(badge);
             listWrapper.appendChild(li);
         }
         grid.appendChild(listWrapper);
-        return;
-    }
-
-    // DESKTOP GRID VIEW
-    for (let i=0;i<firstDay;i++) grid.insertAdjacentHTML('beforeend','<div class="calendar-cell bg-gray-50 border-gray-100"></div>');
-    for (let i=0;i<schedule.length;i++){
-        const dayNumber = i+1;
-        const status = schedule[i];
-        const displayStatus = statusMap[status] || status;
-        const currentDayClass = isCurrentMonth && dayNumber === todayDay ? 'current-day' : '';
-        const cellHtml = `
-            <div class="calendar-cell ${currentDayClass}">
-                <div class="day-number">${dayNumber}</div>
-                <div class="day-status-badge status-${status}">${displayStatus}</div>
-            </div>
-        `;
-        grid.insertAdjacentHTML('beforeend', cellHtml);
+        
+    } else {
+        // DESKTOP: GRID VIEW
+        // Exibe o cabeçalho de Dom, Seg, Ter...
+        if (dowHeader) dowHeader.classList.remove('hidden');
+        grid.classList.add('calendar-grid-container'); // Aplica o grid (definido no CSS)
+        
+        for (let i=0;i<firstDay;i++) grid.insertAdjacentHTML('beforeend','<div class="calendar-cell bg-gray-50 border-gray-100"></div>');
+        for (let i=0;i<schedule.length;i++){
+            const dayNumber = i+1;
+            const status = schedule[i];
+            const displayStatus = statusMap[status] || status;
+            const currentDayClass = isCurrentMonth && dayNumber === todayDay ? 'current-day' : '';
+            const cellHtml = `
+                <div class="calendar-cell ${currentDayClass} border-gray-200">
+                    <div class="day-number">${dayNumber}</div>
+                    <div class="day-status-badge status-${status}">${displayStatus}</div>
+                </div>
+            `;
+            grid.insertAdjacentHTML('beforeend', cellHtml);
+        }
     }
 }
 
