@@ -15,8 +15,7 @@
         <header class="mb-10 text-center md:text-left">
             <h1 class="text-3xl md:text-4xl font-extrabold text-gray-900 mb-2 tracking-tight">Painel Operacional Sitelbra</h1>
             <p id="headerDate" class="text-lg text-gray-500 font-medium"></p>
-            <!-- monthSelect será inserido dinamicamente pelo JS -->
-        </header>
+            </header>
 
         <nav class="flex flex-wrap gap-3 p-3 mb-8 bg-white rounded-xl shadow-md border border-gray-200 justify-center md:justify-start">
 
@@ -94,14 +93,45 @@
                             </div>
                         </div>
                         <div class="flex flex-col justify-center items-center bg-white rounded-xl p-6 border border-gray-200 shadow-lg">
-                            <h3 class="text-lg font-semibold text-gray-700 mb-4">Distribuição de Status (Total)</h3>
-                            <div class="chart-container" style="max-width: 400px;">
-
-                                 <canvas id="dailyChart"></canvas>
                             </div>
 
-                          </div>
                     </div>
+                    <div class="grid grid-cols-1 gap-8 items-start">
+                        <div class="grid grid-cols-2 gap-4">
+                            <div class="bg-white p-5 rounded-xl shadow-md border-t-4 border-green-600 hover:shadow-xl transition-shadow cursor-pointer">
+
+                               <p class="text-sm font-semibold text-green-700">Trabalhando</p>
+                                <p id="kpiWorking" class="text-4xl font-extrabold text-green-600 mt-1">0</p>
+                                <p class="text-xs text-gray-500 mt-1">Em expediente agora</p>
+
+
+                            </div>
+                            <div id="kpiOffShiftCard" class="bg-white p-5 rounded-xl shadow-md border-t-4 border-indigo-600 hover:shadow-xl transition-shadow cursor-pointer">
+                                <p class="text-sm font-semibold text-indigo-700">Expediente Encerrado</p>
+                                <p id="kpiOffShift" class="text-4xl font-extrabold text-indigo-600 mt-1">0</p>
+                                <p class="text-xs text-gray-500 mt-1">Fora de horário</p>
+
+                            </div>
+                            <div class="bg-white p-5 rounded-xl shadow-md border-t-4 border-yellow-500 hover:shadow-xl transition-shadow cursor-pointer">
+
+                                <p class="text-sm font-semibold text-yellow-700">Folga</p>
+
+                                <p id="kpiOff" class="text-4xl font-extrabold text-yellow-600 mt-1">0</p>
+
+                                <p class="text-xs text-gray-500 mt-1">Folga programada</p>
+                            </div>
+
+                             <div class="bg-white p-5 rounded-xl shadow-md border-t-4 border-red-600 hover:shadow-xl transition-shadow cursor-pointer">
+
+                                 <p class="text-sm font-semibold text-red-700">Férias</p>
+                                <p id="kpiVacation" class="text-4xl font-extrabold text-red-600 mt-1">0</p>
+
+
+                                <p class="text-xs text-gray-500 mt-1">Ausência programada</p>
+                            </div>
+                        </div>
+                    </div>
+                    
                 </section>
 
                 <section class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
