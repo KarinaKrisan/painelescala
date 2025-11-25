@@ -29,14 +29,14 @@
   },
   "Carlos Magno": {
     "T": "segunda a sexta",
-    "F": "fins de semana",
+    "F": "fins de semana", [22,23,24,25,26],
     "FS": [],
     "FD": [],
     "FE": []
   },
   "Karina Krisan": {
     "T": [1,2,3,4,5,8,9,10,11,13,15,16,17],
-    "F": ["6,7,12,14"],
+    "F": [6,7,12,14],
     "FS": [],
     "FD": [],
     "FE": ["18/12 a 01/01"]
@@ -99,7 +99,7 @@
   },
   "Patricia Oliveira": {
     "T": "segunda a sexta",
-    "F": "fins de semana"[29,30,31],
+    "F": "fins de semana", [29,30,31],
     "FS": [],
     "FD": [],
     "FE": ["03/11 a 03/12"]
@@ -113,20 +113,27 @@
   },
   "Samile Chaga": {
     "T": "segunda a sexta",
-    "F": "fins de semana"[22,23,24,25,26,27,28],
+    "F": "fins de semana", [22,23,24,25,26,27,28],
     "FS": [],
     "FD": [],
     "FE": []
   },
   "Joab Santos": {
     "T": "segunda a sexta",
-    "F": "fins de semana"[22,23,24,25,26,27,28],
+    "F": "fins de semana", [22,23,24,25,26,27,28],
+    "FS": [],
+    "FD": [],
+    "FE": []
+  },
+  "Raquel Nascimento": {
+    "T": "segunda a sexta",
+    "F": "fins de semana",
     "FS": [],
     "FD": [],
     "FE": []
   },
   "Lucas Keller": {
-    "T": "segunda a sexta"[29,30,31],
+    "T": "segunda a sexta", [29,30,31],
     "F": "fins de semana",
     "FS": [],
     "FD": [],
@@ -134,14 +141,14 @@
   },
   "André Luiz": {
     "T": "segunda a sexta",
-    "F": "fins de semana"[22,23,24,25,26,27,28],
+    "F": "fins de semana", [22,23,24,25,26,27,28],
     "FS": [],
     "FD": [],
     "FE": []
   },
   "Tadeu Sidnei": {
     "T": "segunda a sexta",
-    "F": "fins de semana"[22,23,24,25,26,27,28],
+    "F": "fins de semana", [22,23,24,25,26,27,28],
     "FS": [],
     "FD": [],
     "FE": []
