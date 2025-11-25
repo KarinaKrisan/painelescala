@@ -1,181 +1,191 @@
 {
-  "Yan Santos": {
-  	"T": [],
-  	"F": [],
-  	"FS": [],
-  	"FD": [],
-  	"FE": []
-  },
-  "Carlos Diego": {
-  	"T": [],
-  	"F": [],
-  	"FS": [],
-  	"FD": [],
-  	"FE": []
-  },
-  "Bruno Capone": {
-  	"T": [],
-  	"F": [],
-  	"FS": [],
-  	"FD": [],
-  	"FE": []
-  },
-  "Leandra Moura": {
-  	"T": [],
-  	"F": [],
-  	"FS": [],
-  	"FD": [],
-  	"FE": []
-  },
-  "Carlos Magno": {
-  	"T": [],
-  	"F": [],
-  	"FS": [],
-  	"FD": [],
-  	"FE": []
-  },
-  "Karina Krisan": {
-  	"T": [],
-  	"F": [],
-  	"FS": [],
-  	"FD": [],
-  	"FE": ["18/12 a 01/01"]
-  },
-  "Gabriel Procópio": {
-  	"T": [],
-  	"F": [],
-  	"FS": [],
-  	"FD": [],
-  	"FE": []
-  },
-  "Bruno Roque": {
-  	"T": [],
-  	"F": [],
-  	"FS": [],
-  	"FD": [],
-  	"FE": []
-  },
-  "Johnny Collins": {
-  	"T": [],
-  	"F": [],
-  	"FS": [],
-  	"FD": [],
-  	"FE": []
-  },
-  "Robervan Brahian": {
-  	"T": "fins de semana",
-  	"F": "segunda a sexta",
-  	"FE": []
-  },
-  "Emanuel Pereira": {
-  	"T": [],
-  	"F": [],
-  	"FS": [],
-  	"FD": [],
-  	"FE": []
-  },
-  "Felipe Pena": {
-  	"T": [],
-  	"F": [],
-  	"FS": [],
-  	"FD": [],
-  	"FE": []
-  },
-
-    // Colaboradores 12x36 - Plantão de 12 horas (Noturno)
-  "Bruno Cipola": {
-  	"T": [],
-  	"F": [],
-  	"FS": [],
-  	"FD": [],
-  	"FE": []
-  },
-  "Leandro Alves": {
-  	"T": [],
-  	"F": [],
-  	"FS": [],
-  	"FD": [],
-  	"FE": []
-  },
-
-    // Colaboradores em Turno Comercial (Segunda a Sexta)
-  "Patricia Oliveira": {
-  	"T": "segunda a sexta",
-  	"F": "fins de semana",
-  	"FE": []
-  },
-  "Aidan Candido": {
-  	"T": "segunda a sexta",
-  	"F": "fins de semana",
-  	"FE": ["15/12 a 15/01"]
-  },
-  "Samile Chaga": {
-  	"T": "segunda a sexta",
-  	"F": "fins de semana",
-  	"FE": []
-  },
-  "Joab Santos": {
-  	"T": "segunda a sexta",
-  	"F": "fins de semana",
-  	"FE": []
-  },
-  "Lucas Keller": {
-  	"T": "segunda a sexta",
-  	"F": "fins de semana",
-  	"FE": []
-  },
-  "André Luiz": {
-  	"T": "segunda a sexta",
-  	"F": "fins de semana",
-  	"FE": []
-  },
-  "Tadeu Sidnei": {
-  	"T": "segunda a sexta",
-  	"F": "fins de semana",
-  	"FE": []
-  },
-
-    // Colaboradores 12x36 Diurno (Novos)
-  "Rafael Batista": {
-  	"T": [],
-  	"F": [],
-  	"FS": [],
-  	"FD": [],
-  	"FE": []
-  },
-  "Ivan Gabriel": {
-  	"T": [],
-  	"F": [],
-  	"FS": [],
-  	"FD": [],
-  	"FE": []
-  },
-  "Nilton Santos": {
-  	"T": [],
-  	"F": [],
-  	"FS": [],
-  	"FD": [],
-  	"FE": []
-  },
-  "Diego Mendonça": {
-  	"T": [],
-  	"F": [],
-  	"FS": [],
-  	"FD": [],
-  	"FE": []
-  },
-  "Bruno Messias": {
-  	"T": [],
-  	"F": [],
-  	"FS": [],
-  	"FD": [],
-  	"FE": []
-  },
-  "Carlos Eduardo": {
-  	"T": [],
-  	"F": [],
-  	"FS": [],
-  	"FD": [],
-  	"FE": []
-  }
+  "Yan Santos": {
+    "T": [],
+    "F": [],
+    "FS": [],
+    "FD": [],
+    "FE": []
+  },
+  "Carlos Diego": {
+    "T": [],
+    "F": [],
+    "FS": [],
+    "FD": [],
+    "FE": []
+  },
+  "Bruno Capone": {
+    "T": [],
+    "F": [],
+    "FS": [],
+    "FD": [],
+    "FE": []
+  },
+  "Leandra Moura": {
+    "T": [],
+    "F": [],
+    "FS": [],
+    "FD": [],
+    "FE": []
+  },
+  "Carlos Magno": {
+    "T": [],
+    "F": [],
+    "FS": [],
+    "FD": [],
+    "FE": []
+  },
+  "Karina Krisan": {
+    "T": [],
+    "F": [],
+    "FS": [],
+    "FD": [],
+    "FE": ["18/12 a 01/01"]
+  },
+  "Gabriel Procópio": {
+    "T": [],
+    "F": [],
+    "FS": [],
+    "FD": [],
+    "FE": []
+  },
+  "Bruno Roque": {
+    "T": [],
+    "F": [],
+    "FS": [],
+    "FD": [],
+    "FE": []
+  },
+  "Johnny Collins": {
+    "T": [],
+    "F": [],
+    "FS": [],
+    "FD": [],
+    "FE": []
+  },
+  "Robervan Brahian": {
+    "T": [],
+    "F": [],
+    "FS": [],
+    "FD": [],
+    "FE": []
+  },
+  "Emanuel Pereira": {
+    "T": [],
+    "F": [],
+    "FS": [],
+    "FD": [],
+    "FE": []
+  },
+  "Felipe Pena": {
+    "T": [],
+    "F": [],
+    "FS": [],
+    "FD": [],
+    "FE": []
+  },
+  "Bruno Cipola": {
+    "T": [],
+    "F": [],
+    "FS": [],
+    "FD": [],
+    "FE": []
+  },
+  "Leandro Alves": {
+    "T": [],
+    "F": [],
+    "FS": [],
+    "FD": [],
+    "FE": []
+  },
+  "Patricia Oliveira": {
+    "T": [],
+    "F": [],
+    "FS": [],
+    "FD": [],
+    "FE": []
+  },
+  "Aidan Candido": {
+    "T": [],
+    "F": [],
+    "FS": [],
+    "FD": [],
+    "FE": ["15/12 a 15/01"]
+  },
+  "Samile Chaga": {
+    "T": [],
+    "F": [],
+    "FS": [],
+    "FD": [],
+    "FE": []
+  },
+  "Joab Santos": {
+    "T": [],
+    "F": [],
+    "FS": [],
+    "FD": [],
+    "FE": []
+  },
+  "Lucas Keller": {
+    "T": [],
+    "F": [],
+    "FS": [],
+    "FD": [],
+    "FE": []
+  },
+  "André Luiz": {
+    "T": [],
+    "F": [],
+    "FS": [],
+    "FD": [],
+    "FE": []
+  },
+  "Tadeu Sidney": {
+    "T": [],
+    "F": [],
+    "FS": [],
+    "FD": [],
+    "FE": []
+  },
+  "Rafael Batista": {
+    "T": [],
+    "F": [],
+    "FS": [],
+    "FD": [],
+    "FE": []
+  },
+  "Ivan Gabriel": {
+    "T": [],
+    "F": [],
+    "FS": [],
+    "FD": [],
+    "FE": []
+  },
+  "Nilton Santos": {
+    "T": [],
+    "F": [],
+    "FS": [],
+    "FD": [],
+    "FE": []
+  },
+  "Diego Mendonça": {
+    "T": [],
+    "F": [],
+    "FS": [],
+    "FD": [],
+    "FE": []
+  },
+  "Bruno Messias": {
+    "T": [],
+    "F": [],
+    "FS": [],
+    "FD": [],
+    "FE": []
+  },
+  "Carlos Eduardo": {
+    "T": [],
+    "F": [],
+    "FS": [],
+    "FD": [],
+    "FE": []
+  }
 }
