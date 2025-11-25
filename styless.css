@@ -92,11 +92,10 @@ body {
 } /* Red - Férias (FE) */
 
 /* EXPEDIENTE ENCERRADO — cor solicitada: #b50273 */
-/* EXPEDIENTE ENCERRADO – voltar cor antiga */
 .status-OFF-SHIFT {
-    background-color: #fce7f3; /* rosa claro antigo */
-    color: #9d174d;
-    border: 1px solid #f9a8d4;
+    background-color: #f7e6f1; /* Rosa claro para o fundo */
+    color: #b50273;             /* Rosa escuro para o texto (cor principal solicitada) */
+    border: 1px solid #d456a0;  /* Rosa médio para a borda */
 }
 
 /* Folga Domingo — cor solicitada: #003fc7 */
@@ -168,3 +167,4 @@ body {
     }
 }
 }
+
