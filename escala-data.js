@@ -29,7 +29,7 @@ const employeeMetadata = {
     "Joab Santos": { Grupo: "Líder de Célula", Célula: "Cirion/ Vivo/ Telebras", Horário: "08:00 às 17:48", Turno: "Comercial" },
     "Lucas Keller": { Grupo: "Suporte Avançado", Célula: "N2", Horário: "08:30 às 18:18", Turno: "Comercial" },
     "André Luiz": { Grupo: "Suporte Avançado", Célula: "N2", Horário: "08:30 às 18:18", Turno: "Comercial" },
-    "Tadeu Sidney": { Grupo: "Gestor Técnico Geral", Célula: "-", Horário: "08:30 às 18:18", Turno: "Comercial" },
+    "Tadeu Sidnei": { Grupo: "Gestor Técnico Geral", Célula: "-", Horário: "08:30 às 18:18", Turno: "Comercial" },
     // NOVOS COLABORADORES ADICIONADOS ABAIXO:
     "Rafael Batista": { Grupo: "Operador Noc", Célula: "Oi", Horário: "07:00 às 19:00", Turno: "Turno 12h" },
     "Ivan Gabriel": { Grupo: "Operador Noc", Célula: "Oi", Horário: "07:00 às 19:00", Turno: "Turno 12h" },
@@ -38,3 +38,4 @@ const employeeMetadata = {
     "Bruno Messias": { Grupo: "Operador Noc", Célula: "Oi", Horário: "07:00 às 19:00", Turno: "Turno 12h" },
     "Carlos Eduardo": { Grupo: "Operador Noc", Célula: "Oi", Horário: "07:00 às 19:00", Turno: "Turno 12h" }
 };
+
