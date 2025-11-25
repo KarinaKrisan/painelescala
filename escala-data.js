@@ -28,7 +28,12 @@ const employeeMetadata = {
     "Joab Santos": { Grupo: "Líder de Célula", Célula: "Cirion/ Vivo/ Telebras", Horário: "08:00 às 17:48", Turno: "Comercial" },
     "Lucas Keller": { Grupo: "Suporte Avançado", Célula: "N2", Horário: "08:30 às 18:18", Turno: "Comercial" },
     "André Luiz": { Grupo: "Suporte Avançado", Célula: "N2", Horário: "08:30 às 18:18", Turno: "Comercial" },
-    "Tadeu Sidney": { Grupo: "Gestor Técnico Geral", Célula: "-", Horário: "08:30 às 18:18", Turno: "Comercial" }
+    "Tadeu Sidney": { Grupo: "Gestor Técnico Geral", Célula: "-", Horário: "08:30 às 18:18", Turno: "Comercial" },
+    // NOVOS COLABORADORES ADICIONADOS:
+    "Rafael Batista": { Grupo: "Operador Noc", Célula: "Oi", Horário: "07:00 às 19:00", Turno: "Diurno (12x36)" },
+    "Ivan Gabriel": { Grupo: "Operador Noc", Célula: "Oi", Horário: "07:00 às 19:00", Turno: "Diurno (12x36)" },
+    "Nilton Santos": { Grupo: "Operador Noc", Célula: "Oi", Horário: "07:00 às 19:00", Turno: "Diurno (12x36)" },
+    "Diego Mendonça": { Grupo: "Operador Noc", Célula: "Claro / Telmex", Horário: "07:00 às 19:00", Turno: "Diurno (12x36)" },
+    "Bruno Messias": { Grupo: "Operador Noc", Célula: "Oi", Horário: "07:00 às 19:00", Turno: "Diurno (12x36)" },
+    "Carlos Eduardo": { Grupo: "Operador Noc", Célula: "Oi", Horário: "07:00 às 19:00", Turno: "Diurno (12x36)" }
 };
-
-
