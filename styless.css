@@ -20,8 +20,7 @@ body {
 /* Calendar */
 .calendar-grid {
     display: grid;
-    /* Padrão para 7 colunas em desktop/telas grandes */
-    grid-template-columns: repeat(7, 1fr); 
+    grid-template-columns: repeat(7, 1fr);
     gap: 1px;
     background-color: #e5e7eb; /* Gray 200 */
     border: 1px solid #e5e7eb;
@@ -35,17 +34,16 @@ body {
     padding: 8px;
     display: flex;
     flex-direction: column;
-    justify-content: space-between; /* Espaçamento entre o dia e o status */
-    cursor: pointer;
-    transition: background-color 0.1s;
+    justify-content: space-between;
+    transition: background-color 0.1s ease;
 }
-.day-number {
+.calendar-day-number {
     font-weight: 700;
     font-size: 1.125rem; /* text-lg */
     color: #1f2937; /* Gray 800 */
     text-align: right;
 }
-.day-status-badge {
+.calendar-status {
     font-size: 0.75rem; /* text-xs */
     font-weight: 600;
     /* Adiciona padding e borda padrão para visibilidade */
@@ -53,8 +51,6 @@ body {
     border-radius: 4px;
     text-align: center;
     border: 1px solid transparent; 
-    display: inline-block; /* Garante que o padding funcione corretamente */
-    line-height: 1; /* Alinhamento de linha para compactar */
 }
 .calendar-cell:hover {
     background-color: #f9fafb; /* Gray 50 */
@@ -77,79 +73,29 @@ body {
 } /* Yellow - Folga (F) */
 .status-FE {
     background-color: #fee2e2;
-    color: #991b1b;
+    color: #b91c1c;
     border: 1px solid #fca5a5;
-} /* Red - Feriado / Extra (FE) */
+} /* Red - Férias (FE) */
+.status-OFF-SHIFT {
+    background-color: #f3e8ff;
+    color: #6b21a8;
+    border: 1px solid #d8b4fe;
+} /* Purple/Pink - Exp. Encerrado */
+
+/* NOVAS CORES para Folgas Específicas */
+.status-FD {
+    background-color: #fce7f3;
+    color: #a21235;
+    border: 1px solid #f9a8d4;
+} /* Pink-ish for Sunday Off (FD) */
 .status-FS {
     background-color: #e0f2fe;
-    color: #0c4a6e;
+    color: #0284c7;
     border: 1px solid #7dd3fc;
-} /* Blue - Folga Semanal (FS) */
-.status-FD {
-    background-color: #f3e8ff;
-    color: #5b21b6;
-    border: 1px solid #c4b5fd;
-} /* Purple - Folga Compensatória / Outros (FD) */
-.status-12x36 {
-    background-color: #fae8ff;
-    color: #8327a3;
-    border: 1px solid #d946ef;
-} /* Pink-Purple - 12x36 */
+} /* Light Blue for Saturday Off (FS) */
 
-
----
-
-## 📱 Ajustes Responsivos para Todos os Celulares
-
-Esta seção garante que o layout mude para 4 colunas em qualquer tela com largura menor que $768\text{px}$ (o breakpoint comum para dispositivos móveis).
-
-```css
-/* ==========================================
-// AJUSTES MOBILE PARA CALENDÁRIO INDIVIDUAL 
-// Aplicado em telas menores que 768px (smartphones e tablets pequenos)
-// ========================================== */
-@media (max-width: 767px) {
-    /* 1. Altera o grid principal para 4 colunas em telas pequenas */
-    .calendar-grid {
-        /* Sobrescreve grid-template-columns para 4 colunas */
-        grid-template-columns: repeat(4, 1fr) !important;
-    }
-
-    /* 2. Garante que os rótulos de dias da semana também usem 4 colunas */
-    #calendarContainer > .grid.grid-cols-7 {
-        /* Target: div.grid.grid-cols-7 (rótulos de dias) dentro do container */
-        grid-template-columns: repeat(4, 1fr) !important;
-    }
-
-    /* 3. Esconde os rótulos de dias da semana que não cabem no layout de 4 colunas */
-    /* Qui (5), Sex (6), Sáb (7) */
-    #calendarContainer > .grid.grid-cols-7 > div:nth-child(5), 
-    #calendarContainer > .grid.grid-cols-7 > div:nth-child(6), 
-    #calendarContainer > .grid.grid-cols-7 > div:nth-child(7) { 
-        display: none;
-    }
-
-    /* 4. Ajusta a célula do calendário para ser mais compacta em mobile */
-    .calendar-cell {
-        min-height: 70px; /* Reduz a altura mínima */
-        padding: 6px; /* Reduz o padding */
-    }
-
-    /* 5. Ajusta o tamanho da fonte do status para caber melhor */
-    .day-status-badge {
-        font-size: 0.65rem; /* Menor que text-xs (0.75rem) */
-        padding: 1px 3px;
-        line-height: 1.1; /* Melhora o espaçamento da linha */
-    }
-
-    /* 6. Ajusta o day-number */
-    .day-number {
-        font-size: 1rem; /* text-base */
-        font-weight: 600;
-    }
-    
-    /* 7. Adiciona uma margem superior para compensar a ocultação de dias da semana */
-    #calendarContainer {
-        padding-top: 5px;
-    }
+.chart-container {
+    position: relative;
+    width: 100%;
+    height: 350px;
 }
