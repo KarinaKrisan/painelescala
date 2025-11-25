@@ -21,6 +21,7 @@ const employeeMetadata = {
     "Bruno Roque": { Grupo: "Operador Noc", Célula: "Sitelbra/ B2B", Horário: "7:30 às 17:18", Turno: "Manhã" },
     "Bruno Cipola": { Grupo: "Operador Noc", Célula: "Atendimento", Horário: "19:30 às 07:30", Turno: "Noturno (12x36)" },
     "Leandro Alves": { Grupo: "Operador Noc", Célula: "Atendimento ", Horário: "19:30 às 07:30", Turno: "Noturno (12x36)" },
+    // LIDERES E GESTÃO TÉCNICA
     "Aidan Candido": { Grupo: "Líder de Célula", Célula: "Sitelbra/ B2B", Horário: "08:00 às 17:48", Turno: "Comercial" },
     "Raquel Nascimento": { Grupo: "Líder de Célula", Célula: "Claro / Telmex", Horário: "08:00 às 17:48", Turno: "Comercial" },
     "Samile Chaga": { Grupo: "Líder de Célula", Célula: "Oi", Horário: "08:00 às 17:48", Turno: "Comercial" },
@@ -28,5 +29,12 @@ const employeeMetadata = {
     "Joab Santos": { Grupo: "Líder de Célula", Célula: "Cirion/ Vivo/ Telebras", Horário: "08:00 às 17:48", Turno: "Comercial" },
     "Lucas Keller": { Grupo: "Suporte Avançado", Célula: "N2", Horário: "08:30 às 18:18", Turno: "Comercial" },
     "André Luiz": { Grupo: "Suporte Avançado", Célula: "N2", Horário: "08:30 às 18:18", Turno: "Comercial" },
-    "Tadeu Sidney": { Grupo: "Gestor Técnico Geral", Célula: "-", Horário: "08:30 às 18:18", Turno: "Comercial" }
+    "Tadeu Sidney": { Grupo: "Gestor Técnico Geral", Célula: "-", Horário: "08:30 às 18:18", Turno: "Comercial" },
+    // NOVOS COLABORADORES ADICIONADOS ABAIXO:
+    "Rafael Batista": { Grupo: "Operador Noc", Célula: "Oi", Horário: "07:00 às 19:00", Turno: "Turno 12h" },
+    "Ivan Gabriel": { Grupo: "Operador Noc", Célula: "Oi", Horário: "07:00 às 19:00", Turno: "Turno 12h" },
+    "Nilton Santos": { Grupo: "Operador Noc", Célula: "Oi", Horário: "07:00 às 19:00", Turno: "Turno 12h" },
+    "Diego Mendonça": { Grupo: "Operador Noc", Célula: "Claro / Telmex", Horário: "07:00 às 19:00", Turno: "Turno 12h" },
+    "Bruno Messias": { Grupo: "Operador Noc", Célula: "Oi", Horário: "07:00 às 19:00", Turno: "Turno 12h" },
+    "Carlos Eduardo": { Grupo: "Operador Noc", Célula: "Oi", Horário: "07:00 às 19:00", Turno: "Turno 12h" }
 };
