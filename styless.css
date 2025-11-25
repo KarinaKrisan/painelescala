@@ -92,24 +92,27 @@ body {
 } /* Red - Férias (FE) */
 
 /* EXPEDIENTE ENCERRADO — cor solicitada: #b50273 */
+/* EXPEDIENTE ENCERRADO – voltar cor antiga */
 .status-OFF-SHIFT {
-    background-color: #b50273;
-    color: #ffffff;
-    border: 1px solid #7a014f;
+    background-color: #fce7f3; /* rosa claro antigo */
+    color: #9d174d;
+    border: 1px solid #f9a8d4;
 }
 
 /* Folga Domingo — cor solicitada: #003fc7 */
+/* Folga Domingo – estilo de Trabalhando porém azul */
 .status-FD {
-    background-color: #003fc7;
-    color: #ffffff;
-    border: 1px solid #002a8e;
+    background-color: #dbeafe;
+    color: #1e40af;
+    border: 1px solid #93c5fd;
 }
 
 /* Folga Sábado — cor solicitada: #00c767 */
+/* Folga Sábado – estilo de Trabalhando porém rosa */
 .status-FS {
-    background-color: #00c767;
-    color: #ffffff;
-    border: 1px solid #008e4a;
+    background-color: #fce7f3;
+    color: #9d174d;
+    border: 1px solid #f9a8d4;
 }
 
 /* small utilities */
@@ -121,15 +124,21 @@ body {
 
 /* ==== MOBILE CALENDAR FIX ==== */
 @media (max-width: 640px) {
-    /* Revert to classic 7‑column calendar but allow horizontal drag */
+    /* Retorno do calendário original */
     .calendar-grid {
         display: grid;
-        grid-template-columns: repeat(7, minmax(90px, 1fr));
-        overflow-x: auto;
-        overflow-y: hidden;
+        grid-template-columns: repeat(7, 1fr);
         gap: 1px;
-        -webkit-overflow-scrolling: touch; /* smooth scroll in iOS */
+        background-color: #e5e7eb;
+        border: 1px solid #e5e7eb;
+        border-radius: 8px;
+        overflow: hidden;
     }
+    .calendar-cell {
+        min-width: unset;
+        min-height: 80px;
+    }
+}
     .calendar-cell {
         min-width: 90px;
         min-height: 90px;
@@ -143,8 +152,19 @@ body {
 
 /* Additional small responsiveness for personal info card */
 @media (max-width: 640px) {
-    #personalInfoCard {
-        flex-direction: column;
-        align-items: flex-start;
+    /* Retorno do calendário original */
+    .calendar-grid {
+        display: grid;
+        grid-template-columns: repeat(7, 1fr);
+        gap: 1px;
+        background-color: #e5e7eb;
+        border: 1px solid #e5e7eb;
+        border-radius: 8px;
+        overflow: hidden;
     }
+    .calendar-cell {
+        min-width: unset;
+        min-height: 80px;
+    }
+}
 }
