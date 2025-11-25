@@ -97,9 +97,16 @@ body {
 } /* Pink-Purple - 12x36 */
 
 
+---
+
+## 📱 Ajustes Responsivos para Todos os Celulares
+
+Esta seção garante que o layout mude para 4 colunas em qualquer tela com largura menor que $768\text{px}$ (o breakpoint comum para dispositivos móveis).
+
+```css
 /* ==========================================
-// AJUSTES MOBILE PARA CALENDÁRIO INDIVIDUAL 📱
-// Aplicado em telas menores que 768px (Breakpoint 'md' padrão do Tailwind)
+// AJUSTES MOBILE PARA CALENDÁRIO INDIVIDUAL 
+// Aplicado em telas menores que 768px (smartphones e tablets pequenos)
 // ========================================== */
 @media (max-width: 767px) {
     /* 1. Altera o grid principal para 4 colunas em telas pequenas */
@@ -110,7 +117,7 @@ body {
 
     /* 2. Garante que os rótulos de dias da semana também usem 4 colunas */
     #calendarContainer > .grid.grid-cols-7 {
-        /* Target: div.grid.grid-cols-7 dentro do container */
+        /* Target: div.grid.grid-cols-7 (rótulos de dias) dentro do container */
         grid-template-columns: repeat(4, 1fr) !important;
     }
 
@@ -132,6 +139,7 @@ body {
     .day-status-badge {
         font-size: 0.65rem; /* Menor que text-xs (0.75rem) */
         padding: 1px 3px;
+        line-height: 1.1; /* Melhora o espaçamento da linha */
     }
 
     /* 6. Ajusta o day-number */
