@@ -298,7 +298,8 @@ const centerTextPlugin = {
         // SLA/Meta de exemplo (pode ser ajustado)
         const slaGoal = 75; 
         const isSlaMet = workingPct >= slaGoal;
-        const primaryColor = isSlaMet ? '#10b981' : '#ef4444'; // Green or Red
+        // Usa as novas cores vibrantes
+        const primaryColor = isSlaMet ? '#047857' : '#b91c1c'; // Emerald 700 or Red 700
         
         ctx.save();
         
@@ -337,8 +338,8 @@ function updateChart(working, off, offShift, vacation) {
         `Expediente Encerrado (${offShift})`,
         `Férias (${vacation})`
     ];
-    // Cores: Verde (Trabalhando), Amarelo (Folga), Rosa (Exp. Enc.), Vermelho (Férias)
-    const colors = ['#10b981','#fcd34d','#f9a8d4','#ef4444']; 
+    // Cores VIVAS E CONTRASTADAS (Emerald, Amber, Pink, Red)
+    const colors = ['#047857', '#d97706', '#db2777', '#b91c1c']; 
     
     const filteredData = [], filteredLabels = [], filteredColors = [];
     dataPoints.forEach((d,i)=>{ 
