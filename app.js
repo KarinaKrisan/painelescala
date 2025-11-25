@@ -298,8 +298,7 @@ const centerTextPlugin = {
         // SLA/Meta de exemplo (pode ser ajustado)
         const slaGoal = 75; 
         const isSlaMet = workingPct >= slaGoal;
-        // Usa as novas cores vibrantes
-        const primaryColor = isSlaMet ? '#047857' : '#b91c1c'; // Emerald 700 or Red 700
+        const primaryColor = isSlaMet ? '#10b981' : '#ef4444'; // Green or Red
         
         ctx.save();
         
@@ -338,8 +337,8 @@ function updateChart(working, off, offShift, vacation) {
         `Expediente Encerrado (${offShift})`,
         `Férias (${vacation})`
     ];
-    // Cores VIVAS E CONTRASTADAS (Emerald, Amber, Pink, Red)
-    const colors = ['#047857', '#d97706', '#db2777', '#b91c1c']; 
+    // Cores: Verde (Trabalhando), Amarelo (Folga), Rosa (Exp. Enc.), Vermelho (Férias)
+    const colors = ['#10b981','#fcd34d','#f9a8d4','#ef4444']; 
     
     const filteredData = [], filteredLabels = [], filteredColors = [];
     dataPoints.forEach((d,i)=>{ 
@@ -442,7 +441,7 @@ function updateDailyView() {
                     <span class="font-semibold text-gray-700">${name}</span>
                     <span class="text-xs text-gray-400">${employee.info.Horário || employee.info.Horario || ''}</span>
                 </div>
-                <span class="font-bold text-xs px-2 py-1 rounded day-status status-${displayStatus}">
+                <span class="day-status status-${displayStatus}">
                     ${statusMap[displayStatus] || displayStatus}
                 </span>
             </li>
