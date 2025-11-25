@@ -91,25 +91,26 @@ body {
     border: 1px solid #fca5a5;
 } /* Red - Férias (FE) */
 
-/* EXPEDIENTE ENCERRADO agora rosa */
+/* EXPEDIENTE ENCERRADO — cor solicitada: #b50273 */
 .status-OFF-SHIFT {
-    background-color: #fce7f3; /* rosa claro */
-    color: #9d174d;            /* rosa escuro */
-    border: 1px solid #f9a8d4;
+    background-color: #b50273;
+    color: #ffffff;
+    border: 1px solid #7a014f;
 }
 
-/* NOVAS CORES para Folgas Específicas */
+/* Folga Domingo — cor solicitada: #003fc7 */
 .status-FD {
-    background-color: #fce7f3;
-    color: #a21235;
-    border: 1px solid #f9a8d4;
-} /* Pink-ish for Sunday Off (FD) */
+    background-color: #003fc7;
+    color: #ffffff;
+    border: 1px solid #002a8e;
+}
 
+/* Folga Sábado — cor solicitada: #00c767 */
 .status-FS {
-    background-color: #e0f2fe;
-    color: #0284c7;
-    border: 1px solid #7dd3fc;
-} /* Light Blue for Saturday Off (FS) */
+    background-color: #00c767;
+    color: #ffffff;
+    border: 1px solid #008e4a;
+}
 
 /* small utilities */
 .chart-container {
@@ -120,13 +121,20 @@ body {
 
 /* ==== MOBILE CALENDAR FIX ==== */
 @media (max-width: 640px) {
+    /* Revert to classic 7‑column calendar but allow horizontal drag */
     .calendar-grid {
         display: grid;
-        grid-auto-flow: column;
-        grid-template-columns: repeat(7, 90px);
+        grid-template-columns: repeat(7, minmax(90px, 1fr));
         overflow-x: auto;
-        padding-bottom: 6px;
+        overflow-y: hidden;
+        gap: 1px;
+        -webkit-overflow-scrolling: touch; /* smooth scroll in iOS */
     }
+    .calendar-cell {
+        min-width: 90px;
+        min-height: 90px;
+    }
+}
     .calendar-cell {
         min-width: 90px;
         min-height: 90px;
