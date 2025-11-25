@@ -18,17 +18,22 @@ body {
     box-shadow: 0 1px 2px 0 rgba(0, 0, 0, 0.05);
 }
 
-/* Calendar */
-.calendar-grid {
-    display: grid;
-    grid-template-columns: repeat(7, 1fr);
-    gap: 1px;
-    background-color: #e5e7eb; /* Gray 200 */
-    border: 1px solid #e5e7eb;
-    border-radius: 8px;
-    overflow: hidden;
+/* Calendar (Estilos para Desktop/Grid) */
+/* Este é o container que é adicionado no JS APENAS no desktop */
+@media (min-width: 768px) {
+    .calendar-grid-container {
+        display: grid;
+        grid-template-columns: repeat(7, 1fr);
+        gap: 1px;
+        background-color: #e5e7eb; /* Gray 200 */
+        border: 1px solid #e5e7eb;
+        border-radius: 8px;
+        overflow: hidden;
+    }
 }
+
 .calendar-cell {
+    /* Estilo de célula é mais relevante para o GRID (desktop) */
     background-color: white;
     min-height: 80px;
     padding: 8px;
@@ -54,11 +59,12 @@ body {
     align-self: flex-start;
 }
 
-/* list item badge (used in lists) */
+/* list item badge (used in lists and mobile view) */
+/* Aumentado o padding/tamanho para melhor clique no mobile */
 .day-status {
-    padding: 4px 8px;
+    padding: 6px 10px;
     border-radius: 8px;
-    font-size: 0.75rem;
+    font-size: 0.875rem; /* text-sm */
     font-weight: 700;
     border: 1px solid transparent;
 }
@@ -92,8 +98,6 @@ body {
 } /* Red - Férias (FE) */
 
 /* EXPEDIENTE ENCERRADO — cor solicitada: #b50273 */
-/* EXPEDIENTE ENCERRADO – voltar cor antiga */
-/* EXPEDIENTE ENCERRADO — cor solicitada: #b50273 */
 .status-OFF-SHIFT {
     background-color: #f7e6f1; /* Rosa claro para o fundo */
     color: #b50273;             /* Rosa escuro para o texto (cor principal solicitada) */
@@ -101,7 +105,6 @@ body {
 }
 
 /* Folga Domingo — cor solicitada: #003fc7 */
-/* Folga Domingo – estilo de Trabalhando porém azul */
 .status-FD {
     background-color: #dbeafe;
     color: #1e40af;
@@ -109,7 +112,6 @@ body {
 }
 
 /* Folga Sábado — cor solicitada: #00c767 */
-/* Folga Sábado – estilo de Trabalhando porém rosa */
 .status-FS {
     background-color: #fce7f3;
     color: #9d174d;
@@ -123,54 +125,5 @@ body {
     height: 350px;
 }
 
-/* ==== MOBILE CALENDAR FIX ==== */
-@media (max-width: 640px) {
-    /* Reverter totalmente para a primeira versão mobile (igual ao desktop) */
-    .calendar-grid {
-        display: grid;
-        grid-template-columns: repeat(7, 1fr);
-        gap: 1px;
-        background-color: #e5e7eb;
-        border: 1px solid #e5e7eb;
-        border-radius: 8px;
-        overflow: hidden;
-    }
-    .calendar-cell {
-        min-width: unset;
-        min-height: 80px;
-    }
-}
-    .calendar-cell {
-        min-width: unset;
-        min-height: 80px;
-    }
-}
-    .calendar-cell {
-        min-width: 90px;
-        min-height: 90px;
-    }
-}
-    .calendar-cell {
-        min-width: 90px;
-        min-height: 90px;
-    }
-}
-
-/* Additional small responsiveness for personal info card */
-@media (max-width: 640px) {
-    /* Retorno do calendário original */
-    .calendar-grid {
-        display: grid;
-        grid-template-columns: repeat(7, 1fr);
-        gap: 1px;
-        background-color: #e5e7eb;
-        border: 1px solid #e5e7eb;
-        border-radius: 8px;
-        overflow: hidden;
-    }
-    .calendar-cell {
-        min-width: unset;
-        min-height: 80px;
-    }
-}
-}
+/* O resto dos media queries anteriores para mobile foram removidos */
+/* porque o JS agora lida com o layout de LISTA no mobile (< 768px) */
