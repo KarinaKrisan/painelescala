@@ -1,4 +1,4 @@
-// app.js - Versão C (completa, otimizada, suporte múltiplos horários e 12x36)
+// app.js - Versão D (com Gráfico KPI centralizado)
 // Depende de: employeeMetadata (escala-data.js) e JSONs mensais em ./data/escala-YYYY-MM.json
 
 // ==========================================
@@ -282,20 +282,75 @@ function rebuildScheduleDataForSelectedMonth() {
 }
 
 // ==========================================
-// VISUALIZAÇÃO / CHART
+// VISUALIZAÇÃO / CHART (ATUALIZADA PARA KPI)
 // ==========================================
+
+// Plugin Chart.js para inserir texto no centro do Donut Chart
+const centerTextPlugin = {
+    id: 'centerTextPlugin',
+    beforeDraw: (chart) => {
+        const { ctx, width, height, data } = chart;
+        const total = data.datasets[0].data.reduce((a, b) => a + b, 0);
+        const workingIndex = data.labels.findIndex(l => l.includes('Trabalhando'));
+        const workingCount = workingIndex !== -1 ? data.datasets[0].data[workingIndex] : 0;
+        const workingPct = total > 0 ? ((workingCount / total) * 100).toFixed(0) : 0;
+        
+        // SLA/Meta de exemplo (pode ser ajustado)
+        const slaGoal = 75; 
+        const isSlaMet = workingPct >= slaGoal;
+        const primaryColor = isSlaMet ? '#10b981' : '#ef4444'; // Green or Red
+        
+        ctx.save();
+        
+        const centerX = width / 2;
+        const centerY = height / 2;
+        
+        // 1. Grande Porcentagem (KPI)
+        ctx.font = 'bolder 3rem sans-serif';
+        ctx.fillStyle = primaryColor;
+        ctx.textAlign = 'center';
+        ctx.textBaseline = 'middle';
+        ctx.fillText(`${workingPct}%`, centerX, centerY - 15);
+
+        // 2. Métrica Descritiva
+        ctx.font = '500 0.8rem sans-serif';
+        ctx.fillStyle = '#6b7280'; // Gray 500
+        ctx.fillText('CAPACIDADE ATIVA', centerX, centerY + 25);
+        
+        ctx.restore();
+    }
+};
+
 function updateChart(working, off, offShift, vacation) {
     const total = working + off + offShift + vacation;
     const dataPoints = [working, off, offShift, vacation];
+    
+    // Título atualizado
+    const chartTitleElement = document.querySelector('#dailyView section h3');
+    if (chartTitleElement) {
+        chartTitleElement.textContent = "Capacidade Operacional Atual";
+    }
+
     const labels = [
         `Trabalhando (${working})`,
         `Folga Programada (${off})`,
         `Expediente Encerrado (${offShift})`,
         `Férias (${vacation})`
     ];
-    const colors = ['#10b981','#fcd34d','#f9a8d4','#ef4444']; // updated: off-shift pink color
+    // Cores: Verde (Trabalhando), Amarelo (Folga), Rosa (Exp. Enc.), Vermelho (Férias)
+    const colors = ['#10b981','#fcd34d','#f9a8d4','#ef4444']; 
+    
     const filteredData = [], filteredLabels = [], filteredColors = [];
-    dataPoints.forEach((d,i)=>{ if (d>0 || total===0){ filteredData.push(d); filteredLabels.push(labels[i]); filteredColors.push(colors[i]); }});
+    dataPoints.forEach((d,i)=>{ 
+        // Mostrar zero count apenas se o total for 0, ou para manter o layout de 4 cores se o total for > 0
+        if (d>0 || total===0){ 
+            filteredData.push(d); 
+            filteredLabels.push(labels[i]); 
+            filteredColors.push(colors[i]); 
+        }
+    });
+    
+    // Se o gráfico já existe, apenas atualiza os dados
     if (dailyChart) {
         dailyChart.data.datasets[0].data = filteredData;
         dailyChart.data.datasets[0].backgroundColor = filteredColors;
@@ -304,6 +359,7 @@ function updateChart(working, off, offShift, vacation) {
         return;
     }
 
+    // Configuração inicial (com o novo plugin)
     const data = { labels: filteredLabels, datasets:[{ data: filteredData, backgroundColor: filteredColors, hoverOffset:4 }]};
     const config = {
         type: 'doughnut',
@@ -311,10 +367,16 @@ function updateChart(working, off, offShift, vacation) {
         options: {
             responsive: true,
             maintainAspectRatio: false,
-            cutout: '65%', // DONUT mais moderno
+            cutout: '65%', 
             animation: { animateRotate: true, duration: 900 },
             plugins: {
-                legend: { position: 'bottom', labels: { padding: 15, font: { size: 13 } } },
+                legend: { 
+                    position: 'bottom', 
+                    labels: { 
+                        padding: 15, 
+                        font: { size: 13 } 
+                    } 
+                },
                 tooltip: {
                     callbacks: {
                         label: function(ctx) {
@@ -325,7 +387,8 @@ function updateChart(working, off, offShift, vacation) {
                     }
                 }
             }
-        }
+        },
+        plugins: [centerTextPlugin] // Adiciona o plugin
     };
 
     const ctx = document.getElementById('dailyChart').getContext('2d');
@@ -631,6 +694,7 @@ function initDailyView() {
     if (slider) slider.addEventListener('input', e => { currentDay = parseInt(e.target.value,10); updateDailyView(); });
 
     const ctx = document.getElementById('dailyChart').getContext('2d');
+    // Inicialização básica do chart para evitar erros
     dailyChart = new Chart(ctx, { type:'doughnut', data:{ datasets:[{ data:[0,0,0,0] }] }, options:{ responsive:true, maintainAspectRatio:false } });
 }
 
