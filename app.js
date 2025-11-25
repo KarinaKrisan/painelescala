@@ -23,7 +23,7 @@ let currentDay = systemDay;
 
 let rawSchedule = {};    // JSON carregado por mês (escala-YYYY-MM.json)
 let scheduleData = {};   // Estrutura final: { nome: { info, schedule: ['T'|'F'|'FE'|'FS'|'FD'|'12x36' ...] } }
-// let dailyChart = null; // REMOVIDO: Variável do Chart.js não é mais necessária
+let dailyChart = null;
 
 const daysOfWeek = ["Dom","Seg","Ter","Qua","Qui","Sex","Sáb"];
 const statusMap = { 'T':'Trabalhando','F':'Folga','FS':'Folga Sáb','FD':'Folga Dom','FE':'Férias','OFF-SHIFT':'Exp. Encerrado' };
@@ -310,8 +310,30 @@ function rebuildScheduleDataForSelectedMonth() {
 // ==========================================
 // VISUALIZAÇÃO / CHART
 // ==========================================
-
-// REMOVIDA A FUNÇÃO updateChart
+function updateChart(working, off, offShift, vacation) {
+    const total = working + off + offShift + vacation;
+    const dataPoints = [working, off, offShift, vacation];
+    const labels = [
+        `Trabalhando (${working})`,
+        `Folga Programada (${off})`,
+        `Expediente Encerrado (${offShift})`,
+        `Férias (${vacation})`
+    ];
+    const colors = ['#10b981','#fcd34d','#6366f1','#ef4444'];
+    const filteredData = [], filteredLabels = [], filteredColors = [];
+    dataPoints.forEach((d,i)=>{ if (d>0 || total===0){ filteredData.push(d); filteredLabels.push(labels[i]); filteredColors.push(colors[i]); }});
+    if (dailyChart) {
+        dailyChart.data.datasets[0].data = filteredData;
+        dailyChart.data.datasets[0].backgroundColor = filteredColors;
+        dailyChart.data.labels = filteredLabels;
+        dailyChart.update();
+        return;
+    }
+    const data = { labels: filteredLabels, datasets:[{ data: filteredData, backgroundColor: filteredColors, hoverOffset:4 }]};
+    const config = { type:'doughnut', data, options: { responsive:true, maintainAspectRatio:false, plugins:{ legend:{ position:'bottom' } } } };
+    const ctx = document.getElementById('dailyChart').getContext('2d');
+    dailyChart = new Chart(ctx, config);
+}
 
 function updateDailyView() {
     const currentDateLabel = document.getElementById('currentDateLabel');
@@ -382,7 +404,7 @@ function updateDailyView() {
     listOff.innerHTML = offHtml || '<li class="text-gray-400 text-sm text-center py-4">Nenhuma folga programada.</li>';
     listVacation.innerHTML = vacationHtml || '<li class="text-gray-400 text-sm text-center py-4">Ninguém de férias.</li>';
 
-    // updateChart(workingCount, offCount, offShiftCount, vacationCount); // REMOVIDA A CHAMADA PARA updateChart
+    updateChart(workingCount, offCount, offShiftCount, vacationCount);
 }
 
 // ==========================================
@@ -563,7 +585,9 @@ function initTabs() {
 function initDailyView() {
     const slider = document.getElementById('dateSlider');
     if (slider) slider.addEventListener('input', e => { currentDay = parseInt(e.target.value,10); updateDailyView(); });
-    // REMOVIDA: Inicialização do Chart.js
+
+    const ctx = document.getElementById('dailyChart').getContext('2d');
+    dailyChart = new Chart(ctx, { type:'doughnut', data:{ datasets:[{ data:[0,0,0,0] }] }, options:{ responsive:true, maintainAspectRatio:false } });
 }
 
 // ==========================================
