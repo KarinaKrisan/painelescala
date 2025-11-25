@@ -766,3 +766,4 @@ function initGlobal() {
 }
 
 document.addEventListener('DOMContentLoaded', initGlobal);
+
