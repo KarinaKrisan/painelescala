@@ -55,14 +55,12 @@ async function loadMonthlyJson(year, month) {
 // GERAÇÃO DE PADRÕES E PARSE DE DIAS
 // ==========================================
 
-// Gera 12x36 alternando dias (assume início no dia startWorkingDay)
 function generate12x36Schedule(startWorkingDay, totalDays) {
     const schedule = new Array(totalDays).fill('F');
     for (let d = startWorkingDay; d <= totalDays; d += 2) schedule[d-1] = 'T';
     return schedule;
 }
 
-// Gera segunda-a-sexta por mês
 function generate5x2ScheduleDefaultForMonth(monthObj) {
     const totalDays = new Date(monthObj.year, monthObj.month+1, 0).getDate();
     const arr = [];
@@ -73,7 +71,6 @@ function generate5x2ScheduleDefaultForMonth(monthObj) {
     return arr;
 }
 
-// Parse strings como "1,2,5-10,15/11 a 20/11, fins de semana, segunda a sexta"
 function parseDayListForMonth(dayString, monthObj) {
     if (!dayString) return [];
     const totalDays = new Date(monthObj.year, monthObj.month+1, 0).getDate();
@@ -89,7 +86,6 @@ function parseDayListForMonth(dayString, monthObj) {
     const parts = normalized.split(',').map(p=>p.trim()).filter(p=>p.length>0);
 
     parts.forEach(part=>{
-        // full date range dd/mm a dd/mm or dd/mm/yyyy - dd/mm/yyyy
         const dateRange = part.match(/^(\d{1,2})\/(\d{1,2})(?:\/(\d{2,4}))?\s*(?:a|-)\s*(\d{1,2})\/(\d{1,2})(?:\/(\d{2,4}))?$/);
         if (dateRange) {
             let [, sD, sM, sY, eD, eM, eY] = dateRange;
@@ -104,7 +100,6 @@ function parseDayListForMonth(dayString, monthObj) {
             return;
         }
 
-        // single dd/mm
         const single = part.match(/^(\d{1,2})\/(\d{1,2})(?:\/(\d{2,4}))?$/);
         if (single) {
             const d = parseInt(single[1],10);
@@ -113,7 +108,6 @@ function parseDayListForMonth(dayString, monthObj) {
             return;
         }
 
-        // simple numeric range 10-15
         const simple = part.match(/^(\d{1,2})-(\d{1,2})$/);
         if (simple) {
             const s = parseInt(simple[1],10), e = parseInt(simple[2],10);
@@ -121,7 +115,6 @@ function parseDayListForMonth(dayString, monthObj) {
             return;
         }
 
-        // single number
         const number = part.match(/^(\d{1,2})$/);
         if (number) {
             const v = parseInt(number[1],10);
@@ -129,7 +122,6 @@ function parseDayListForMonth(dayString, monthObj) {
             return;
         }
 
-        // keywords
         if (/fins? de semana|fim de semana/i.test(part)) {
             for (let d=1; d<=totalDays; d++){ const dow = new Date(monthObj.year, monthObj.month, d).getDay(); if (dow===0||dow===6) days.add(d); }
             return;
@@ -147,27 +139,20 @@ function parseDayListForMonth(dayString, monthObj) {
 // BUILD FINAL SCHEDULE (UNIFICA FORMAS)
 // ==========================================
 function buildFinalScheduleForMonth(employeeData, monthObj) {
-    // employeeData : object do JSON mensal para esse nome
-    // monthObj : {year, month}
     const totalDays = new Date(monthObj.year, monthObj.month+1, 0).getDate();
     const schedule = new Array(totalDays).fill(null);
 
-    // Helper: interpreta T (string, array, pattern)
     const parseTtoArray = (t) => {
         if (!t) return [];
-        // If already an array like ['T','F',...'] assume full schedule
         if (Array.isArray(t) && t.length === totalDays && typeof t[0] === 'string') return t;
-        // If string contains '12x36', generate 12x36 pattern (try to detect start day)
         if (typeof t === 'string' && /12x36/i.test(t)) {
             const m = t.match(/iniciado no dia\s*(\d{1,2})/i);
             const start = m ? parseInt(m[1],10) : 1;
             return generate12x36Schedule(start, totalDays);
         }
-        // If string says 'segunda a sexta' or 'fins de semana' -> generate 5x2 pattern
         if (typeof t === 'string' && /segunda a sexta|segunda à sexta/i.test(t)) {
             return generate5x2ScheduleDefaultForMonth(monthObj);
         }
-        // If string looks like list of days -> parseDayListForMonth returns array of day numbers
         if (typeof t === 'string') {
             const parsedDays = parseDayListForMonth(t, monthObj);
             if (parsedDays.length > 0) {
@@ -175,9 +160,7 @@ function buildFinalScheduleForMonth(employeeData, monthObj) {
                 parsedDays.forEach(d=> { if (d>=1 && d<=totalDays) arr[d-1] = 'T'; });
                 return arr;
             }
-            // else if contains something else (like a single horario string), fallback to full T (we'll treat T filling later)
         }
-        // If array of numbers
         if (Array.isArray(t) && t.length && typeof t[0] === 'number') {
             const arr = new Array(totalDays).fill('F');
             t.forEach(d => { if (d>=1 && d<=totalDays) arr[d-1] = 'T'; });
@@ -200,7 +183,6 @@ function buildFinalScheduleForMonth(employeeData, monthObj) {
             schedule[i] = tParsed[i] || 'F';
         }
     } else {
-        // put explicit T days if parsed
         if (Array.isArray(tParsed) && tParsed.length === totalDays) {
             for (let i=0;i<totalDays;i++) {
                 if (schedule[i] === 'FE') continue;
@@ -219,12 +201,11 @@ function buildFinalScheduleForMonth(employeeData, monthObj) {
     parseDayListForMonth(employeeData.F, monthObj).forEach(d => { if (d>=1 && d<=totalDays && !['FE','FD','FS'].includes(schedule[d-1])) schedule[d-1] = 'F'; });
 
     // 5) Finally, fill blanks:
-    // If employeeData.T is a horario (e.g. "07:00 às 19:00"), treat blank as T (work every non-FE day)
     const tIsHorarioString = typeof employeeData.T === 'string' && employeeData.T.trim().length > 0 && !/segunda a sexta|12x36|fins? de semana/i.test(employeeData.T.toLowerCase());
     for (let i=0;i<totalDays;i++){
         if (!schedule[i]) {
             if (tIsHorarioString) schedule[i] = 'T';
-            else schedule[i] = 'T'; // default: working unless specifically listed as F; keeps previous behaviour
+            else schedule[i] = 'T'; // default
         }
     }
 
@@ -233,29 +214,23 @@ function buildFinalScheduleForMonth(employeeData, monthObj) {
 
 // ==========================================
 // HORÁRIO: parsing e verificação de "agora"
-// aceitamos Horário como string "07:00 às 19:00" ou array ["07:00 às 19:00", ...]
 // ==========================================
 function parseSingleTimeRange(rangeStr) {
-    // aceitáveis: "7:00 às 19:00", "07:00 às 19:00", "19:00 às 07:00"
     if (!rangeStr || typeof rangeStr !== 'string') return null;
-    // Regex correto (sem escape duplo)
     const m = rangeStr.match(/(\d{1,2}):(\d{2})\s*às\s*(\d{1,2}):(\d{2})/);
     if (!m) return null;
-    // Note: m[1]..m[4] são strings
     const startH = parseInt(m[1],10), startM = parseInt(m[2],10);
     const endH = parseInt(m[3],10), endM = parseInt(m[4],10);
     return { startTotal: startH*60 + startM, endTotal: endH*60 + endM };
 }
 
 function isWorkingTime(timeRange) {
-    // timeRange pode ser: string ("07:00 às 19:00"), array de strings, null, ou "12x36"
-    if (!timeRange) return true; // se sem horário, consideramos disponível (compat.)
+    if (!timeRange) return true;
     if (typeof timeRange === 'string' && /12x36/i.test(timeRange)) return true;
     const now = new Date();
     const currentMinutes = now.getHours()*60 + now.getMinutes();
 
     if (Array.isArray(timeRange)) {
-        // se qualquer período incluir o horário atual -> working
         for (const r of timeRange) {
             const parsed = parseSingleTimeRange(r);
             if (!parsed) continue;
@@ -272,7 +247,6 @@ function isWorkingTime(timeRange) {
         if (!parsed) return false;
         const { startTotal, endTotal } = parsed;
         if (startTotal > endTotal) {
-            // vira após meia-noite
             return currentMinutes >= startTotal || currentMinutes <= endTotal;
         }
         return currentMinutes >= startTotal && currentMinutes <= endTotal;
@@ -319,7 +293,7 @@ function updateChart(working, off, offShift, vacation) {
         `Expediente Encerrado (${offShift})`,
         `Férias (${vacation})`
     ];
-    const colors = ['#10b981','#fcd34d','#6366f1','#ef4444'];
+    const colors = ['#10b981','#fcd34d','#f9a8d4','#ef4444']; // updated: off-shift pink color
     const filteredData = [], filteredLabels = [], filteredColors = [];
     dataPoints.forEach((d,i)=>{ if (d>0 || total===0){ filteredData.push(d); filteredLabels.push(labels[i]); filteredColors.push(colors[i]); }});
     if (dailyChart) {
@@ -329,8 +303,31 @@ function updateChart(working, off, offShift, vacation) {
         dailyChart.update();
         return;
     }
+
     const data = { labels: filteredLabels, datasets:[{ data: filteredData, backgroundColor: filteredColors, hoverOffset:4 }]};
-    const config = { type:'doughnut', data, options: { responsive:true, maintainAspectRatio:false, plugins:{ legend:{ position:'bottom' } } } };
+    const config = {
+        type: 'doughnut',
+        data,
+        options: {
+            responsive: true,
+            maintainAspectRatio: false,
+            cutout: '65%', // DONUT mais moderno
+            animation: { animateRotate: true, duration: 900 },
+            plugins: {
+                legend: { position: 'bottom', labels: { padding: 15, font: { size: 13 } } },
+                tooltip: {
+                    callbacks: {
+                        label: function(ctx) {
+                            const totalVal = ctx.dataset.data.reduce((a,b)=>a+b,0) || 1;
+                            const pct = ((ctx.raw / totalVal) * 100).toFixed(1);
+                            return `${pct}% — ${ctx.label}`;
+                        }
+                    }
+                }
+            }
+        }
+    };
+
     const ctx = document.getElementById('dailyChart').getContext('2d');
     dailyChart = new Chart(ctx, config);
 }
@@ -365,7 +362,6 @@ function updateDailyView() {
         if (kpiStatus === 'FE') {
             vacationCount++; displayStatus = 'FE';
         } else if (isToday && kpiStatus === 'T') {
-            // precisa checar Horário efetivo (employee.info.Horário) - pode ser "07:00 às 19:00" ou array
             const horarioRaw = employee.info.Horário || employee.info.Horario || '';
             const isWorking = isWorkingTime(horarioRaw);
             if (!isWorking) { offShiftCount++; displayStatus = 'OFF-SHIFT'; kpiStatus = 'F_EFFECTIVE'; }
@@ -408,7 +404,7 @@ function updateDailyView() {
 }
 
 // ==========================================
-// VIEWS PESSOAL E CALENDÁRIO
+// VIEWS PESSOAL E CALENDÁRIO (com mobile lista)
 // ==========================================
 function initSelect() {
     const select = document.getElementById('employeeSelect');
@@ -472,15 +468,44 @@ function updatePersonalView(employeeName) {
     updateCalendar(employee.schedule);
 }
 
+// Novo: renderiza calendário COMO GRID (desktop) OU COMO LISTA (mobile)
 function updateCalendar(schedule) {
     const grid = document.getElementById('calendarGrid');
     if (!grid) return;
     grid.innerHTML = '';
     const monthObj = { year: selectedMonthObj.year, month: selectedMonthObj.month };
     const firstDay = new Date(monthObj.year, monthObj.month, 1).getDay();
-    for (let i=0;i<firstDay;i++) grid.insertAdjacentHTML('beforeend','<div class="calendar-cell bg-gray-50 border-gray-100"></div>');
+    const totalDays = schedule.length;
     const todayDay = systemDay;
     const isCurrentMonth = (systemMonth === monthObj.month && systemYear === monthObj.year);
+    const isMobile = window.innerWidth <= 640;
+
+    if (isMobile) {
+        // LIST VIEW for mobile
+        const listWrapper = document.createElement('div');
+        listWrapper.className = 'space-y-2 p-2';
+        for (let d=1; d<=totalDays; d++) {
+            const status = schedule[d-1];
+            const displayStatus = statusMap[status] || status;
+            const li = document.createElement('div');
+            li.className = 'flex items-center justify-between bg-white p-3 rounded shadow-sm border border-gray-100';
+            const left = document.createElement('div');
+            left.innerHTML = `<div class="text-sm font-bold">${pad(d)} / ${pad(monthObj.month+1)}</div><div class="text-xs text-gray-500">${daysOfWeek[new Date(monthObj.year, monthObj.month, d).getDay()]}</div>`;
+            const right = document.createElement('div');
+            const badge = document.createElement('span');
+            badge.className = `day-status status-${status}`;
+            badge.textContent = displayStatus;
+            right.appendChild(badge);
+            li.appendChild(left);
+            li.appendChild(right);
+            listWrapper.appendChild(li);
+        }
+        grid.appendChild(listWrapper);
+        return;
+    }
+
+    // DESKTOP GRID VIEW
+    for (let i=0;i<firstDay;i++) grid.insertAdjacentHTML('beforeend','<div class="calendar-cell bg-gray-50 border-gray-100"></div>');
     for (let i=0;i<schedule.length;i++){
         const dayNumber = i+1;
         const status = schedule[i];
@@ -511,13 +536,9 @@ function updateWeekendTable() {
         const date = new Date(monthObj.year, monthObj.month, day);
         const dow = date.getDay();
         if (dow === 6 || dow === 0) {
-            // gather saturday & sunday workers around this weekend
-            // find satDay and sunDay for the weekend card
             const isSaturday = dow === 6;
             const satDay = isSaturday ? day : (day - 1);
             const sunDay = isSaturday ? (day + 1) : day;
-
-            // avoid duplicates: only create card when encountering Saturday OR when month starts on Sunday (day==1)
             if (!isSaturday && !(dow===0 && day===1)) continue;
 
             let satWorkers = [], sunWorkers = [];
@@ -646,6 +667,14 @@ function initGlobal() {
         updateDailyView();
         scheduleMidnightUpdate();
         updateWeekendTable();
+    });
+
+    // re-render calendar on resize when personal view opened
+    window.addEventListener('resize', () => {
+        const select = document.getElementById('employeeSelect');
+        if (select && select.value) {
+            updatePersonalView(select.value);
+        }
     });
 }
 
