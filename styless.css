@@ -30,7 +30,7 @@ body {
 .calendar-cell {
     background-color: white;
     /* AJUSTE: Altura mínima para que as células fiquem uniformes */
-    min-height: 80px; 
+    min-height: 60px; /* Reduzido para melhorar a escala em celular */
     padding: 8px;
     display: flex;
     flex-direction: column;
