@@ -36,32 +36,21 @@ body {
     flex-direction: column;
     justify-content: space-between;
     transition: background-color 0.1s ease;
-    
-    /* 🌟 NOVO: Centraliza o conteúdo horizontalmente dentro da célula */
-    align-items: center; 
 }
 .calendar-day-number {
     font-weight: 700;
     font-size: 1.125rem; /* text-lg */
     color: #1f2937; /* Gray 800 */
-    
-    /* 🌟 AJUSTE: Move o número do dia para a direita (como estava na imagem) */
-    align-self: flex-end; 
+    text-align: right;
 }
 .calendar-status {
-    /* 🌟 AJUSTE: Diminuído o tamanho da fonte */
-    font-size: 0.65rem; /* text-xxs, ideal para chips compactos */
+    font-size: 0.75rem; /* text-xs */
     font-weight: 600;
-    
-    /* 🌟 AJUSTE: Reduzido o padding para deixar mais compacto */
-    padding: 1px 4px; 
+    /* Adiciona padding e borda padrão para visibilidade */
+    padding: 2px 4px; 
     border-radius: 4px;
     text-align: center;
     border: 1px solid transparent; 
-    
-    /* 🌟 NOVO: Garante que o badge seja tratado como um bloco inline
-       para que o 'align-items: center' no pai (calendar-cell) o centralize */
-    display: inline-block; 
 }
 .calendar-cell:hover {
     background-color: #f9fafb; /* Gray 50 */
