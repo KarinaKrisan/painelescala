@@ -60,7 +60,7 @@ body {
 }
 
 /* list item badge (used in lists and mobile view) */
-/* Aumentado o padding/tamanho para melhor clique no mobile */
+/* Define o tamanho padrão para TODAS as tags de status em listas */
 .day-status {
     padding: 6px 10px;
     border-radius: 8px;
@@ -78,48 +78,44 @@ body {
     box-shadow: inset 0 0 0 3px #4f46e5; /* Indigo 600 */
 }
 
-/* Status Colors: Cores fortes e alto contraste (fundo escuro + texto branco) */
-
-/* Green - Trabalhando */
+/* Status Colors: keep names matching classes in app.js (status-T, status-F, status-FE, status-OFF-SHIFT, etc.) */
 .status-T {
-    background-color: #047857; /* Emerald 700 - Forte */
-    color: #ffffff;
-    border: 1px solid transparent;
-}
+    background-color: #d1fae5;
+    color: #065f46;
+    border: 1px solid #86efac;
+} /* Green - Trabalhando */
 
-/* Yellow/Amber - Folga (F) */
 .status-F {
-    background-color: #d97706; /* Amber 700 - Forte */
-    color: #ffffff;
-    border: 1px solid transparent;
-}
+    background-color: #fef9c3;
+    color: #a16207;
+    border: 1px solid #fde047;
+} /* Yellow - Folga (F) */
 
-/* Red - Férias (FE) */
 .status-FE {
-    background-color: #b91c1c; /* Red 700 - Forte */
-    color: #ffffff;
-    border: 1px solid transparent;
-}
+    background-color: #fee2e2;
+    color: #b91c1c;
+    border: 1px solid #fca5a5;
+} /* Red - Férias (FE) */
 
-/* EXPEDIENTE ENCERRADO (Pink/Rosa - Forte) */
+/* EXPEDIENTE ENCERRADO — cor solicitada: #b50273 */
 .status-OFF-SHIFT {
-    background-color: #db2777; /* Pink 700 - Forte */
-    color: #ffffff;             
-    border: 1px solid transparent;
+    background-color: #f7e6f1; /* Rosa claro para o fundo */
+    color: #b50273;             /* Rosa escuro para o texto (cor principal solicitada) */
+    border: 1px solid #d456a0;  /* Rosa médio para a borda */
 }
 
-/* Folga Domingo (FD - Azul Forte) */
+/* Folga Domingo — cor solicitada: #003fc7 */
 .status-FD {
-    background-color: #1e40af; /* Blue 700 - Forte */
-    color: #ffffff;
-    border: 1px solid transparent;
+    background-color: #dbeafe;
+    color: #1e40af;
+    border: 1px solid #93c5fd;
 }
 
-/* Folga Sábado (FS - Fuchsia Forte) */
+/* Folga Sábado — cor solicitada: #00c767 */
 .status-FS {
-    background-color: #a21caf; /* Fuchsia 700 - Forte */
-    color: #ffffff;
-    border: 1px solid transparent;
+    background-color: #fce7f3;
+    color: #9d174d;
+    border: 1px solid #f9a8d4;
 }
 
 /* small utilities */
