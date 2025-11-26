@@ -1,4 +1,4 @@
-// app.js - Versão Definitiva (Cards de FDS Restaurados + Gráfico Tendência + IDs Corrigidos)
+// app.js - Versão Final Robusta (Correção de Ano + Tendência Mensal + IDs Corrigidos)
 // Depende de: JSONs mensais em ./data/escala-YYYY-MM.json
 
 // ==========================================
@@ -336,4 +336,241 @@ function renderMonthlyTrendChart() {
                     ctx.lineTo(right, yValue);
                     ctx.stroke();
                     ctx.fillStyle = '#6b7280';
-                    ctx.font = '10px
+                    ctx.font = '10px sans-serif';
+                    ctx.fillText('Meta 75%', left + 5, yValue - 5);
+                    ctx.restore();
+                }
+            }
+        }]
+    });
+}
+
+function updateDailyChartDonut(working, off, offShift, vacation) {
+    const labels = [`Trabalhando (${working})`, `Folga (${off})`, `Encerrado (${offShift})`, `Férias (${vacation})`];
+    const rawColors = ['#10b981','#fcd34d','#f9a8d4','#ef4444'];
+    const fData=[], fLabels=[], fColors=[];
+    [working, off, offShift, vacation].forEach((d,i)=>{ 
+        if(d>0 || (working+off+offShift+vacation)===0){ fData.push(d); fLabels.push(labels[i]); fColors.push(rawColors[i]); }
+    });
+
+    const ctx = document.getElementById('dailyChart').getContext('2d');
+    if (dailyChart) {
+        if (dailyChart.config.type !== 'doughnut') {
+            dailyChart.destroy();
+            dailyChart = null;
+        }
+    }
+
+    if (!dailyChart) {
+        dailyChart = new Chart(ctx, {
+            type: 'doughnut',
+            data: { labels: fLabels, datasets:[{ data: fData, backgroundColor: fColors, hoverOffset:4 }] },
+            options: {
+                responsive: true,
+                maintainAspectRatio: false,
+                cutout: '70%',
+                plugins: { legend: { position:'bottom', labels:{ padding:15, boxWidth: 10 } } }
+            },
+            plugins: [centerTextPlugin]
+        });
+    } else {
+        dailyChart.data.labels = fLabels;
+        dailyChart.data.datasets[0].data = fData;
+        dailyChart.data.datasets[0].backgroundColor = fColors;
+        dailyChart.update();
+    }
+}
+
+function updateDailyView() {
+    if (isTrendMode) {
+        isTrendMode = false;
+        const btn = document.getElementById("btnToggleChart");
+        if(btn) btn.textContent = "Ver Tendência Mensal";
+        const title = document.getElementById("chartTitle");
+        if(title) title.textContent = "Capacidade Operacional Atual";
+    }
+
+    const currentDateLabel = document.getElementById('currentDateLabel');
+    const monthObj = { year: selectedMonthObj.year, month: selectedMonthObj.month };
+    const dayOfWeekIndex = new Date(monthObj.year, monthObj.month, currentDay).getDay();
+    const now = new Date();
+    const isToday = (now.getDate() === currentDay && now.getMonth() === systemMonth && now.getFullYear() === systemYear);
+    
+    currentDateLabel.textContent = `${daysOfWeek[dayOfWeekIndex]}, ${pad(currentDay)}/${pad(monthObj.month+1)}/${monthObj.year}`;
+
+    let w=0, o=0, v=0, os=0;
+    let wH='', oH='', vH='', osH='';
+
+    if (Object.keys(scheduleData).length === 0) {
+        updateDailyChartDonut(0,0,0,0);
+        return;
+    }
+
+    Object.keys(scheduleData).forEach(name=>{
+        const emp = scheduleData[name];
+        let status = emp.schedule[currentDay-1] || 'F';
+        let display = status;
+
+        if (status === 'FE') { v++; display='FE'; }
+        else if (isToday && status === 'T') {
+            if (!isWorkingTime(emp.info.Horário)) { os++; display='OFF-SHIFT'; status='F_EFFECTIVE'; }
+            else w++;
+        }
+        else if (status === 'T') w++;
+        else o++; 
+
+        const row = `
+            <li class="flex justify-between items-center text-sm p-3 rounded hover:bg-indigo-50 border-b border-gray-100 last:border-0 transition-colors">
+                <div class="flex flex-col"><span class="font-semibold text-gray-700">${name}</span><span class="text-xs text-gray-400">${emp.info.Horário||''}</span></div>
+                <span class="day-status status-${display}">${statusMap[display]||display}</span>
+            </li>`;
+
+        if (status==='T') wH+=row;
+        else if (status==='F_EFFECTIVE') osH+=row;
+        else if (['FE'].includes(status)) vH+=row;
+        else oH+=row;
+    });
+
+    document.getElementById('kpiWorking').textContent = w;
+    document.getElementById('kpiOffShift').textContent = os;
+    document.getElementById('kpiOff').textContent = o;
+    document.getElementById('kpiVacation').textContent = v;
+
+    document.getElementById('listWorking').innerHTML = wH || '<li class="text-gray-400 text-sm text-center py-4">Ninguém.</li>';
+    document.getElementById('listOffShift').innerHTML = osH || '<li class="text-gray-400 text-sm text-center py-4">Ninguém.</li>';
+    document.getElementById('listOff').innerHTML = oH || '<li class="text-gray-400 text-sm text-center py-4">Ninguém.</li>';
+    document.getElementById('listVacation').innerHTML = vH || '<li class="text-gray-400 text-sm text-center py-4">Ninguém.</li>';
+
+    updateDailyChartDonut(w, o, os, v);
+}
+
+// ==========================================
+// VIEWS PESSOAL & INICIALIZAÇÃO
+// ==========================================
+function initSelect() {
+    const select = document.getElementById('employeeSelect');
+    if (!select) return;
+    select.innerHTML = '<option value="">Selecione seu nome</option>';
+    Object.keys(scheduleData).sort().forEach(name=>{
+        const opt = document.createElement('option'); opt.value=name; opt.textContent=name; select.appendChild(opt);
+    });
+    const newSelect = select.cloneNode(true);
+    select.parentNode.replaceChild(newSelect, select);
+    newSelect.addEventListener('change', e => {
+        const name = e.target.value;
+        if(name) updatePersonalView(name);
+        else document.getElementById('personalInfoCard').classList.add('hidden');
+    });
+}
+
+function updatePersonalView(name) {
+    const emp = scheduleData[name];
+    if (!emp) return;
+    const card = document.getElementById('personalInfoCard');
+    const isLeader = emp.info.Grupo === "Líder de Célula";
+    card.className = `hidden ${isLeader?'bg-purple-700':'bg-indigo-600'} p-6 rounded-xl mb-6 shadow-xl text-white flex flex-col transition-opacity duration-300 opacity-100`;
+    card.innerHTML = `<h2 class="text-2xl font-bold">${name}</h2><p>${emp.info.Grupo} - ${emp.info.Horário}</p>`;
+    card.classList.remove('hidden');
+    document.getElementById('calendarContainer').classList.remove('hidden');
+    updateCalendar(emp.schedule);
+}
+
+function updateCalendar(schedule) {
+    const grid = document.getElementById('calendarGrid');
+    const isMobile = window.innerWidth <= 767;
+    grid.innerHTML = '';
+    
+    if(isMobile) {
+        grid.className = 'space-y-2';
+        schedule.forEach((st, i) => {
+            grid.insertAdjacentHTML('beforeend', `<div class="flex justify-between bg-white p-3 rounded shadow status-${st}"><span>Dia ${i+1}</span><span>${statusMap[st]||st}</span></div>`);
+        });
+    } else {
+        grid.className = 'calendar-grid-container';
+        const m = { y: selectedMonthObj.year, mo: selectedMonthObj.month };
+        const empty = new Date(m.y, m.mo, 1).getDay();
+        for(let i=0;i<empty;i++) grid.insertAdjacentHTML('beforeend','<div class="calendar-cell bg-gray-50"></div>');
+        schedule.forEach((st, i) => {
+             grid.insertAdjacentHTML('beforeend', `<div class="calendar-cell bg-white border"><div class="day-number">${i+1}</div><div class="day-status-badge status-${st}">${statusMap[st]||st}</div></div>`);
+        });
+    }
+}
+
+function updateWeekendTable() {
+    const container = document.getElementById('weekendPlantaoContainer');
+    if (!container) return;
+    container.innerHTML = '';
+    const m = { y: selectedMonthObj.year, mo: selectedMonthObj.month };
+    const total = new Date(m.y, m.mo+1, 0).getDate();
+    
+    for (let d=1; d<=total; d++){
+        const dow = new Date(m.y, m.mo, d).getDay();
+        if (dow === 6) { 
+            const sat = d, sun = d+1 <= total ? d+1 : null;
+            let satW=[], sunW=[];
+            Object.keys(scheduleData).forEach(n=>{
+                if(scheduleData[n].schedule[sat-1]==='T') satW.push(n);
+                if(sun && scheduleData[n].schedule[sun-1]==='T') sunW.push(n);
+            });
+            if(satW.length || sunW.length) {
+                container.insertAdjacentHTML('beforeend', 
+                    `<div class="bg-white p-4 rounded shadow border">
+                        <h3 class="font-bold text-indigo-700 mb-2">Fim de Semana ${sat}/${m.mo+1}</h3>
+                        <p class="text-sm"><strong>Sáb:</strong> ${satW.join(', ') || '-'}</p>
+                        <p class="text-sm"><strong>Dom:</strong> ${sunW.join(', ') || '-'}</p>
+                    </div>`
+                );
+            }
+        }
+    }
+}
+
+function initTabs() {
+    document.querySelectorAll('.tab-button').forEach(b => {
+        b.addEventListener('click', () => {
+            document.querySelectorAll('.tab-button').forEach(x=>x.classList.remove('active'));
+            document.querySelectorAll('.tab-content').forEach(x=>x.classList.add('hidden'));
+            b.classList.add('active');
+            document.getElementById(`${b.dataset.tab}View`).classList.remove('hidden');
+            if(b.dataset.tab==='personal') updateWeekendTable();
+        });
+    });
+}
+
+function initGlobal() {
+    loadMonthlyJson(selectedMonthObj.year, selectedMonthObj.month).then(json => {
+        rawSchedule = json;
+        initTabs();
+        
+        const header = document.querySelector('header');
+        if(!document.getElementById('monthSel')) {
+            const sel = document.createElement('select'); sel.id='monthSel';
+            sel.className = 'mt-2 p-2 rounded border';
+            availableMonths.forEach(m => {
+                const opt = document.createElement('option'); opt.value=`${m.year}-${m.month}`;
+                opt.textContent = `${monthNames[m.month]}/${m.year}`;
+                if(m.month===selectedMonthObj.month) opt.selected=true;
+                sel.appendChild(opt);
+            });
+            sel.addEventListener('change', e=>{
+                const [y,mo] = e.target.value.split('-').map(Number);
+                selectedMonthObj={year:y, month:mo};
+                initGlobal(); 
+            });
+            header.appendChild(sel);
+        }
+
+        rebuildScheduleDataForSelectedMonth();
+        
+        const ds = document.getElementById('dateSlider');
+        if (ds) ds.addEventListener('input', e => { currentDay = parseInt(e.target.value); updateDailyView(); });
+
+        updateDailyView();
+        
+        const now = new Date(), night = new Date(now);
+        night.setHours(24,0,0,0);
+        setTimeout(() => location.reload(), night - now);
+    });
+}
+
+document.addEventListener('DOMContentLoaded', initGlobal);
