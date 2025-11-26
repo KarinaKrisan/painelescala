@@ -1,4 +1,4 @@
-// app.js - Versão Final Robusta (Correção de Ano + Tendência Mensal + IDs Corrigidos)
+// app.js - Versão Final Robusta (Visual Cards Fim de Semana Atualizado)
 // Depende de: JSONs mensais em ./data/escala-YYYY-MM.json
 
 // ==========================================
@@ -16,7 +16,6 @@ const availableMonths = [
     { year: 2025, month: 10 }, // Novembro 2025 (Mês 10)
     { year: 2025, month: 11 }//, // Dezembro 2025 (Mês 11)
     //{ year: 2026, month: 0 }//, // Janeiro 2026 (Mês 0)
-    // Para adicionar Fevereiro 2026, adicione: { year: 2026, month: 1 }
 ];
 
 let selectedMonthObj = availableMonths.find(m => m.year === systemYear && m.month === systemMonth) || availableMonths[0];
@@ -496,6 +495,9 @@ function updateCalendar(schedule) {
     }
 }
 
+// ==========================================
+// FUNÇÃO ATUALIZADA - CARD DE FIM DE SEMANA
+// ==========================================
 function updateWeekendTable() {
     const container = document.getElementById('weekendPlantaoContainer');
     if (!container) return;
@@ -503,23 +505,76 @@ function updateWeekendTable() {
     const m = { y: selectedMonthObj.year, mo: selectedMonthObj.month };
     const total = new Date(m.y, m.mo+1, 0).getDate();
     
+    // Helper simples para formatar DD/MM
+    const fmtDate = (d) => `${pad(d)}/${pad(m.mo+1)}`;
+
     for (let d=1; d<=total; d++){
         const dow = new Date(m.y, m.mo, d).getDay();
+        
+        // Verifica se é Sábado (dow === 6)
         if (dow === 6) { 
-            const sat = d, sun = d+1 <= total ? d+1 : null;
+            const satDate = d;
+            const sunDate = d+1 <= total ? d+1 : null;
+            
             let satW=[], sunW=[];
+            
             Object.keys(scheduleData).forEach(n=>{
-                if(scheduleData[n].schedule[sat-1]==='T') satW.push(n);
-                if(sun && scheduleData[n].schedule[sun-1]==='T') sunW.push(n);
+                if(scheduleData[n].schedule[satDate-1]==='T') satW.push(n);
+                if(sunDate && scheduleData[n].schedule[sunDate-1]==='T') sunW.push(n);
             });
+            
+            // Se houver alguém trabalhando no fds, monta o card
             if(satW.length || sunW.length) {
-                container.insertAdjacentHTML('beforeend', 
-                    `<div class="bg-white p-4 rounded shadow border">
-                        <h3 class="font-bold text-indigo-700 mb-2">Fim de Semana ${sat}/${m.mo+1}</h3>
-                        <p class="text-sm"><strong>Sáb:</strong> ${satW.join(', ') || '-'}</p>
-                        <p class="text-sm"><strong>Dom:</strong> ${sunW.join(', ') || '-'}</p>
-                    </div>`
-                );
+                
+                // Função auxiliar para gerar as tags
+                const makeTags = (list, borderColorClass, textColorClass) => {
+                    if(!list.length) return '<span class="text-gray-400 text-sm italic pl-1">Sem escala</span>';
+                    return list.map(name => 
+                        `<span class="inline-block bg-white border ${borderColorClass} ${textColorClass} px-3 py-1 rounded-md text-sm font-medium shadow-sm mb-2 mr-2">${name}</span>`
+                    ).join('');
+                };
+
+                const satTags = makeTags(satW, 'border-blue-400', 'text-blue-700');
+                const sunTags = makeTags(sunW, 'border-purple-400', 'text-purple-700');
+                
+                // Strings formatadas conforme solicitado
+                // Ex: "sábado (01/11)"
+                const labelSat = `sábado (${fmtDate(satDate)})`;
+                const labelSun = sunDate ? `domingo (${fmtDate(sunDate)})` : 'domingo';
+
+                const cardHTML = `
+                <div class="bg-white rounded-xl shadow-lg overflow-hidden border border-gray-100 mb-8 max-w-md mx-auto md:mx-0">
+                    <div class="bg-gradient-to-r from-blue-600 to-blue-500 p-4 flex items-center text-white shadow-md">
+                        <svg class="w-5 h-5 mr-2 opacity-90" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8 7V3m8 4V3m-9 8h10M5 21h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z"></path></svg>
+                        <h3 class="font-bold text-lg tracking-wide">Fim de Semana ${fmtDate(satDate)}</h3>
+                    </div>
+
+                    <div class="p-6">
+                        <div class="flex items-start mb-6">
+                            <div class="w-1 self-stretch bg-blue-400 rounded-full mr-4 opacity-70 flex-shrink-0"></div> 
+                            <div class="flex-1">
+                                <h4 class="text-blue-600 font-bold text-xs uppercase tracking-wider mb-3">${labelSat}</h4>
+                                <div class="flex flex-wrap">
+                                    ${satTags}
+                                </div>
+                            </div>
+                        </div>
+
+                        ${sunDate ? `
+                        <div class="flex items-start">
+                            <div class="w-1 self-stretch bg-purple-400 rounded-full mr-4 opacity-70 flex-shrink-0"></div>
+                            <div class="flex-1">
+                                <h4 class="text-purple-600 font-bold text-xs uppercase tracking-wider mb-3">${labelSun}</h4>
+                                <div class="flex flex-wrap">
+                                    ${sunTags}
+                                </div>
+                            </div>
+                        </div>
+                        ` : ''}
+                    </div>
+                </div>`;
+                
+                container.insertAdjacentHTML('beforeend', cardHTML);
             }
         }
     }
