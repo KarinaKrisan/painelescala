@@ -33,7 +33,7 @@
     "Grupo": "Operador Noc", "Célula": "Oi", "Horário": "08:00 às 17:48", "Turno": "Manhã",
     "T": [1, 2, 3, 4, 5, 8, 9, 10, 11, 13, 15, 16, 17],
     "F": [6, 7, 12, 14],
-    "FS": [], "FD": [], "FE": ["18/12/2025 a 01/01/2026"]
+    "FS": [], "FD": [], "FE": ["18/12 a 01/01"]
   },
   "Gabriel Procópio": {
     "Grupo": "Operador Noc", "Célula": "Oi", "Horário": "07:30 às 17:18", "Turno": "Manhã",
