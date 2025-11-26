@@ -26,7 +26,7 @@ let scheduleData = {};   // Estrutura final: { nome: { info, schedule: ['T'|'F'|
 let dailyChart = null;
 
 const daysOfWeek = ["Dom","Seg","Ter","Qua","Qui","Sex","Sáb"];
-const statusMap = { 'T':'Trabalhando','F':'Folga','FS':'Folga Sáb','FD':'Folga Dom','FE':'Férias','OFF-SHIFT':'Exp. Encerrado' };
+const statusMap = { 'T':'Trabalhando','F':'Folga','FS':'Folga Sáb','FD':'Folga Dom','FE':'Férias','OFF-SHIFT':'Exp.Encerrado' };
 
 // Helpers
 function pad(n){ return n < 10 ? '0' + n : '' + n; }
@@ -766,3 +766,4 @@ function initGlobal() {
 }
 
 document.addEventListener('DOMContentLoaded', initGlobal);
+
