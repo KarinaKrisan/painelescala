@@ -1,4 +1,4 @@
-// app.js - Versão Final Robusta (Visual Cards Fim de Semana Atualizado)
+// app.js - Versão Final Robusta (Visual Cards Fim de Semana - Tags Mais Arredondadas)
 // Depende de: JSONs mensais em ./data/escala-YYYY-MM.json
 
 // ==========================================
@@ -527,10 +527,11 @@ function updateWeekendTable() {
             if(satW.length || sunW.length) {
                 
                 // Função auxiliar para gerar as tags
+                // Alterado rounded-md para rounded-xl
                 const makeTags = (list, borderColorClass, textColorClass) => {
                     if(!list.length) return '<span class="text-gray-400 text-sm italic pl-1">Sem escala</span>';
                     return list.map(name => 
-                        `<span class="inline-block bg-white border ${borderColorClass} ${textColorClass} px-3 py-1 rounded-md text-sm font-medium shadow-sm mb-2 mr-2">${name}</span>`
+                        `<span class="inline-block bg-white border ${borderColorClass} ${textColorClass} px-3 py-1 rounded-xl text-sm font-medium shadow-sm mb-2 mr-2">${name}</span>`
                     ).join('');
                 };
 
@@ -538,7 +539,6 @@ function updateWeekendTable() {
                 const sunTags = makeTags(sunW, 'border-purple-400', 'text-purple-700');
                 
                 // Strings formatadas conforme solicitado
-                // Ex: "sábado (01/11)"
                 const labelSat = `sábado (${fmtDate(satDate)})`;
                 const labelSun = sunDate ? `domingo (${fmtDate(sunDate)})` : 'domingo';
 
