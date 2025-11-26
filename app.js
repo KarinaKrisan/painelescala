@@ -1,5 +1,5 @@
-// app.js - Versão D (com Gráfico KPI centralizado)
-// Depende de: employeeMetadata (escala-data.js) e JSONs mensais em ./data/escala-YYYY-MM.json
+// app.js - Versão Atualizada (Lê Metadados do JSON Mensal)
+// Depende de: JSONs mensais em ./data/escala-YYYY-MM.json
 
 // ==========================================
 // CONFIGURAÇÕES INICIAIS / UTILITÁRIAS
@@ -11,22 +11,24 @@ const systemYear = currentDateObj.getFullYear();
 const systemMonth = currentDateObj.getMonth();
 const systemDay = currentDateObj.getDate();
 
-// Ajuste de meses disponíveis (editar conforme necessário)
+// Ajuste de meses disponíveis 
+// IMPORTANTE: Adicionei Novembro como padrão inicial para testar seus dados
 const availableMonths = [
     { year: 2025, month: 10 }, // Novembro 2025
     { year: 2025, month: 11 }, // Dezembro 2025
     { year: 2026, month: 0 }   // Janeiro 2026
 ];
 
+// Tenta encontrar o mês atual, senão pega o primeiro da lista
 let selectedMonthObj = availableMonths.find(m => m.year === systemYear && m.month === systemMonth) || availableMonths[0];
 let currentDay = systemDay;
 
-let rawSchedule = {};    // JSON carregado por mês (escala-YYYY-MM.json)
-let scheduleData = {};   // Estrutura final: { nome: { info, schedule: ['T'|'F'|'FE'|'FS'|'FD'|'12x36' ...] } }
+let rawSchedule = {};    // JSON carregado por mês
+let scheduleData = {};   // Estrutura final processada
 let dailyChart = null;
 
 const daysOfWeek = ["Dom","Seg","Ter","Qua","Qui","Sex","Sáb"];
-const statusMap = { 'T':'Trabalhando','F':'Folga','FS':'Folga Sáb','FD':'Folga Dom','FE':'Férias','OFF-SHIFT':'Exp.Encerrado' };
+const statusMap = { 'T':'Trabalhando','F':'Folga','FS':'Folga Sáb','FD':'Folga Dom','FE':'Férias','OFF-SHIFT':'Exp.Encerrado', 'F_EFFECTIVE': 'Exp.Encerrado' };
 
 // Helpers
 function pad(n){ return n < 10 ? '0' + n : '' + n; }
@@ -41,13 +43,14 @@ async function loadMonthlyJson(year, month) {
         const resp = await fetch(filePath);
         if (!resp.ok) {
             console.warn('Arquivo de escala não encontrado:', filePath);
-            return null;
+            // Retorna vazio para não quebrar a tela, mas avisa
+            return {};
         }
         const json = await resp.json();
         return json;
     } catch (err) {
         console.error('Erro ao carregar JSON:', err);
-        return null;
+        return {};
     }
 }
 
@@ -86,6 +89,7 @@ function parseDayListForMonth(dayString, monthObj) {
     const parts = normalized.split(',').map(p=>p.trim()).filter(p=>p.length>0);
 
     parts.forEach(part=>{
+        // Verifica range DD/MM a DD/MM
         const dateRange = part.match(/^(\d{1,2})\/(\d{1,2})(?:\/(\d{2,4}))?\s*(?:a|-)\s*(\d{1,2})\/(\d{1,2})(?:\/(\d{2,4}))?$/);
         if (dateRange) {
             let [, sD, sM, sY, eD, eM, eY] = dateRange;
@@ -100,6 +104,7 @@ function parseDayListForMonth(dayString, monthObj) {
             return;
         }
 
+        // Verifica dia único DD/MM
         const single = part.match(/^(\d{1,2})\/(\d{1,2})(?:\/(\d{2,4}))?$/);
         if (single) {
             const d = parseInt(single[1],10);
@@ -108,6 +113,7 @@ function parseDayListForMonth(dayString, monthObj) {
             return;
         }
 
+        // Verifica range simples 5-10
         const simple = part.match(/^(\d{1,2})-(\d{1,2})$/);
         if (simple) {
             const s = parseInt(simple[1],10), e = parseInt(simple[2],10);
@@ -115,6 +121,7 @@ function parseDayListForMonth(dayString, monthObj) {
             return;
         }
 
+        // Verifica número simples
         const number = part.match(/^(\d{1,2})$/);
         if (number) {
             const v = parseInt(number[1],10);
@@ -142,17 +149,23 @@ function buildFinalScheduleForMonth(employeeData, monthObj) {
     const totalDays = new Date(monthObj.year, monthObj.month+1, 0).getDate();
     const schedule = new Array(totalDays).fill(null);
 
+    // Helper: transforma T (string ou array) em array de dias 'T'
     const parseTtoArray = (t) => {
         if (!t) return [];
+        // Se já é array de strings ('T','F'...) de tamanho completo, retorna ele
         if (Array.isArray(t) && t.length === totalDays && typeof t[0] === 'string') return t;
+        
+        // Se é string '12x36...'
         if (typeof t === 'string' && /12x36/i.test(t)) {
             const m = t.match(/iniciado no dia\s*(\d{1,2})/i);
             const start = m ? parseInt(m[1],10) : 1;
             return generate12x36Schedule(start, totalDays);
         }
+        // Se é string 'segunda a sexta'
         if (typeof t === 'string' && /segunda a sexta|segunda à sexta/i.test(t)) {
             return generate5x2ScheduleDefaultForMonth(monthObj);
         }
+        // Se é string complexa de dias
         if (typeof t === 'string') {
             const parsedDays = parseDayListForMonth(t, monthObj);
             if (parsedDays.length > 0) {
@@ -161,51 +174,52 @@ function buildFinalScheduleForMonth(employeeData, monthObj) {
                 return arr;
             }
         }
+        // Se é array de NÚMEROS (dias trabalhados)
         if (Array.isArray(t) && t.length && typeof t[0] === 'number') {
             const arr = new Array(totalDays).fill('F');
             t.forEach(d => { if (d>=1 && d<=totalDays) arr[d-1] = 'T'; });
             return arr;
         }
-        return []; // empty => no fixed T pattern
+        return [];
     };
 
-    // 1) Mark vacations FE (priority)
+    // 1) Prioridade: Férias (FE)
     const vacDays = parseDayListForMonth(employeeData.FE, monthObj);
     vacDays.forEach(d => { if (d>=1 && d<=totalDays) schedule[d-1] = 'FE'; });
 
-    // 2) Try fixed schedule
+    // 2) Tenta montar a escala de trabalho (T)
     const tParsed = parseTtoArray(employeeData.T);
-    const isFixedFullSchedule = Array.isArray(tParsed) && tParsed.length === totalDays && typeof tParsed[0] === 'string';
-
-    if (isFixedFullSchedule) {
-        for (let i=0;i<totalDays;i++){
-            if (schedule[i] === 'FE') continue;
-            schedule[i] = tParsed[i] || 'F';
-        }
-    } else {
-        if (Array.isArray(tParsed) && tParsed.length === totalDays) {
-            for (let i=0;i<totalDays;i++) {
-                if (schedule[i] === 'FE') continue;
-                if (tParsed[i] === 'T') schedule[i] = 'T';
-            }
-        } else if (Array.isArray(tParsed) && tParsed.length > 0 && typeof tParsed[0] === 'number') {
-            tParsed.forEach(d => { if (d>=1 && d<=totalDays && schedule[d-1] !== 'FE') schedule[d-1] = 'T'; });
+    
+    // Se tParsed for um array de 'T'/'F'
+    if (Array.isArray(tParsed) && tParsed.length === totalDays) {
+        for (let i=0; i<totalDays; i++) {
+            if (schedule[i] === 'FE') continue; // não sobrescreve férias
+            if (tParsed[i] === 'T') schedule[i] = 'T';
         }
     }
 
-    // 3) FD, FS overrides
-    parseDayListForMonth(employeeData.FD, monthObj).forEach(d => { if (d>=1 && d<=totalDays && schedule[d-1] !== 'FE') schedule[d-1] = 'FD'; });
-    parseDayListForMonth(employeeData.FS, monthObj).forEach(d => { if (d>=1 && d<=totalDays && schedule[d-1] !== 'FE' && schedule[d-1] !== 'FD') schedule[d-1] = 'FS'; });
+    // 3) Overrides de Folgas Específicas (FD, FS)
+    parseDayListForMonth(employeeData.FD, monthObj).forEach(d => { 
+        if (d>=1 && d<=totalDays && schedule[d-1] !== 'FE') schedule[d-1] = 'FD'; 
+    });
+    parseDayListForMonth(employeeData.FS, monthObj).forEach(d => { 
+        if (d>=1 && d<=totalDays && schedule[d-1] !== 'FE' && schedule[d-1] !== 'FD') schedule[d-1] = 'FS'; 
+    });
 
-    // 4) F (folgas)
-    parseDayListForMonth(employeeData.F, monthObj).forEach(d => { if (d>=1 && d<=totalDays && !['FE','FD','FS'].includes(schedule[d-1])) schedule[d-1] = 'F'; });
+    // 4) Folgas Gerais (F)
+    parseDayListForMonth(employeeData.F, monthObj).forEach(d => { 
+        if (d>=1 && d<=totalDays && !['FE','FD','FS'].includes(schedule[d-1])) schedule[d-1] = 'F'; 
+    });
 
-    // 5) Finally, fill blanks:
-    const tIsHorarioString = typeof employeeData.T === 'string' && employeeData.T.trim().length > 0 && !/segunda a sexta|12x36|fins? de semana/i.test(employeeData.T.toLowerCase());
+    // 5) Preenche buracos com 'T' se necessário (fallback)
+    // Se o usuário passou um array numérico de T, o resto virou F no passo parseTtoArray.
+    // Se o usuário passou string vazia, assume T? Melhor assumir F se não tem info.
     for (let i=0;i<totalDays;i++){
         if (!schedule[i]) {
-            if (tIsHorarioString) schedule[i] = 'T';
-            else schedule[i] = 'T'; // default
+            // Se não foi definido nada, e T era "segunda a sexta", o parseT já cuidou.
+            // Se sobrou null, vamos assumir 'T' padrão apenas se T não estava vazio.
+            if (employeeData.T) schedule[i] = 'T'; 
+            else schedule[i] = 'F'; // Segurança
         }
     }
 
@@ -255,18 +269,37 @@ function isWorkingTime(timeRange) {
 }
 
 // ==========================================
-// REBUILD scheduleData a partir de employeeMetadata e rawSchedule do mês
+// REBUILD (LÓGICA NOVA: LÊ DO JSON CARREGADO)
 // ==========================================
 function rebuildScheduleDataForSelectedMonth() {
     const monthObj = { year: selectedMonthObj.year, month: selectedMonthObj.month };
     const totalDays = new Date(monthObj.year, monthObj.month+1, 0).getDate();
 
     scheduleData = {};
-    Object.keys(employeeMetadata).forEach(name => {
-        const data = rawSchedule && rawSchedule[name] ? rawSchedule[name] : { T: employeeMetadata[name].Horário || 'segunda a sexta', F: 'fins de semana', FS: '', FD: '', FE: '' };
+    
+    // Se o JSON estiver vazio, encerra
+    if (!rawSchedule || Object.keys(rawSchedule).length === 0) {
+        // Limpa a tela
+        console.warn("Sem dados para este mês.");
+        updateDailyView();
+        return;
+    }
+
+    Object.keys(rawSchedule).forEach(name => {
+        const empData = rawSchedule[name];
+        
+        // Os metadados agora vêm do próprio JSON (empData).
+        // Se não tiver lá, tenta pegar do antigo employeeMetadata (se existir) como fallback.
+        const metaInfo = {
+            Grupo: empData.Grupo || 'Indefinido',
+            Célula: empData.Célula || '-',
+            Horário: empData.Horário || empData.Horario || '',
+            Turno: empData.Turno || ''
+        };
+
         scheduleData[name] = {
-            info: employeeMetadata[name],
-            schedule: buildFinalScheduleForMonth(data, monthObj)
+            info: metaInfo,
+            schedule: buildFinalScheduleForMonth(empData, monthObj)
         };
     });
 
@@ -276,16 +309,19 @@ function rebuildScheduleDataForSelectedMonth() {
         slider.max = totalDays;
         const sliderMaxLabel = document.getElementById('sliderMaxLabel');
         if (sliderMaxLabel) sliderMaxLabel.textContent = `Dia ${totalDays}`;
+        
+        // Se mudou de mês e o dia selecionado é maior que o total de dias do novo mês (ex: 31 -> 30)
         if (currentDay > totalDays) currentDay = totalDays;
         slider.value = currentDay;
     }
+    
+    // Atualiza o select de nomes na aba pessoal
+    initSelect();
 }
 
 // ==========================================
-// VISUALIZAÇÃO / CHART (ATUALIZADA PARA KPI)
+// VISUALIZAÇÃO / CHART
 // ==========================================
-
-// Plugin Chart.js para inserir texto no centro do Donut Chart
 const centerTextPlugin = {
     id: 'centerTextPlugin',
     beforeDraw: (chart) => {
@@ -295,28 +331,23 @@ const centerTextPlugin = {
         const workingCount = workingIndex !== -1 ? data.datasets[0].data[workingIndex] : 0;
         const workingPct = total > 0 ? ((workingCount / total) * 100).toFixed(0) : 0;
         
-        // SLA/Meta de exemplo (pode ser ajustado)
         const slaGoal = 75; 
         const isSlaMet = workingPct >= slaGoal;
-        const primaryColor = isSlaMet ? '#10b981' : '#ef4444'; // Green or Red
+        const primaryColor = isSlaMet ? '#10b981' : '#ef4444';
         
         ctx.save();
-        
         const centerX = width / 2;
         const centerY = height / 2;
         
-        // 1. Grande Porcentagem (KPI)
         ctx.font = 'bolder 3rem sans-serif';
         ctx.fillStyle = primaryColor;
         ctx.textAlign = 'center';
         ctx.textBaseline = 'middle';
         ctx.fillText(`${workingPct}%`, centerX, centerY - 15);
 
-        // 2. Métrica Descritiva
         ctx.font = '500 0.8rem sans-serif';
-        ctx.fillStyle = '#6b7280'; // Gray 500
+        ctx.fillStyle = '#6b7280';
         ctx.fillText('CAPACIDADE ATIVA', centerX, centerY + 25);
-        
         ctx.restore();
     }
 };
@@ -325,11 +356,8 @@ function updateChart(working, off, offShift, vacation) {
     const total = working + off + offShift + vacation;
     const dataPoints = [working, off, offShift, vacation];
     
-    // Título atualizado
     const chartTitleElement = document.querySelector('#dailyView section h3');
-    if (chartTitleElement) {
-        chartTitleElement.textContent = "Capacidade Operacional Atual";
-    }
+    if (chartTitleElement) chartTitleElement.textContent = "Capacidade Operacional Atual";
 
     const labels = [
         `Trabalhando (${working})`,
@@ -337,12 +365,10 @@ function updateChart(working, off, offShift, vacation) {
         `Expediente Encerrado (${offShift})`,
         `Férias (${vacation})`
     ];
-    // Cores: Verde (Trabalhando), Amarelo (Folga), Rosa (Exp. Enc.), Vermelho (Férias)
     const colors = ['#10b981','#fcd34d','#f9a8d4','#ef4444']; 
     
     const filteredData = [], filteredLabels = [], filteredColors = [];
     dataPoints.forEach((d,i)=>{ 
-        // Mostrar zero count apenas se o total for 0, ou para manter o layout de 4 cores se o total for > 0
         if (d>0 || total===0){ 
             filteredData.push(d); 
             filteredLabels.push(labels[i]); 
@@ -350,7 +376,6 @@ function updateChart(working, off, offShift, vacation) {
         }
     });
     
-    // Se o gráfico já existe, apenas atualiza os dados
     if (dailyChart) {
         dailyChart.data.datasets[0].data = filteredData;
         dailyChart.data.datasets[0].backgroundColor = filteredColors;
@@ -359,7 +384,6 @@ function updateChart(working, off, offShift, vacation) {
         return;
     }
 
-    // Configuração inicial (com o novo plugin)
     const data = { labels: filteredLabels, datasets:[{ data: filteredData, backgroundColor: filteredColors, hoverOffset:4 }]};
     const config = {
         type: 'doughnut',
@@ -370,13 +394,7 @@ function updateChart(working, off, offShift, vacation) {
             cutout: '65%', 
             animation: { animateRotate: true, duration: 900 },
             plugins: {
-                legend: { 
-                    position: 'bottom', 
-                    labels: { 
-                        padding: 15, 
-                        font: { size: 13 } 
-                    } 
-                },
+                legend: { position: 'bottom', labels: { padding: 15, font: { size: 13 } } },
                 tooltip: {
                     callbacks: {
                         label: function(ctx) {
@@ -388,7 +406,7 @@ function updateChart(working, off, offShift, vacation) {
                 }
             }
         },
-        plugins: [centerTextPlugin] // Adiciona o plugin
+        plugins: [centerTextPlugin]
     };
 
     const ctx = document.getElementById('dailyChart').getContext('2d');
@@ -416,16 +434,24 @@ function updateDailyView() {
     const listOff = document.getElementById('listOff');
     const listVacation = document.getElementById('listVacation');
 
+    if (Object.keys(scheduleData).length === 0) {
+        // Se não tiver dados
+        kpiWorking.textContent = 0; kpiOffShift.textContent = 0; kpiOff.textContent = 0; kpiVacation.textContent = 0;
+        listWorking.innerHTML = ''; listOffShift.innerHTML = ''; listOff.innerHTML = ''; listVacation.innerHTML = '';
+        updateChart(0,0,0,0);
+        return;
+    }
+
     Object.keys(scheduleData).forEach(name=>{
         const employee = scheduleData[name];
-        const status = employee.schedule[currentDay-1]; // 'T','F','FE','FD','FS', etc.
+        const status = employee.schedule[currentDay-1] || 'F'; // Default para F se undefined
         let kpiStatus = status;
         let displayStatus = status;
 
         if (kpiStatus === 'FE') {
             vacationCount++; displayStatus = 'FE';
         } else if (isToday && kpiStatus === 'T') {
-            const horarioRaw = employee.info.Horário || employee.info.Horario || '';
+            const horarioRaw = employee.info.Horário || '';
             const isWorking = isWorkingTime(horarioRaw);
             if (!isWorking) { offShiftCount++; displayStatus = 'OFF-SHIFT'; kpiStatus = 'F_EFFECTIVE'; }
             else { workingCount++; }
@@ -439,7 +465,7 @@ function updateDailyView() {
             <li class="flex justify-between items-center text-sm p-3 rounded hover:bg-indigo-50 border-b border-gray-100 last:border-0 transition-colors">
                 <div class="flex flex-col">
                     <span class="font-semibold text-gray-700">${name}</span>
-                    <span class="text-xs text-gray-400">${employee.info.Horário || employee.info.Horario || ''}</span>
+                    <span class="text-xs text-gray-400">${employee.info.Horário || ''}</span>
                 </div>
                 <span class="day-status status-${displayStatus}">
                     ${statusMap[displayStatus] || displayStatus}
@@ -458,36 +484,48 @@ function updateDailyView() {
     kpiOff.textContent = offCount;
     kpiVacation.textContent = vacationCount;
 
-    listWorking.innerHTML = workingHtml || '<li class="text-gray-400 text-sm text-center py-4">Ninguém em expediente no momento.</li>';
-    listOffShift.innerHTML = offShiftHtml || '<li class="text-gray-400 text-sm text-center py-4">Ninguém fora de expediente no momento.</li>';
-    listOff.innerHTML = offHtml || '<li class="text-gray-400 text-sm text-center py-4">Nenhuma folga programada.</li>';
+    listWorking.innerHTML = workingHtml || '<li class="text-gray-400 text-sm text-center py-4">Ninguém em expediente.</li>';
+    listOffShift.innerHTML = offShiftHtml || '<li class="text-gray-400 text-sm text-center py-4">Ninguém fora de expediente.</li>';
+    listOff.innerHTML = offHtml || '<li class="text-gray-400 text-sm text-center py-4">Nenhuma folga.</li>';
     listVacation.innerHTML = vacationHtml || '<li class="text-gray-400 text-sm text-center py-4">Ninguém de férias.</li>';
 
     updateChart(workingCount, offCount, offShiftCount, vacationCount);
 }
 
 // ==========================================
-// VIEWS PESSOAL E CALENDÁRIO (com mobile lista)
+// VIEWS PESSOAL
 // ==========================================
 function initSelect() {
     const select = document.getElementById('employeeSelect');
     if (!select) return;
+    
+    // Limpa opções anteriores
     select.innerHTML = '<option value="">Selecione seu nome</option>';
-    Object.keys(scheduleData).sort().forEach(name=>{
-        const opt = document.createElement('option'); opt.value = name; opt.textContent = name; select.appendChild(opt);
+    
+    // Popula com quem existe no JSON do mês atual
+    const names = Object.keys(scheduleData).sort();
+    names.forEach(name=>{
+        const opt = document.createElement('option'); 
+        opt.value = name; 
+        opt.textContent = name; 
+        select.appendChild(opt);
     });
-    select.addEventListener('change', e=>{
-        const employeeName = e.target.value;
-        const infoCard = document.getElementById('personalInfoCard');
-        const calendarContainer = document.getElementById('calendarContainer');
-        if (employeeName) updatePersonalView(employeeName);
-        else {
-            if (infoCard) {
-                infoCard.classList.remove('opacity-100'); infoCard.classList.add('opacity-0');
-                setTimeout(()=>{ infoCard.classList.add('hidden'); if (calendarContainer) calendarContainer.classList.add('hidden'); }, 300);
-            }
+
+    select.removeEventListener('change', handleSelectChange); // Remove listener duplicado se houver
+    select.addEventListener('change', handleSelectChange);
+}
+
+function handleSelectChange(e) {
+    const employeeName = e.target.value;
+    const infoCard = document.getElementById('personalInfoCard');
+    const calendarContainer = document.getElementById('calendarContainer');
+    if (employeeName) updatePersonalView(employeeName);
+    else {
+        if (infoCard) {
+            infoCard.classList.remove('opacity-100'); infoCard.classList.add('opacity-0');
+            setTimeout(()=>{ infoCard.classList.add('hidden'); if (calendarContainer) calendarContainer.classList.add('hidden'); }, 300);
         }
-    });
+    }
 }
 
 function updatePersonalView(employeeName) {
@@ -500,7 +538,6 @@ function updatePersonalView(employeeName) {
     const mainColor = isLeader ? 'text-purple-300' : 'text-indigo-300';
     const turnoDisplay = employee.info.Turno || '';
 
-    // NOVA ESTRUTURA COMPACTA DO CARD DE PERFIL (Mobile-First)
     infoCard.className = `hidden ${bgColor} p-4 rounded-xl mb-6 shadow-lg text-white flex flex-col transition-opacity duration-300 opacity-0`;
     infoCard.innerHTML = `
         <div class="flex items-center space-x-3 mb-3 border-b border-white/20 pb-2">
@@ -515,7 +552,7 @@ function updatePersonalView(employeeName) {
         <div class="flex justify-between items-center text-xs font-semibold">
             <div class="flex-1 text-center border-r border-white/20">
                 <p class="${mainColor}">Célula</p>
-                <p class="font-bold">${employee.info.Célula || '-'}</p>
+                <p class="font-bold">${employee.info.Célula}</p>
             </div>
             <div class="flex-1 text-center border-r border-white/20">
                 <p class="${mainColor}">Turno</p>
@@ -523,7 +560,7 @@ function updatePersonalView(employeeName) {
             </div>
             <div class="flex-1 text-center">
                 <p class="${mainColor}">Horário</p>
-                <p class="font-bold">${employee.info.Horário || employee.info.Horario || '-'}</p>
+                <p class="font-bold">${employee.info.Horário || '-'}</p>
             </div>
         </div>
     `;
@@ -533,10 +570,9 @@ function updatePersonalView(employeeName) {
     updateCalendar(employee.schedule);
 }
 
-// Novo: renderiza calendário COMO GRID (desktop) OU COMO LISTA (mobile)
 function updateCalendar(schedule) {
     const grid = document.getElementById('calendarGrid');
-    const dowHeader = grid.previousElementSibling; // A div com Dom, Seg, Ter...
+    const dowHeader = grid.previousElementSibling; 
     if (!grid) return;
     grid.innerHTML = '';
     const monthObj = { year: selectedMonthObj.year, month: selectedMonthObj.month };
@@ -544,16 +580,14 @@ function updateCalendar(schedule) {
     const totalDays = schedule.length;
     const todayDay = systemDay;
     const isCurrentMonth = (systemMonth === monthObj.month && systemYear === monthObj.year);
-    const isMobile = window.innerWidth <= 767; // Usando 767px para corresponder ao md do Tailwind
+    const isMobile = window.innerWidth <= 767;
 
     if (isMobile) {
-        // MOBILE: LIST VIEW
-        // Esconde o cabeçalho de Dom, Seg, Ter...
         if (dowHeader) dowHeader.classList.add('hidden');
-        grid.classList.remove('calendar-grid-container'); // Garante que o grid não seja aplicado
+        grid.classList.remove('calendar-grid-container');
         
         const listWrapper = document.createElement('div');
-        listWrapper.className = 'space-y-3'; // Aumentado o espaçamento para mobile
+        listWrapper.className = 'space-y-3';
 
         for (let d=1; d<=totalDays; d++) {
             const status = schedule[d-1];
@@ -561,7 +595,6 @@ function updateCalendar(schedule) {
             const isToday = isCurrentMonth && d === todayDay;
 
             const li = document.createElement('div');
-            // Usamos a classe 'current-day' no desktop para a borda. Aqui, usamos para a sombra/cor.
             const todayClass = isToday ? 'border-2 border-indigo-500 shadow-md' : 'border border-gray-100';
             
             li.className = `flex items-center justify-between bg-white p-3 rounded-xl shadow-sm transition-shadow ${todayClass}`;
@@ -585,10 +618,8 @@ function updateCalendar(schedule) {
         grid.appendChild(listWrapper);
         
     } else {
-        // DESKTOP: GRID VIEW
-        // Exibe o cabeçalho de Dom, Seg, Ter...
         if (dowHeader) dowHeader.classList.remove('hidden');
-        grid.classList.add('calendar-grid-container'); // Aplica o grid (definido no CSS)
+        grid.classList.add('calendar-grid-container');
         
         for (let i=0;i<firstDay;i++) grid.insertAdjacentHTML('beforeend','<div class="calendar-cell bg-gray-50 border-gray-100"></div>');
         for (let i=0;i<schedule.length;i++){
@@ -667,10 +698,10 @@ function updateWeekendTable() {
 }
 
 // ==========================================
-// TABS E INICIALIZAÇÃO DO DAILY VIEW
+// TABS E INICIALIZAÇÃO GLOBAL
 // ==========================================
 function initTabs() {
-    const tabButtons = document.querySelectorAll('.tab-button:not(.turno-filter)');
+    const tabButtons = document.querySelectorAll('.tab-button');
     const tabContents = document.querySelectorAll('.tab-content');
     tabButtons.forEach(button => {
         button.addEventListener('click', () => {
@@ -694,17 +725,18 @@ function initDailyView() {
     if (slider) slider.addEventListener('input', e => { currentDay = parseInt(e.target.value,10); updateDailyView(); });
 
     const ctx = document.getElementById('dailyChart').getContext('2d');
-    // Inicialização básica do chart para evitar erros
     dailyChart = new Chart(ctx, { type:'doughnut', data:{ datasets:[{ data:[0,0,0,0] }] }, options:{ responsive:true, maintainAspectRatio:false } });
 }
 
-// ==========================================
-// MÊS SELECT / INICIALIZAÇÃO GLOBAL
-// ==========================================
 function initMonthSelect() {
+    // Remove se já existir para evitar duplicação em reloads
+    const existing = document.getElementById('monthSelectWrapper');
+    if(existing) existing.remove();
+
     const select = document.createElement('select');
     select.id = 'monthSelect';
     select.className = 'appearance-none w-56 p-3 bg-indigo-50 border border-indigo-200 rounded-xl focus:ring-4 focus:ring-indigo-100 focus:border-indigo-500 text-gray-900 text-sm font-semibold transition-all shadow-lg';
+    
     availableMonths.forEach(m => {
         const opt = document.createElement('option');
         opt.value = `${m.year}-${m.month}`;
@@ -712,17 +744,21 @@ function initMonthSelect() {
         if (m.year === selectedMonthObj.year && m.month === selectedMonthObj.month) opt.selected = true;
         select.appendChild(opt);
     });
+
     const header = document.querySelector('header');
-    const container = document.createElement('div'); container.className = 'mt-3'; container.appendChild(select); header.appendChild(container);
+    const container = document.createElement('div'); 
+    container.id = 'monthSelectWrapper';
+    container.className = 'mt-3'; 
+    container.appendChild(select); 
+    header.appendChild(container);
 
     select.addEventListener('change', (e) => {
         const [y, mo] = e.target.value.split('-').map(Number);
         selectedMonthObj = { year: y, month: mo };
-        // load JSON for month and rebuild
-        loadMonthlyJson(y, mo).then(json=>{
-            rawSchedule = json || {};
+        
+        loadMonthlyJson(y, mo).then(json => {
+            rawSchedule = json;
             rebuildScheduleDataForSelectedMonth();
-            initSelect();
             updateDailyView();
             updateWeekendTable();
             document.getElementById('headerDate').textContent = `Mês de Referência: ${monthNames[selectedMonthObj.month]} de ${selectedMonthObj.year}`;
@@ -739,24 +775,30 @@ function scheduleMidnightUpdate() {
 }
 
 function initGlobal() {
-    loadMonthlyJson(selectedMonthObj.year, selectedMonthObj.month).then(json=>{
-        rawSchedule = json || {};
+    // Carrega o mês selecionado inicialmente
+    loadMonthlyJson(selectedMonthObj.year, selectedMonthObj.month).then(json => {
+        rawSchedule = json;
+        
         initMonthSelect();
         rebuildScheduleDataForSelectedMonth();
+        
         document.getElementById('headerDate').textContent = `Mês de Referência: ${monthNames[selectedMonthObj.month]} de ${selectedMonthObj.year}`;
+        
+        initTabs(); 
+        initDailyView();
+        
+        // Garante que o dia atual não estoure o max do mês
         const monthObj = { year: selectedMonthObj.year, month: selectedMonthObj.month };
         const totalDays = new Date(monthObj.year, monthObj.month+1, 0).getDate();
-        const slider = document.getElementById('dateSlider'); if (slider) slider.max = totalDays;
-        const sliderMaxLabel = document.getElementById('sliderMaxLabel'); if (sliderMaxLabel) sliderMaxLabel.textContent = `Dia ${totalDays}`;
-        initTabs(); initSelect(); initDailyView();
         currentDay = Math.min(systemDay, totalDays);
+        
         const ds = document.getElementById('dateSlider'); if (ds) ds.value = currentDay;
+        
         updateDailyView();
         scheduleMidnightUpdate();
         updateWeekendTable();
     });
 
-    // re-render calendar on resize when personal view opened
     window.addEventListener('resize', () => {
         const select = document.getElementById('employeeSelect');
         if (select && select.value) {
@@ -766,4 +808,3 @@ function initGlobal() {
 }
 
 document.addEventListener('DOMContentLoaded', initGlobal);
-
