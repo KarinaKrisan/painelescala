@@ -1,4 +1,4 @@
-// app.js - Versão Final (Com correção automática de ano para Férias)
+// app.js - Versão Final (Correção Inteligente de Virada de Ano)
 // Depende de: JSONs mensais em ./data/escala-YYYY-MM.json
 
 // ==========================================
@@ -18,8 +18,7 @@ const availableMonths = [
     { year: 2026, month: 0 }   // Janeiro 2026
 ];
 
-// Tenta encontrar o mês atual, senão pega o primeiro da lista (Novembro)
-// Para testar Dezembro direto, você pode forçar aqui, mas a interface permite trocar.
+// Tenta encontrar o mês atual, senão pega o primeiro da lista
 let selectedMonthObj = availableMonths.find(m => m.year === systemYear && m.month === systemMonth) || availableMonths[0];
 let currentDay = systemDay;
 
@@ -94,21 +93,33 @@ function parseDayListForMonth(dayString, monthObj) {
             let [, sD, sM, sY, eD, eM, eY] = dateRange;
             sD = parseInt(sD,10); sM = parseInt(sM,10)-1; eD = parseInt(eD,10); eM = parseInt(eM,10)-1;
             
-            const sYear = sY ? parseInt(sY,10) : monthObj.year;
-            
-            // CORREÇÃO INTELIGENTE DE ANO:
-            // Se o usuário não digitou o ano final, e o mês final for menor que o inicial (Ex: Dezembro -> Janeiro)
-            // Assumimos que virou o ano.
+            // Define o ano padrão como o ano que estamos visualizando no calendário
+            let sYear = sY ? parseInt(sY,10) : monthObj.year;
             let eYear = eY ? parseInt(eY,10) : monthObj.year;
-            if (!eY && eM < sM) {
-                eYear++; 
+            
+            // --- LÓGICA DE CORREÇÃO DE VIRADA DE ANO ---
+            // Se o usuário não digitou o ano (ex: "18/12 a 01/01") e o mês final é menor que o inicial
+            if (!sY && !eY && sM > eM) {
+                // Cenário A: Estamos visualizando Janeiro/Fevereiro (início do ano)
+                // O "18/12" se refere ao ano passado.
+                if (monthObj.month <= eM) {
+                    sYear--; // Início foi ano passado
+                    eYear = monthObj.year; // Fim é este ano
+                } 
+                // Cenário B: Estamos visualizando Dezembro (fim do ano)
+                // O "01/01" se refere ao ano que vem.
+                else {
+                    sYear = monthObj.year; // Início é este ano
+                    eYear++; // Fim é ano que vem
+                }
             }
-
+            
             const start = new Date(sYear, sM, sD);
             const end = new Date(eYear, eM, eD);
             
+            // Loop para preencher os dias
             for (let dt = new Date(start); dt <= end; dt.setDate(dt.getDate()+1)){
-                // Só adicionamos ao Set se o dia cair dentro do mês que estamos visualizando
+                // Só adicionamos ao Set se o dia cair dentro do mês/ano que estamos visualizando na tela
                 if (dt.getFullYear() === monthObj.year && dt.getMonth() === monthObj.month) {
                     days.add(dt.getDate());
                 }
@@ -121,7 +132,10 @@ function parseDayListForMonth(dayString, monthObj) {
         if (single) {
             const d = parseInt(single[1],10);
             const m = parseInt(single[2],10)-1;
-            if (m === monthObj.month) days.add(d);
+            // Se tiver ano, valida. Se não, assume mês atual.
+            const y = single[3] ? parseInt(single[3],10) : monthObj.year;
+            
+            if (m === monthObj.month && y === monthObj.year) days.add(d);
             return;
         }
 
