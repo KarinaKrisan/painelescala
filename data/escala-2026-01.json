@@ -1,191 +1,170 @@
 {
   "Yan Santos": {
+    "Grupo": "Operador Noc", "Célula": "Oi", "Horário": "08:00 às 17:48", "Turno": "Manhã",
     "T": [],
     "F": [],
-    "FS": [],
-    "FD": [],
-    "FE": []
+    "FS": [], "FD": [], "FE": []
   },
   "Carlos Diego": {
+    "Grupo": "Operador Noc", "Célula": "Claro / Telmex", "Horário": "08:00 às 17:48", "Turno": "Manhã",
     "T": [],
     "F": [],
-    "FS": [],
-    "FD": [],
-    "FE": []
+    "FS": [], "FD": [], "FE": []
   },
   "Bruno Capone": {
+    "Grupo": "Operador Noc", "Célula": "Outras Operadoras", "Horário": "07:30 às 17:18", "Turno": "Manhã",
     "T": [],
     "F": [],
-    "FS": [],
-    "FD": [],
-    "FE": []
+    "FS": [], "FD": [], "FE": []
   },
   "Leandra Moura": {
+    "Grupo": "Operador Noc", "Célula": "Oi", "Horário": "08:00 às 17:48", "Turno": "Manhã",
     "T": [],
     "F": [],
-    "FS": [],
-    "FD": [],
-    "FE": []
+    "FS": [], "FD": [], "FE": []
   },
   "Carlos Magno": {
-    "T": [],
-    "F": [],
-    "FS": [],
-    "FD": [],
-    "FE": []
+    "Grupo": "Operador Noc", "Célula": "Sitebra / B2B", "Horário": "07:30 às 17:18", "Turno": "Manhã",
+    "T": "segunda a sexta",
+    "F": "fins de semana",
+    "FS": [], "FD": [], "FE": []
   },
   "Karina Krisan": {
+    "Grupo": "Operador Noc", "Célula": "Oi", "Horário": "08:00 às 17:48", "Turno": "Manhã",
     "T": [],
     "F": [],
-    "FS": [],
-    "FD": [],
-    "FE": ["18/12 a 01/01"]
+    "FS": [], "FD": [], "FE": ["18/12 a 01/01"]
   },
   "Gabriel Procópio": {
+    "Grupo": "Operador Noc", "Célula": "Oi", "Horário": "07:30 às 17:18", "Turno": "Manhã",
     "T": [],
     "F": [],
-    "FS": [],
-    "FD": [],
-    "FE": []
+    "FS": [], "FD": [], "FE": []
   },
   "Bruno Roque": {
+    "Grupo": "Operador Noc", "Célula": "Sitelbra/ B2B", "Horário": "07:30 às 17:18", "Turno": "Manhã",
     "T": [],
     "F": [],
-    "FS": [],
-    "FD": [],
-    "FE": []
+    "FS": [], "FD": [], "FE": []
   },
   "Johnny Collins": {
+    "Grupo": "Operador Noc", "Célula": "Cirion / Vivo / Telebras", "Horário": "07:30 às 17:18", "Turno": "Manhã",
     "T": [],
     "F": [],
-    "FS": [],
-    "FD": [],
-    "FE": []
+    "FS": [], "FD": [], "FE": []
   },
   "Robervan Brahian": {
-    "T": [],
-    "F": [],
-    "FS": [],
-    "FD": [],
-    "FE": []
+    "Grupo": "Operador Noc", "Célula": "Oi", "Horário": "08:30 às 18:18", "Turno": "Manhã",
+    "T": "segunda a sexta",
+    "F": "fins de semana",
+    "FS": [], "FD": [], "FE": []
   },
   "Emanuel Pereira": {
+    "Grupo": "Operador Noc", "Célula": "Oi", "Horário": "08:00 às 17:48", "Turno": "Manhã",
     "T": [],
     "F": [],
-    "FS": [],
-    "FD": [],
-    "FE": []
+    "FS": [], "FD": [], "FE": []
   },
   "Felipe Pena": {
-    "T": [],
-    "F": [],
-    "FS": [],
-    "FD": [],
-    "FE": []
+    "Grupo": "Operador Noc", "Célula": "Cirion / Vivo / Telebras", "Horário": "12:12 às 22:00", "Turno": "Tarde",
+    "T": "segunda a sexta",
+    "F": "fins de semana",
+    "FS": [], "FD": [], "FE": []
   },
   "Bruno Cipola": {
+    "Grupo": "Operador Noc", "Célula": "Atendimento", "Horário": "19:30 às 07:30", "Turno": "Noturno (12x36)",
     "T": [],
     "F": [],
-    "FS": [],
-    "FD": [],
-    "FE": []
+    "FS": [], "FD": [], "FE": []
   },
   "Leandro Alves": {
+    "Grupo": "Operador Noc", "Célula": "Atendimento ", "Horário": "19:30 às 07:30", "Turno": "Noturno (12x36)",
     "T": [],
     "F": [],
-    "FS": [],
-    "FD": [],
-    "FE": []
+    "FS": [], "FD": [], "FE": []
   },
   "Patricia Oliveira": {
-    "T": ["segunda a sexta"],
-    "F": ["fins de semana"],
-    "FS": [],
-    "FD": [],
-    "FE": []
+    "Grupo": "Líder de Célula", "Célula": "Outras Operadoras", "Horário": "08:00 às 17:48", "Turno": "Comercial",
+    "T": "segunda a sexta",
+    "F": "fins de semana",
+    "FS": [], "FD": [], "FE": []
   },
   "Aidan Candido": {
-    "T": ["segunda a sexta"],
-    "F": ["fins de semana"],
-    "FS": [],
-    "FD": [],
-    "FE": ["15/12 a 15/01"]
+    "Grupo": "Líder de Célula", "Célula": "Sitelbra/ B2B", "Horário": "08:00 às 17:48", "Turno": "Comercial",
+    "T": "segunda a sexta",
+    "F": "fins de semana",
+    "FS": [], "FD": [], "FE": ["15/12 a 15/01"]
   },
   "Samile Chaga": {
-    "T": ["segunda a sexta"],
-    "F": ["fins de semana"],
-    "FS": [],
-    "FD": [],
-    "FE": []
+    "Grupo": "Líder de Célula", "Célula": "Oi", "Horário": "08:00 às 17:48", "Turno": "Comercial",
+    "T": "segunda a sexta",
+    "F": "fins de semana",
+    "FS": [], "FD": [], "FE": []
   },
   "Joab Santos": {
-    "T": ["segunda a sexta"],
-    "F": ["fins de semana"],
-    "FS": [],
-    "FD": [],
-    "FE": []
+    "Grupo": "Líder de Célula", "Célula": "Cirion/ Vivo/ Telebras", "Horário": "08:00 às 17:48", "Turno": "Comercial",
+    "T": "segunda a sexta",
+    "F": "fins de semana",
+    "FS": [], "FD": [], "FE": []
+  },
+  "Raquel Nascimento": {
+    "Grupo": "Líder de Célula", "Célula": "Claro / Telmex", "Horário": "08:00 às 17:48", "Turno": "Comercial",
+    "T": "segunda a sexta",
+    "F": "fins de semana",
+    "FS": [], "FD": [], "FE": []
   },
   "Lucas Keller": {
-    "T": ["segunda a sexta"],
-    "F": ["fins de semana"],
-    "FS": [],
-    "FD": [],
-    "FE": []
+    "Grupo": "Suporte Avançado", "Célula": "N2", "Horário": "08:30 às 18:18", "Turno": "Comercial",
+    "T": "segunda a sexta",
+    "F": "fins de semana",
+    "FS": [], "FD": [], "FE": []
   },
   "André Luiz": {
-    "T": ["segunda a sexta"],
-    "F": ["fins de semana"],
-    "FS": [],
-    "FD": [],
-    "FE": []
+    "Grupo": "Suporte Avançado", "Célula": "N2", "Horário": "08:30 às 18:18", "Turno": "Comercial",
+    "T": "segunda a sexta",
+    "F": "fins de semana",
+    "FS": [], "FD": [], "FE": []
   },
   "Tadeu Sidnei": {
-    "T": ["segunda a sexta"],
-    "F": ["fins de semana"],
-    "FS": [],
-    "FD": [],
-    "FE": []
+    "Grupo": "Gestor Técnico Geral", "Célula": "-", "Horário": "08:30 às 18:18", "Turno": "Comercial",
+    "T": "segunda a sexta",
+    "F": "fins de semana",
+    "FS": [], "FD": [], "FE": []
   },
   "Rafael Batista": {
+    "Grupo": "Operador Noc", "Célula": "Oi", "Horário": "07:00 às 19:00", "Turno": "Diurno (12x36)",
     "T": [],
     "F": [],
-    "FS": [],
-    "FD": [],
-    "FE": []
+    "FS": [], "FD": [], "FE": []
   },
   "Ivan Gabriel": {
+    "Grupo": "Operador Noc", "Célula": "Oi", "Horário": "07:00 às 19:00", "Turno": "Diurno (12x36)",
     "T": [],
     "F": [],
-    "FS": [],
-    "FD": [],
-    "FE": []
+    "FS": [], "FD": [], "FE": []
   },
   "Nilton Santos": {
+    "Grupo": "Operador Noc", "Célula": "Oi", "Horário": "07:00 às 19:00", "Turno": "Diurno (12x36)",
     "T": [],
     "F": [],
-    "FS": [],
-    "FD": [],
-    "FE": []
+    "FS": [], "FD": [], "FE": []
   },
   "Diego Mendonça": {
+    "Grupo": "Operador Noc", "Célula": "Claro / Telmex", "Horário": "07:00 às 19:00", "Turno": "Diurno (12x36)",
     "T": [],
     "F": [],
-    "FS": [],
-    "FD": [],
-    "FE": []
+    "FS": [], "FD": [], "FE": []
   },
   "Bruno Messias": {
+    "Grupo": "Operador Noc", "Célula": "Oi", "Horário": "07:00 às 19:00", "Turno": "Diurno (12x36)",
     "T": [],
     "F": [],
-    "FS": [],
-    "FD": [],
-    "FE": []
+    "FS": [], "FD": [], "FE": []
   },
   "Carlos Eduardo": {
+    "Grupo": "Operador Noc", "Célula": "Oi", "Horário": "07:00 às 19:00", "Turno": "Diurno (12x36)",
     "T": [],
     "F": [],
-    "FS": [],
-    "FD": [],
-    "FE": []
+    "FS": [], "FD": [], "FE": []
   }
 }
