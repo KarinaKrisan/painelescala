@@ -1,4 +1,4 @@
-// app.js - Versão D (com Gráfico KPI centralizado e Cores de Alto Contraste)
+// app.js - Versão D (com Gráfico KPI centralizado)
 // Depende de: employeeMetadata (escala-data.js) e JSONs mensais em ./data/escala-YYYY-MM.json
 
 // ==========================================
@@ -298,8 +298,7 @@ const centerTextPlugin = {
         // SLA/Meta de exemplo (pode ser ajustado)
         const slaGoal = 75; 
         const isSlaMet = workingPct >= slaGoal;
-        // Cores de texto mais fortes para contraste (Emerald 600 ou Red 600)
-        const primaryColor = isSlaMet ? '#059669' : '#dc2626'; 
+        const primaryColor = isSlaMet ? '#10b981' : '#ef4444'; // Green or Red
         
         ctx.save();
         
@@ -338,9 +337,8 @@ function updateChart(working, off, offShift, vacation) {
         `Expediente Encerrado (${offShift})`,
         `Férias (${vacation})`
     ];
-    // CORES ATUALIZADAS PARA MAIOR CONTRASTE (Tons 600 do Tailwind)
-    // Verde, Amarelo (Amber), Fúcsia, Vermelho
-    const colors = ['#059669', '#d97706', '#c026d3', '#dc2626']; 
+    // Cores: Verde (Trabalhando), Amarelo (Folga), Rosa (Exp. Enc.), Vermelho (Férias)
+    const colors = ['#10b981','#fcd34d','#f9a8d4','#ef4444']; 
     
     const filteredData = [], filteredLabels = [], filteredColors = [];
     dataPoints.forEach((d,i)=>{ 
@@ -443,7 +441,7 @@ function updateDailyView() {
                     <span class="font-semibold text-gray-700">${name}</span>
                     <span class="text-xs text-gray-400">${employee.info.Horário || employee.info.Horario || ''}</span>
                 </div>
-                <span class="day-status rounded-full status-${displayStatus}">
+                <span class="day-status status-${displayStatus}">
                     ${statusMap[displayStatus] || displayStatus}
                 </span>
             </li>
@@ -577,7 +575,7 @@ function updateCalendar(schedule) {
             `;
             
             const badge = document.createElement('span');
-            badge.className = `day-status rounded-full status-${status}`;
+            badge.className = `day-status status-${status}`;
             badge.textContent = displayStatus;
             
             li.appendChild(left);
@@ -628,3 +626,143 @@ function updateWeekendTable() {
             const satDay = isSaturday ? day : (day - 1);
             const sunDay = isSaturday ? (day + 1) : day;
             if (!isSaturday && !(dow===0 && day===1)) continue;
+
+            let satWorkers = [], sunWorkers = [];
+            Object.keys(scheduleData).forEach(name=>{
+                const emp = scheduleData[name];
+                if (emp.info.Grupo === "Operador Noc" || emp.info.Grupo === "Líder de Célula") {
+                    if (satDay > 0 && satDay <= totalDays && emp.schedule[satDay-1] === 'T') satWorkers.push(name);
+                    if (sunDay > 0 && sunDay <= totalDays && emp.schedule[sunDay-1] === 'T') sunWorkers.push(name);
+                }
+            });
+
+            const hasSat = satWorkers.length>0 && satDay<=totalDays;
+            const hasSun = sunWorkers.length>0 && sunDay<=totalDays;
+            if (hasSat || hasSun) {
+                hasResults = true;
+                const formatDate = d => `${pad(d)}/${pad(monthObj.month+1)}`;
+                const formatBadge = name => {
+                    const emp = scheduleData[name];
+                    const isLeader = emp.info.Grupo === "Líder de Célula";
+                    const badgeClass = isLeader ? 'bg-purple-100 text-purple-800 border-purple-300' : 'bg-blue-100 text-blue-800 border-blue-300';
+                    return `<span class="text-sm font-semibold px-3 py-1 rounded-full border ${badgeClass} shadow-sm">${name}</span>`;
+                };
+                const cardHtml = `
+                    <div class="bg-white p-5 rounded-2xl shadow-xl border border-gray-200 flex flex-col min-h-full">
+                        <div class="bg-indigo-700 text-white p-4 -m-5 mb-5 rounded-t-xl flex justify-center items-center">
+                            <h3 class="text-white font-bold text-base"> Fim de Semana ${formatDate(satDay)} - ${formatDate(sunDay)}</h3>
+                        </div>
+                        <div class="flex-1 flex flex-col justify-start space-y-6">
+                            ${hasSat ? `<div class="flex gap-4"><div class="w-1.5 bg-blue-500 rounded-full shrink-0"></div><div class="flex-1"><p class="text-xs font-bold text-blue-600 uppercase tracking-widest mb-3">Sábado (${formatDate(satDay)})</p><div class="flex flex-wrap gap-2">${satWorkers.map(formatBadge).join('') || '<span class="text-gray-400 text-sm italic">Ninguém escalado</span>'}</div></div></div>` : ''}
+                            ${hasSun ? `<div class="flex gap-4"><div class="w-1.5 bg-purple-500 rounded-full shrink-0"></div><div class="flex-1"><p class="text-xs font-bold text-purple-600 uppercase tracking-widest mb-3">Domingo (${formatDate(sunDay)})</p><div class="flex flex-wrap gap-2">${sunWorkers.map(formatBadge).join('') || '<span class="text-gray-400 text-sm italic">Ninguém escalado</span>'}</div></div></div>` : ''}
+                        </div>
+                    </div>
+                `;
+                container.insertAdjacentHTML('beforeend', cardHtml);
+            }
+        }
+    }
+
+    if (!hasResults) container.innerHTML = `<div class="md:col-span-2 lg:col-span-3 bg-white p-8 rounded-xl shadow-sm border border-gray-200 text-center"><p class="text-gray-500 text-lg">Nenhum Operador Noc escalado para fins de semana neste mês.</p></div>`;
+}
+
+// ==========================================
+// TABS E INICIALIZAÇÃO DO DAILY VIEW
+// ==========================================
+function initTabs() {
+    const tabButtons = document.querySelectorAll('.tab-button:not(.turno-filter)');
+    const tabContents = document.querySelectorAll('.tab-content');
+    tabButtons.forEach(button => {
+        button.addEventListener('click', () => {
+            tabButtons.forEach(btn => btn.classList.remove('active'));
+            button.classList.add('active');
+            const target = button.dataset.tab;
+            tabContents.forEach(content => {
+                if (content.id === `${target}View`) {
+                    content.classList.remove('hidden');
+                    if (target === 'personal') updateWeekendTable();
+                } else {
+                    content.classList.add('hidden');
+                }
+            });
+        });
+    });
+}
+
+function initDailyView() {
+    const slider = document.getElementById('dateSlider');
+    if (slider) slider.addEventListener('input', e => { currentDay = parseInt(e.target.value,10); updateDailyView(); });
+
+    const ctx = document.getElementById('dailyChart').getContext('2d');
+    // Inicialização básica do chart para evitar erros
+    dailyChart = new Chart(ctx, { type:'doughnut', data:{ datasets:[{ data:[0,0,0,0] }] }, options:{ responsive:true, maintainAspectRatio:false } });
+}
+
+// ==========================================
+// MÊS SELECT / INICIALIZAÇÃO GLOBAL
+// ==========================================
+function initMonthSelect() {
+    const select = document.createElement('select');
+    select.id = 'monthSelect';
+    select.className = 'appearance-none w-56 p-3 bg-indigo-50 border border-indigo-200 rounded-xl focus:ring-4 focus:ring-indigo-100 focus:border-indigo-500 text-gray-900 text-sm font-semibold transition-all shadow-lg';
+    availableMonths.forEach(m => {
+        const opt = document.createElement('option');
+        opt.value = `${m.year}-${m.month}`;
+        opt.textContent = `${monthNames[m.month]} / ${m.year}`;
+        if (m.year === selectedMonthObj.year && m.month === selectedMonthObj.month) opt.selected = true;
+        select.appendChild(opt);
+    });
+    const header = document.querySelector('header');
+    const container = document.createElement('div'); container.className = 'mt-3'; container.appendChild(select); header.appendChild(container);
+
+    select.addEventListener('change', (e) => {
+        const [y, mo] = e.target.value.split('-').map(Number);
+        selectedMonthObj = { year: y, month: mo };
+        // load JSON for month and rebuild
+        loadMonthlyJson(y, mo).then(json=>{
+            rawSchedule = json || {};
+            rebuildScheduleDataForSelectedMonth();
+            initSelect();
+            updateDailyView();
+            updateWeekendTable();
+            document.getElementById('headerDate').textContent = `Mês de Referência: ${monthNames[selectedMonthObj.month]} de ${selectedMonthObj.year}`;
+        });
+    });
+}
+
+function scheduleMidnightUpdate() {
+    const now = new Date();
+    const midnight = new Date(now);
+    midnight.setHours(24,0,0,0);
+    const timeToMidnight = midnight.getTime() - now.getTime();
+    setTimeout(()=>{ updateDailyView(); setInterval(updateDailyView, 24*60*60*1000); }, timeToMidnight+1000);
+}
+
+function initGlobal() {
+    loadMonthlyJson(selectedMonthObj.year, selectedMonthObj.month).then(json=>{
+        rawSchedule = json || {};
+        initMonthSelect();
+        rebuildScheduleDataForSelectedMonth();
+        document.getElementById('headerDate').textContent = `Mês de Referência: ${monthNames[selectedMonthObj.month]} de ${selectedMonthObj.year}`;
+        const monthObj = { year: selectedMonthObj.year, month: selectedMonthObj.month };
+        const totalDays = new Date(monthObj.year, monthObj.month+1, 0).getDate();
+        const slider = document.getElementById('dateSlider'); if (slider) slider.max = totalDays;
+        const sliderMaxLabel = document.getElementById('sliderMaxLabel'); if (sliderMaxLabel) sliderMaxLabel.textContent = `Dia ${totalDays}`;
+        initTabs(); initSelect(); initDailyView();
+        currentDay = Math.min(systemDay, totalDays);
+        const ds = document.getElementById('dateSlider'); if (ds) ds.value = currentDay;
+        updateDailyView();
+        scheduleMidnightUpdate();
+        updateWeekendTable();
+    });
+
+    // re-render calendar on resize when personal view opened
+    window.addEventListener('resize', () => {
+        const select = document.getElementById('employeeSelect');
+        if (select && select.value) {
+            updatePersonalView(select.value);
+        }
+    });
+}
+
+document.addEventListener('DOMContentLoaded', initGlobal);
