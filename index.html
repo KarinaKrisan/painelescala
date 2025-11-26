@@ -7,6 +7,7 @@
 
     <script src="https://cdn.tailwindcss.com"></script>
     <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+
     <link rel="stylesheet" href="styless.css">
 </head>
 <body class="text-gray-800 bg-gray-100">
@@ -40,8 +41,8 @@
 
             <div id="dailyView" class="tab-content active space-y-8">
                 <section class="bg-white p-8 rounded-2xl shadow-2xl border border-gray-100">
-                    
                     <div class="mb-8 pb-4 border-b border-gray-100">
+
                        <div class="flex justify-between items-center mb-4">
                             <h2 class="text-xl font-bold text-gray-800">Status da Equipe em:</h2>
                             <span id="currentDateLabel" class="text-3xl font-extrabold text-indigo-800 capitalize block"></span>
@@ -53,11 +54,12 @@
                             <span>Dia 1</span>
                             <span id="sliderMaxLabel">Fim</span>
                         </div>
+
                     </div>
+                    
+                    <div class="grid grid-cols-1 lg:grid-cols-2 gap-8 items-stretch">
 
-                    <div class="grid grid-cols-1 lg:grid-cols-2 gap-8 items-start">
-
-                        <div class="grid grid-cols-2 gap-4">
+                        <div class="grid grid-cols-2 gap-4 h-full">
                             <div class="bg-white p-5 rounded-xl shadow-md border-t-4 border-green-600 hover:shadow-xl transition-shadow cursor-pointer">
                                <p class="text-sm font-semibold text-green-700">Trabalhando</p>
                                 <p id="kpiWorking" class="text-4xl font-extrabold text-green-600 mt-1">0</p>
@@ -83,16 +85,17 @@
                             </div>
                         </div>
 
-                        <div class="flex flex-col bg-white rounded-xl p-6 border border-gray-200 shadow-lg relative h-full min-h-[380px]">
+                        <div class="flex flex-col bg-white rounded-xl p-6 border border-gray-200 shadow-lg relative h-full">
+                            
                             <div class="flex justify-between items-center mb-6 border-b border-gray-100 pb-2">
                                 <h3 id="chartTitle" class="text-lg font-bold text-gray-700">Capacidade Operacional</h3>
-                                <button onclick="toggleChartMode()" class="text-xs bg-indigo-50 text-indigo-600 border border-indigo-200 px-4 py-1.5 rounded-full font-bold hover:bg-indigo-100 transition-colors shadow-sm focus:outline-none focus:ring-2 focus:ring-indigo-500">
+                                <button id="btnToggleChart" onclick="toggleChartMode()" class="text-xs bg-indigo-50 text-indigo-600 border border-indigo-200 px-4 py-1.5 rounded-full font-bold hover:bg-indigo-100 transition-colors shadow-sm">
                                     Ver Tendência Mensal
                                 </button>
                             </div>
-                        
-                            <div class="chart-container flex-1 w-full relative">
-                                    <canvas id="dailyChart"></canvas>
+
+                            <div class="chart-container flex-1 w-full min-h-[300px] relative">
+                                 <canvas id="dailyChart"></canvas>
                             </div>
                         </div>
 
@@ -146,10 +149,10 @@
                     </div>
 
                     <div id="personalInfoCard" class="hidden bg-indigo-600 p-6 rounded-2xl mb-6 shadow-xl text-white flex flex-col sm:flex-row justify-between items-center transition-opacity duration-300 opacity-0">
-                    </div>
+                        </div>
 
                     <div id="calendarContainer" class="hidden">
-                        <div class="grid grid-cols-7 gap-1 mb-1 text-center font-semibold text-gray-700 md:grid hidden">
+                        <div class="grid grid-cols-7 gap-1 mb-1 text-center font-semibold text-gray-700 hidden md:grid">
                             <div class="text-xs uppercase tracking-wider p-2">Dom</div>
                             <div class="text-xs uppercase tracking-wider p-2">Seg</div>
                             <div class="text-xs uppercase tracking-wider p-2">Ter</div>
@@ -171,13 +174,13 @@
                                  <svg xmlns="http://www.w3.org/2000/svg" class="h-6 w-6 mr-2 text-indigo-700" fill="none" viewBox="0 0 24 24" stroke="currentColor">
                                 <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8 7V3m8 4V3m-9 8h10M5 21h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z" />
                            </svg>
-                            Plantão Fins de Semana
+                            Plantão Fins de Semana - Operador Noc
                           </h2>
                         <p class="text-sm text-gray-500">Visão consolidada das equipes escaladas (Sábado e Domingo).</p>
                     </div>
 
                         <div id="weekendPlantaoContainer" class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-                             </div>
+                            </div>
                 </section>
 
             </div>
