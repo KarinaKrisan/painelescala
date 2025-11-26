@@ -1,4 +1,4 @@
-// app.js - Versão Final Robusta (Correção de Ano + Tendência Mensal + IDs Corrigidos)
+// app.js - Versão Final (Visual Restaurado idêntico à imagem + Gráfico + Correção Ano)
 // Depende de: JSONs mensais em ./data/escala-YYYY-MM.json
 
 // ==========================================
@@ -13,10 +13,9 @@ const systemDay = currentDateObj.getDate();
 
 // Ajuste de meses disponíveis
 const availableMonths = [
-    { year: 2025, month: 10 }, // Novembro 2025 (Mês 10)
-    { year: 2025, month: 11 }//, // Dezembro 2025 (Mês 11)
-    //{ year: 2026, month: 0 }//, // Janeiro 2026 (Mês 0)
-    // Para adicionar Fevereiro 2026, adicione: { year: 2026, month: 1 }
+    { year: 2025, month: 10 }, 
+    { year: 2025, month: 11 }, 
+    { year: 2026, month: 0 }   
 ];
 
 let selectedMonthObj = availableMonths.find(m => m.year === systemYear && m.month === systemMonth) || availableMonths[0];
@@ -189,12 +188,25 @@ function isWorkingTime(timeRange) {
 function rebuildScheduleDataForSelectedMonth() {
     const monthObj = { year: selectedMonthObj.year, month: selectedMonthObj.month };
     scheduleData = {};
-    if (!rawSchedule) return;
+    
+    // Proteção contra JSON vazio
+    if (!rawSchedule || Object.keys(rawSchedule).length === 0) {
+        console.warn("JSON vazio.");
+        updateDailyView();
+        return;
+    }
 
     Object.keys(rawSchedule).forEach(name => {
+        const empData = rawSchedule[name];
+        const metaInfo = {
+            Grupo: empData.Grupo || 'Indefinido',
+            Célula: empData.Célula || '-',
+            Horário: empData.Horário || empData.Horario || '',
+            Turno: empData.Turno || ''
+        };
         scheduleData[name] = {
-            info: rawSchedule[name],
-            schedule: buildFinalScheduleForMonth(rawSchedule[name], monthObj)
+            info: metaInfo,
+            schedule: buildFinalScheduleForMonth(empData, monthObj)
         };
     });
 
@@ -207,6 +219,7 @@ function rebuildScheduleDataForSelectedMonth() {
         slider.value = currentDay;
     }
     initSelect();
+    updateDailyView();
 }
 
 // ==========================================
@@ -464,15 +477,53 @@ function initSelect() {
 }
 
 function updatePersonalView(name) {
-    const emp = scheduleData[name];
-    if (!emp) return;
-    const card = document.getElementById('personalInfoCard');
-    const isLeader = emp.info.Grupo === "Líder de Célula";
-    card.className = `hidden ${isLeader?'bg-purple-700':'bg-indigo-600'} p-6 rounded-xl mb-6 shadow-xl text-white flex flex-col transition-opacity duration-300 opacity-100`;
-    card.innerHTML = `<h2 class="text-2xl font-bold">${name}</h2><p>${emp.info.Grupo} - ${emp.info.Horário}</p>`;
-    card.classList.remove('hidden');
-    document.getElementById('calendarContainer').classList.remove('hidden');
-    updateCalendar(emp.schedule);
+    const employee = scheduleData[name];
+    if (!employee) return;
+    
+    const infoCard = document.getElementById('personalInfoCard');
+    const calendarContainer = document.getElementById('calendarContainer');
+    
+    const isLeader = employee.info.Grupo === "Líder de Célula";
+    const bgColor = isLeader ? 'bg-purple-700' : 'bg-indigo-600';
+    const mainColor = isLeader ? 'text-purple-300' : 'text-indigo-300';
+    const turnoDisplay = employee.info.Turno || '';
+
+    infoCard.className = `hidden ${bgColor} p-4 rounded-xl mb-6 shadow-lg text-white flex flex-col transition-opacity duration-300 opacity-0`;
+    
+    infoCard.innerHTML = `
+        <div class="flex items-center space-x-3 mb-3 border-b border-white/20 pb-2">
+            <svg class="h-8 w-8 ${mainColor} flex-shrink-0" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                 ${isLeader ? '<path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M17 20h5v-2a3 3 0 00-5.356-1.857M17 20v-2c0-.656-.126-1.283-.356-1.857M9 20l3-3m0 0l-3-3m3 3h6m-3 3v-2.5M10 9a2 2 0 012-2h4a2 2 0 012 2v4a2 2 0 01-2 2h-4a2 2 0 01-2-2v-4zm-9 3a2 2 0 012-2h4a2 2 0 012-2h4a2 2 0 01-2 2H3a2 2 0 01-2-2v-4z" />' : '<path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M16 7a4 4 0 11-8 0 4 4 0 018 0zM12 14a7 7 0 00-7 7h14a7 7 0 00-7-7z" />'}
+            </svg>
+            <div class="flex-1 min-w-0">
+                <p class="text-lg font-extrabold">${name}</p>
+                <p class="text-xs font-semibold ${mainColor}">${employee.info.Grupo}</p>
+            </div>
+        </div>
+        <div class="flex justify-between items-center text-xs font-semibold">
+            <div class="flex-1 text-center border-r border-white/20">
+                <p class="${mainColor}">Célula</p>
+                <p class="font-bold">${employee.info.Célula}</p>
+            </div>
+            <div class="flex-1 text-center border-r border-white/20">
+                <p class="${mainColor}">Turno</p>
+                <p class="font-bold">${turnoDisplay}</p>
+            </div>
+            <div class="flex-1 text-center">
+                <p class="${mainColor}">Horário</p>
+                <p class="font-bold">${employee.info.Horário || '-'}</p>
+            </div>
+        </div>
+    `;
+
+    infoCard.classList.remove('hidden');
+    setTimeout(() => {
+         infoCard.classList.remove('opacity-0'); 
+         infoCard.classList.add('opacity-100');
+    }, 10);
+   
+    calendarContainer.classList.remove('hidden');
+    updateCalendar(employee.schedule);
 }
 
 function updateCalendar(schedule) {
@@ -496,32 +547,87 @@ function updateCalendar(schedule) {
     }
 }
 
+// ==========================================
+// FUNÇÃO DE PLANTÃO RESTAURADA + DATA NO SÁBADO
+// ==========================================
 function updateWeekendTable() {
     const container = document.getElementById('weekendPlantaoContainer');
     if (!container) return;
     container.innerHTML = '';
+    
     const m = { y: selectedMonthObj.year, mo: selectedMonthObj.month };
     const total = new Date(m.y, m.mo+1, 0).getDate();
-    
+    let hasResults = false;
+
+    // Helper para formatar DD/MM
+    const formatDate = d => `${pad(d)}/${pad(m.mo+1)}`;
+
     for (let d=1; d<=total; d++){
         const dow = new Date(m.y, m.mo, d).getDay();
-        if (dow === 6) { 
-            const sat = d, sun = d+1 <= total ? d+1 : null;
-            let satW=[], sunW=[];
-            Object.keys(scheduleData).forEach(n=>{
-                if(scheduleData[n].schedule[sat-1]==='T') satW.push(n);
-                if(sun && scheduleData[n].schedule[sun-1]==='T') sunW.push(n);
+        if (dow === 6) { // Sábado
+            const satDay = d;
+            const sunDay = d+1;
+            const isSunInMonth = sunDay <= total;
+            
+            let satWorkers = [], sunWorkers = [];
+            Object.keys(scheduleData).forEach(name=>{
+                const emp = scheduleData[name];
+                // Filtro: Apenas Operadores ou Líderes
+                if (emp.info.Grupo === "Operador Noc" || emp.info.Grupo === "Líder de Célula") {
+                    if (emp.schedule[satDay-1] === 'T') satWorkers.push(name);
+                    if (isSunInMonth && emp.schedule[sunDay-1] === 'T') sunWorkers.push(name);
+                }
             });
-            if(satW.length || sunW.length) {
-                container.insertAdjacentHTML('beforeend', 
-                    `<div class="bg-white p-4 rounded shadow border">
-                        <h3 class="font-bold text-indigo-700 mb-2">Fim de Semana ${sat}/${m.mo+1}</h3>
-                        <p class="text-sm"><strong>Sáb:</strong> ${satW.join(', ') || '-'}</p>
-                        <p class="text-sm"><strong>Dom:</strong> ${sunW.join(', ') || '-'}</p>
-                    </div>`
-                );
+
+            if (satWorkers.length > 0 || sunWorkers.length > 0) {
+                hasResults = true;
+
+                // Construção do Card Visual (Baseado na imagem fornecida)
+                const cardHtml = `
+                    <div class="bg-white rounded-2xl shadow-lg border border-gray-100 overflow-hidden flex flex-col mb-6">
+                        <div class="bg-gradient-to-r from-blue-600 to-indigo-600 p-4 text-white">
+                             <h3 class="font-bold text-lg flex items-center gap-2">
+                                <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5 opacity-80" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                                  <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8 7V3m8 4V3m-9 8h10M5 21h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z" />
+                                </svg>
+                                Fim de Semana ${formatDate(satDay)}
+                             </h3>
+                        </div>
+
+                        <div class="p-5 flex-1 flex flex-col gap-6">
+                            ${satWorkers.length ? `
+                            <div class="flex gap-3">
+                                <div class="w-1.5 bg-blue-500 rounded-full shrink-0"></div> <div class="flex-1">
+                                    <p class="text-xs font-bold text-blue-600 uppercase tracking-widest mb-3">
+                                        SÁBADO (${formatDate(satDay)})
+                                    </p>
+                                    <div class="flex flex-wrap gap-2">
+                                        ${satWorkers.map(n => `<span class="border border-blue-300 text-blue-700 bg-blue-50 px-3 py-1.5 rounded-lg text-sm font-semibold">${n}</span>`).join('')}
+                                    </div>
+                                </div>
+                            </div>` : ''}
+
+                            ${isSunInMonth && sunWorkers.length ? `
+                            <div class="flex gap-3">
+                                <div class="w-1.5 bg-purple-500 rounded-full shrink-0"></div> <div class="flex-1">
+                                    <p class="text-xs font-bold text-purple-600 uppercase tracking-widest mb-3">
+                                        DOMINGO (${formatDate(sunDay)})
+                                    </p>
+                                    <div class="flex flex-wrap gap-2">
+                                        ${sunWorkers.map(n => `<span class="border border-purple-300 text-purple-700 bg-purple-50 px-3 py-1.5 rounded-lg text-sm font-semibold">${n}</span>`).join('')}
+                                    </div>
+                                </div>
+                            </div>` : ''}
+                        </div>
+                    </div>
+                `;
+                container.insertAdjacentHTML('beforeend', cardHtml);
             }
         }
+    }
+
+    if (!hasResults) {
+         container.innerHTML = `<div class="md:col-span-2 lg:col-span-3 bg-white p-8 rounded-xl shadow-sm border border-gray-200 text-center"><p class="text-gray-500 text-lg">Nenhum Operador Noc escalado para fins de semana neste mês.</p></div>`;
     }
 }
 
