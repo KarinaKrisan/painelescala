@@ -1,95 +1,91 @@
-// ==========================================
-// CARD DO COLABORADOR (DESIGN PREMIUM)
-// ==========================================
-function updatePersonalView(name) {
-    const employee = scheduleData[name];
-    if (!employee) return;
+function updateWeekendTable() {
+    const container = document.getElementById('weekendPlantaoContainer');
+    if (!container) return;
+    container.innerHTML = '';
     
-    const infoCard = document.getElementById('personalInfoCard');
-    const calendarContainer = document.getElementById('calendarContainer');
+    const m = { y: selectedMonthObj.year, mo: selectedMonthObj.month };
+    const total = new Date(m.y, m.mo+1, 0).getDate();
     
-    // Definição de Cores baseada no Grupo (Líder vs Operador)
-    const isLeader = employee.info.Grupo === "Líder de Célula";
-    
-    // Degradê do cabeçalho
-    const gradientClass = isLeader 
-        ? 'bg-gradient-to-r from-purple-700 to-pink-600' 
-        : 'bg-gradient-to-r from-indigo-600 to-blue-600';
+    // Helper para formatar data (DD/MM)
+    const fmtDate = (d) => `${pad(d)}/${pad(m.mo+1)}`;
+
+    // Helper para criar as tags de nomes (estilo "botão" da imagem)
+    const createNameTags = (names, colorClass = 'blue') => {
+        if (!names || names.length === 0) return '<span class="text-gray-400 text-sm italic ml-2">Ninguém escalado</span>';
         
-    // Cor dos ícones internos
-    const iconBgClass = isLeader ? 'bg-purple-50 text-purple-600' : 'bg-indigo-50 text-indigo-600';
-
-    // Garante que o container esteja visível e limpa classes antigas de cor sólida
-    infoCard.className = `hidden bg-white rounded-2xl shadow-xl border border-gray-100 overflow-hidden mb-8 transition-all duration-500 ease-out transform translate-y-4 opacity-0`;
+        // Define cores baseadas no parametro (azul para sabado, roxo para domingo na imagem)
+        const border = colorClass === 'purple' ? 'border-purple-600 text-purple-700' : 'border-blue-600 text-blue-700';
+        
+        return names.map(n => `
+            <div class="border ${border} px-3 py-1 rounded-md text-sm font-medium bg-white shadow-sm whitespace-nowrap">
+                ${n}
+            </div>
+        `).join('');
+    };
     
-    // HTML do Novo Card
-    infoCard.innerHTML = `
-        <div class="${gradientClass} p-6 relative overflow-hidden">
-            <div class="absolute top-0 right-0 -mr-10 -mt-10 w-40 h-40 rounded-full bg-white opacity-10 blur-2xl"></div>
+    for (let d=1; d<=total; d++){
+        const dow = new Date(m.y, m.mo, d).getDay();
+        
+        // Encontrou um Sábado (Dia 6)
+        if (dow === 6) { 
+            const sat = d;
+            const sun = d+1 <= total ? d+1 : null; // Verifica se domingo cai no mesmo mês
             
-            <div class="relative z-10 flex items-center gap-5">
-                <div class="bg-white/20 backdrop-blur-sm p-3 rounded-full border border-white/30 shadow-inner">
-                    <svg xmlns="http://www.w3.org/2000/svg" class="h-8 w-8 text-white" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M16 7a4 4 0 11-8 0 4 4 0 018 0zM12 14a7 7 0 00-7 7h14a7 7 0 00-7-7z" />
-                    </svg>
-                </div>
+            let satW=[], sunW=[];
+            Object.keys(scheduleData).forEach(n=>{
+                if(scheduleData[n].schedule[sat-1]==='T') satW.push(n);
+                if(sun && scheduleData[n].schedule[sun-1]==='T') sunW.push(n);
+            });
+
+            // Se houver alguém escalado no fim de semana, renderiza o card
+            if(satW.length || sunW.length) {
+                // Formata as Labels com a data solicitada
+                const satLabel = `SÁBADO (${fmtDate(sat)})`;
+                const sunLabel = sun ? `DOMINGO (${fmtDate(sun)})` : 'DOMINGO (Próx. Mês)';
+
+                // HTML do Card Estilizado
+                const cardHTML = `
+                <div class="bg-white rounded-xl shadow-lg mb-6 overflow-hidden border border-gray-100 font-sans">
+                    <div class="bg-gradient-to-r from-blue-600 to-blue-500 text-white p-4 flex items-center gap-3">
+                        <svg class="w-6 h-6 opacity-80" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8 7V3m8 4V3m-9 8h10M5 21h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z"></path></svg>
+                        <span class="font-bold text-lg">Fim de Semana ${fmtDate(sat)}</span>
+                    </div>
+
+                    <div class="p-6 flex flex-col gap-6">
+                        
+                        <div class="flex gap-4">
+                            <div class="w-1.5 bg-blue-400 rounded-full shrink-0"></div>
+                            <div class="flex-1">
+                                <h4 class="text-xs font-bold text-blue-600 uppercase tracking-widest mb-3">
+                                    ${satLabel}
+                                </h4>
+                                <div class="flex flex-wrap gap-2">
+                                    ${createNameTags(satW, 'blue')}
+                                </div>
+                            </div>
+                        </div>
+
+                        ${sun ? `
+                        <div class="border-t border-dashed border-gray-200"></div>
+
+                        <div class="flex gap-4">
+                            <div class="w-1.5 bg-purple-400 rounded-full shrink-0"></div>
+                            <div class="flex-1">
+                                <h4 class="text-xs font-bold text-purple-600 uppercase tracking-widest mb-3">
+                                    ${sunLabel}
+                                </h4>
+                                <div class="flex flex-wrap gap-2">
+                                    ${createNameTags(sunW, 'purple')}
+                                </div>
+                            </div>
+                        </div>
+                        ` : ''}
+
+                    </div>
+                </div>`;
                 
-                <div class="flex-1 text-white">
-                    <h2 class="text-2xl md:text-3xl font-bold tracking-tight leading-tight">${name}</h2>
-                    <p class="text-white/90 text-sm font-medium uppercase tracking-wider mt-1 opacity-90 border-l-2 border-white/40 pl-2">
-                        ${employee.info.Grupo}
-                    </p>
-                </div>
-            </div>
-        </div>
-
-        <div class="p-6 md:p-8 grid grid-cols-1 md:grid-cols-3 gap-6 md:gap-8 bg-white">
-            
-            <div class="flex items-start gap-4 p-3 rounded-xl hover:bg-gray-50 transition-colors">
-                <div class="p-3 ${iconBgClass} rounded-lg shrink-0">
-                    <svg xmlns="http://www.w3.org/2000/svg" class="h-6 w-6" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 21V5a2 2 0 00-2-2H7a2 2 0 00-2 2v16m14 0h2m-2 0h-5m-9 0H3m2 0h5M9 7h1m-1 4h1m4-4h1m-1 4h1m-5 10v-5a1 1 0 011-1h2a1 1 0 011 1v5m-4 0h4" />
-                    </svg>
-                </div>
-                <div>
-                    <p class="text-xs font-bold text-gray-400 uppercase tracking-wide mb-1">Célula / Projeto</p>
-                    <p class="text-gray-800 font-bold text-lg leading-tight">${employee.info.Célula}</p>
-                </div>
-            </div>
-
-            <div class="flex items-start gap-4 p-3 rounded-xl hover:bg-gray-50 transition-colors">
-                <div class="p-3 ${iconBgClass} rounded-lg shrink-0">
-                    <svg xmlns="http://www.w3.org/2000/svg" class="h-6 w-6" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M20.354 15.354A9 9 0 018.646 3.646 9.003 9.003 0 0012 21a9.003 9.003 0 008.354-5.646z" />
-                    </svg>
-                </div>
-                <div>
-                    <p class="text-xs font-bold text-gray-400 uppercase tracking-wide mb-1">Turno</p>
-                    <p class="text-gray-800 font-bold text-lg leading-tight">${employee.info.Turno || 'Padrão'}</p>
-                </div>
-            </div>
-
-            <div class="flex items-start gap-4 p-3 rounded-xl hover:bg-gray-50 transition-colors">
-                <div class="p-3 ${iconBgClass} rounded-lg shrink-0">
-                    <svg xmlns="http://www.w3.org/2000/svg" class="h-6 w-6" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z" />
-                    </svg>
-                </div>
-                <div>
-                    <p class="text-xs font-bold text-gray-400 uppercase tracking-wide mb-1">Horário de Trabalho</p>
-                    <p class="text-gray-800 font-bold text-lg leading-tight">${employee.info.Horário || '--:--'}</p>
-                </div>
-            </div>
-        </div>
-    `;
-
-    infoCard.classList.remove('hidden');
-    
-    // Animação de entrada suave (Slide up + Fade in)
-    setTimeout(() => {
-         infoCard.classList.remove('translate-y-4', 'opacity-0'); 
-    }, 50);
-   
-    calendarContainer.classList.remove('hidden');
-    updateCalendar(employee.schedule);
+                container.insertAdjacentHTML('beforeend', cardHTML);
+            }
+        }
+    }
 }
