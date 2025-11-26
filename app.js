@@ -1,4 +1,4 @@
-// app.js - Versão D (com Gráfico KPI centralizado)
+// app.js - Versão D (com Gráfico KPI centralizado e Tags Arredondadas Mobile)
 // Depende de: employeeMetadata (escala-data.js) e JSONs mensais em ./data/escala-YYYY-MM.json
 
 // ==========================================
@@ -26,7 +26,7 @@ let scheduleData = {};   // Estrutura final: { nome: { info, schedule: ['T'|'F'|
 let dailyChart = null;
 
 const daysOfWeek = ["Dom","Seg","Ter","Qua","Qui","Sex","Sáb"];
-const statusMap = { 'T':'Trabalhando','F':'Folga','FS':'Folga Sáb','FD':'Folga Dom','FE':'Férias','OFF-SHIFT':'Exp.Encerrado' };
+const statusMap = { 'T':'Trabalhando','F':'Folga','FS':'Folga Sáb','FD':'Folga Dom','FE':'Férias','OFF-SHIFT':'Exp. Encerrado' };
 
 // Helpers
 function pad(n){ return n < 10 ? '0' + n : '' + n; }
@@ -435,13 +435,14 @@ function updateDailyView() {
             offCount++;
         }
 
+        // ADICIONADO: rounded-full na tag span abaixo
         const itemHtml = `
             <li class="flex justify-between items-center text-sm p-3 rounded hover:bg-indigo-50 border-b border-gray-100 last:border-0 transition-colors">
                 <div class="flex flex-col">
                     <span class="font-semibold text-gray-700">${name}</span>
                     <span class="text-xs text-gray-400">${employee.info.Horário || employee.info.Horario || ''}</span>
                 </div>
-                <span class="day-status status-${displayStatus}">
+                <span class="day-status rounded-full status-${displayStatus}">
                     ${statusMap[displayStatus] || displayStatus}
                 </span>
             </li>
@@ -574,8 +575,9 @@ function updateCalendar(schedule) {
                 <div class="text-xs text-gray-500">${daysOfWeek[dayOfWeekIndex]}</div>
             `;
             
+            // ADICIONADO: rounded-full aqui para garantir o arredondamento na lista mobile
             const badge = document.createElement('span');
-            badge.className = `day-status status-${status}`;
+            badge.className = `day-status rounded-full status-${status}`;
             badge.textContent = displayStatus;
             
             li.appendChild(left);
@@ -766,4 +768,3 @@ function initGlobal() {
 }
 
 document.addEventListener('DOMContentLoaded', initGlobal);
-
