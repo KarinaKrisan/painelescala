@@ -15,7 +15,7 @@ const systemDay = currentDateObj.getDate();
 // ATENÇÃO: O mês aqui é zero-indexed (0 = Janeiro, 11 = Dezembro)
 const availableMonths = [
     { year: 2025, month: 10 }, // Novembro 2025 (Mês 10)
-    { year: 2025, month: 11 }, // Dezembro 2025 (Mês 11)
+    { year: 2025, month: 11 }//, // Dezembro 2025 (Mês 11)
     //{ year: 2026, month: 0 }   // Janeiro 2026 (Mês 0)
     // Para adicionar Fevereiro 2026, adicione: { year: 2026, month: 1 }
 ];
@@ -854,3 +854,4 @@ function initGlobal() {
 }
 
 document.addEventListener('DOMContentLoaded', initGlobal);
+
