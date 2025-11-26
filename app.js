@@ -1,4 +1,4 @@
-// app.js - Versão Atualizada (Lê Metadados do JSON Mensal)
+// app.js - Versão Final (Com correção automática de ano para Férias)
 // Depende de: JSONs mensais em ./data/escala-YYYY-MM.json
 
 // ==========================================
@@ -11,15 +11,15 @@ const systemYear = currentDateObj.getFullYear();
 const systemMonth = currentDateObj.getMonth();
 const systemDay = currentDateObj.getDate();
 
-// Ajuste de meses disponíveis 
-// IMPORTANTE: Adicionei Novembro como padrão inicial para testar seus dados
+// Ajuste de meses disponíveis
 const availableMonths = [
     { year: 2025, month: 10 }, // Novembro 2025
     { year: 2025, month: 11 }, // Dezembro 2025
     { year: 2026, month: 0 }   // Janeiro 2026
 ];
 
-// Tenta encontrar o mês atual, senão pega o primeiro da lista
+// Tenta encontrar o mês atual, senão pega o primeiro da lista (Novembro)
+// Para testar Dezembro direto, você pode forçar aqui, mas a interface permite trocar.
 let selectedMonthObj = availableMonths.find(m => m.year === systemYear && m.month === systemMonth) || availableMonths[0];
 let currentDay = systemDay;
 
@@ -43,7 +43,6 @@ async function loadMonthlyJson(year, month) {
         const resp = await fetch(filePath);
         if (!resp.ok) {
             console.warn('Arquivo de escala não encontrado:', filePath);
-            // Retorna vazio para não quebrar a tela, mas avisa
             return {};
         }
         const json = await resp.json();
@@ -55,7 +54,7 @@ async function loadMonthlyJson(year, month) {
 }
 
 // ==========================================
-// GERAÇÃO DE PADRÕES E PARSE DE DIAS
+// GERAÇÃO DE PADRÕES E PARSE DE DIAS (COM CORREÇÃO DE ANO)
 // ==========================================
 
 function generate12x36Schedule(startWorkingDay, totalDays) {
@@ -94,12 +93,25 @@ function parseDayListForMonth(dayString, monthObj) {
         if (dateRange) {
             let [, sD, sM, sY, eD, eM, eY] = dateRange;
             sD = parseInt(sD,10); sM = parseInt(sM,10)-1; eD = parseInt(eD,10); eM = parseInt(eM,10)-1;
+            
             const sYear = sY ? parseInt(sY,10) : monthObj.year;
-            const eYear = eY ? parseInt(eY,10) : monthObj.year;
+            
+            // CORREÇÃO INTELIGENTE DE ANO:
+            // Se o usuário não digitou o ano final, e o mês final for menor que o inicial (Ex: Dezembro -> Janeiro)
+            // Assumimos que virou o ano.
+            let eYear = eY ? parseInt(eY,10) : monthObj.year;
+            if (!eY && eM < sM) {
+                eYear++; 
+            }
+
             const start = new Date(sYear, sM, sD);
             const end = new Date(eYear, eM, eD);
+            
             for (let dt = new Date(start); dt <= end; dt.setDate(dt.getDate()+1)){
-                if (dt.getFullYear() === monthObj.year && dt.getMonth() === monthObj.month) days.add(dt.getDate());
+                // Só adicionamos ao Set se o dia cair dentro do mês que estamos visualizando
+                if (dt.getFullYear() === monthObj.year && dt.getMonth() === monthObj.month) {
+                    days.add(dt.getDate());
+                }
             }
             return;
         }
@@ -152,7 +164,7 @@ function buildFinalScheduleForMonth(employeeData, monthObj) {
     // Helper: transforma T (string ou array) em array de dias 'T'
     const parseTtoArray = (t) => {
         if (!t) return [];
-        // Se já é array de strings ('T','F'...) de tamanho completo, retorna ele
+        // Se já é array de strings ('T','F'...) de tamanho completo
         if (Array.isArray(t) && t.length === totalDays && typeof t[0] === 'string') return t;
         
         // Se é string '12x36...'
@@ -180,6 +192,27 @@ function buildFinalScheduleForMonth(employeeData, monthObj) {
             t.forEach(d => { if (d>=1 && d<=totalDays) arr[d-1] = 'T'; });
             return arr;
         }
+        // Se é array misto (strings e numeros) - Ex: ["segunda a sexta", 29, 30]
+        if (Array.isArray(t)) {
+             const arr = new Array(totalDays).fill('F');
+             let hasValid = false;
+             
+             // Processa string base se houver (ex: "segunda a sexta")
+             const baseString = t.find(x => typeof x === 'string');
+             if (baseString) {
+                  const baseArr = parseTtoArray(baseString);
+                  for(let k=0; k<totalDays; k++) if(baseArr[k]==='T') arr[k]='T';
+                  hasValid = true;
+             }
+             
+             // Processa numeros individuais
+             t.filter(x => typeof x === 'number').forEach(d => {
+                 if (d>=1 && d<=totalDays) { arr[d-1] = 'T'; hasValid = true; }
+             });
+
+             if (hasValid) return arr;
+        }
+
         return [];
     };
 
@@ -206,20 +239,16 @@ function buildFinalScheduleForMonth(employeeData, monthObj) {
         if (d>=1 && d<=totalDays && schedule[d-1] !== 'FE' && schedule[d-1] !== 'FD') schedule[d-1] = 'FS'; 
     });
 
-    // 4) Folgas Gerais (F)
+    // 4) Folgas Gerais (F) - Elas sobrescrevem T se colidirem, exceto Férias
     parseDayListForMonth(employeeData.F, monthObj).forEach(d => { 
-        if (d>=1 && d<=totalDays && !['FE','FD','FS'].includes(schedule[d-1])) schedule[d-1] = 'F'; 
+        if (d>=1 && d<=totalDays && !['FE'].includes(schedule[d-1])) schedule[d-1] = 'F'; 
     });
 
-    // 5) Preenche buracos com 'T' se necessário (fallback)
-    // Se o usuário passou um array numérico de T, o resto virou F no passo parseTtoArray.
-    // Se o usuário passou string vazia, assume T? Melhor assumir F se não tem info.
+    // 5) Preenche buracos com 'T' se necessário (fallback) ou F
     for (let i=0;i<totalDays;i++){
         if (!schedule[i]) {
-            // Se não foi definido nada, e T era "segunda a sexta", o parseT já cuidou.
-            // Se sobrou null, vamos assumir 'T' padrão apenas se T não estava vazio.
             if (employeeData.T) schedule[i] = 'T'; 
-            else schedule[i] = 'F'; // Segurança
+            else schedule[i] = 'F'; 
         }
     }
 
@@ -269,7 +298,7 @@ function isWorkingTime(timeRange) {
 }
 
 // ==========================================
-// REBUILD (LÓGICA NOVA: LÊ DO JSON CARREGADO)
+// REBUILD (LÊ DO JSON CARREGADO)
 // ==========================================
 function rebuildScheduleDataForSelectedMonth() {
     const monthObj = { year: selectedMonthObj.year, month: selectedMonthObj.month };
@@ -277,9 +306,8 @@ function rebuildScheduleDataForSelectedMonth() {
 
     scheduleData = {};
     
-    // Se o JSON estiver vazio, encerra
+    // Se o JSON estiver vazio
     if (!rawSchedule || Object.keys(rawSchedule).length === 0) {
-        // Limpa a tela
         console.warn("Sem dados para este mês.");
         updateDailyView();
         return;
@@ -288,8 +316,6 @@ function rebuildScheduleDataForSelectedMonth() {
     Object.keys(rawSchedule).forEach(name => {
         const empData = rawSchedule[name];
         
-        // Os metadados agora vêm do próprio JSON (empData).
-        // Se não tiver lá, tenta pegar do antigo employeeMetadata (se existir) como fallback.
         const metaInfo = {
             Grupo: empData.Grupo || 'Indefinido',
             Célula: empData.Célula || '-',
@@ -310,7 +336,7 @@ function rebuildScheduleDataForSelectedMonth() {
         const sliderMaxLabel = document.getElementById('sliderMaxLabel');
         if (sliderMaxLabel) sliderMaxLabel.textContent = `Dia ${totalDays}`;
         
-        // Se mudou de mês e o dia selecionado é maior que o total de dias do novo mês (ex: 31 -> 30)
+        // Se mudou de mês e o dia selecionado é maior que o total (ex: 31 -> 30)
         if (currentDay > totalDays) currentDay = totalDays;
         slider.value = currentDay;
     }
@@ -435,7 +461,6 @@ function updateDailyView() {
     const listVacation = document.getElementById('listVacation');
 
     if (Object.keys(scheduleData).length === 0) {
-        // Se não tiver dados
         kpiWorking.textContent = 0; kpiOffShift.textContent = 0; kpiOff.textContent = 0; kpiVacation.textContent = 0;
         listWorking.innerHTML = ''; listOffShift.innerHTML = ''; listOff.innerHTML = ''; listVacation.innerHTML = '';
         updateChart(0,0,0,0);
@@ -444,7 +469,7 @@ function updateDailyView() {
 
     Object.keys(scheduleData).forEach(name=>{
         const employee = scheduleData[name];
-        const status = employee.schedule[currentDay-1] || 'F'; // Default para F se undefined
+        const status = employee.schedule[currentDay-1] || 'F';
         let kpiStatus = status;
         let displayStatus = status;
 
@@ -499,10 +524,8 @@ function initSelect() {
     const select = document.getElementById('employeeSelect');
     if (!select) return;
     
-    // Limpa opções anteriores
     select.innerHTML = '<option value="">Selecione seu nome</option>';
     
-    // Popula com quem existe no JSON do mês atual
     const names = Object.keys(scheduleData).sort();
     names.forEach(name=>{
         const opt = document.createElement('option'); 
@@ -511,8 +534,10 @@ function initSelect() {
         select.appendChild(opt);
     });
 
-    select.removeEventListener('change', handleSelectChange); // Remove listener duplicado se houver
-    select.addEventListener('change', handleSelectChange);
+    // Remove listener anterior se existir
+    const newSelect = select.cloneNode(true);
+    select.parentNode.replaceChild(newSelect, select);
+    newSelect.addEventListener('change', handleSelectChange);
 }
 
 function handleSelectChange(e) {
@@ -729,7 +754,6 @@ function initDailyView() {
 }
 
 function initMonthSelect() {
-    // Remove se já existir para evitar duplicação em reloads
     const existing = document.getElementById('monthSelectWrapper');
     if(existing) existing.remove();
 
@@ -787,7 +811,6 @@ function initGlobal() {
         initTabs(); 
         initDailyView();
         
-        // Garante que o dia atual não estoure o max do mês
         const monthObj = { year: selectedMonthObj.year, month: selectedMonthObj.month };
         const totalDays = new Date(monthObj.year, monthObj.month+1, 0).getDate();
         currentDay = Math.min(systemDay, totalDays);
