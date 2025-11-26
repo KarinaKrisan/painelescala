@@ -1,4 +1,4 @@
-// app.js - Versão Final Robusta (Visual Cards Fim de Semana - Tags Mais Arredondadas)
+// app.js - Versão Final Robusta (Visual Cards Fim de Semana - Título Centralizado)
 // Depende de: JSONs mensais em ./data/escala-YYYY-MM.json
 
 // ==========================================
@@ -527,11 +527,11 @@ function updateWeekendTable() {
             if(satW.length || sunW.length) {
                 
                 // Função auxiliar para gerar as tags
-                // Alterado rounded-md para rounded-xl
+                // 'rounded-full' mantido para efeito pílula
                 const makeTags = (list, borderColorClass, textColorClass) => {
                     if(!list.length) return '<span class="text-gray-400 text-sm italic pl-1">Sem escala</span>';
                     return list.map(name => 
-                        `<span class="inline-block bg-white border ${borderColorClass} ${textColorClass} px-3 py-1 rounded-xl text-sm font-medium shadow-sm mb-2 mr-2">${name}</span>`
+                        `<span class="inline-block bg-white border ${borderColorClass} ${textColorClass} px-3 py-1 rounded-full text-sm font-medium shadow-sm mb-2 mr-2">${name}</span>`
                     ).join('');
                 };
 
@@ -542,9 +542,10 @@ function updateWeekendTable() {
                 const labelSat = `sábado (${fmtDate(satDate)})`;
                 const labelSun = sunDate ? `domingo (${fmtDate(sunDate)})` : 'domingo';
 
+                // ADICIONADO: 'justify-center' na div do header para centralizar o texto
                 const cardHTML = `
                 <div class="bg-white rounded-xl shadow-lg overflow-hidden border border-gray-100 mb-8 max-w-md mx-auto md:mx-0">
-                    <div class="bg-gradient-to-r from-blue-600 to-blue-500 p-4 flex items-center text-white shadow-md">
+                    <div class="bg-gradient-to-r from-blue-600 to-blue-500 p-4 flex items-center justify-center text-white shadow-md">
                         <svg class="w-5 h-5 mr-2 opacity-90" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8 7V3m8 4V3m-9 8h10M5 21h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z"></path></svg>
                         <h3 class="font-bold text-lg tracking-wide">Fim de Semana ${fmtDate(satDate)}</h3>
                     </div>
