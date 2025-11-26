@@ -1,4 +1,4 @@
-// app.js - Versão D (com Gráfico KPI centralizado e Tags Arredondadas Mobile)
+// app.js - Versão D (com Gráfico KPI centralizado e Cores de Alto Contraste)
 // Depende de: employeeMetadata (escala-data.js) e JSONs mensais em ./data/escala-YYYY-MM.json
 
 // ==========================================
@@ -298,7 +298,8 @@ const centerTextPlugin = {
         // SLA/Meta de exemplo (pode ser ajustado)
         const slaGoal = 75; 
         const isSlaMet = workingPct >= slaGoal;
-        const primaryColor = isSlaMet ? '#10b981' : '#ef4444'; // Green or Red
+        // Cores de texto mais fortes para contraste (Emerald 600 ou Red 600)
+        const primaryColor = isSlaMet ? '#059669' : '#dc2626'; 
         
         ctx.save();
         
@@ -337,8 +338,9 @@ function updateChart(working, off, offShift, vacation) {
         `Expediente Encerrado (${offShift})`,
         `Férias (${vacation})`
     ];
-    // Cores: Verde (Trabalhando), Amarelo (Folga), Rosa (Exp. Enc.), Vermelho (Férias)
-    const colors = ['#10b981','#fcd34d','#f9a8d4','#ef4444']; 
+    // CORES ATUALIZADAS PARA MAIOR CONTRASTE (Tons 600 do Tailwind)
+    // Verde, Amarelo (Amber), Fúcsia, Vermelho
+    const colors = ['#059669', '#d97706', '#c026d3', '#dc2626']; 
     
     const filteredData = [], filteredLabels = [], filteredColors = [];
     dataPoints.forEach((d,i)=>{ 
@@ -435,7 +437,6 @@ function updateDailyView() {
             offCount++;
         }
 
-        // ADICIONADO: rounded-full na tag span abaixo
         const itemHtml = `
             <li class="flex justify-between items-center text-sm p-3 rounded hover:bg-indigo-50 border-b border-gray-100 last:border-0 transition-colors">
                 <div class="flex flex-col">
@@ -575,7 +576,6 @@ function updateCalendar(schedule) {
                 <div class="text-xs text-gray-500">${daysOfWeek[dayOfWeekIndex]}</div>
             `;
             
-            // ADICIONADO: rounded-full aqui para garantir o arredondamento na lista mobile
             const badge = document.createElement('span');
             badge.className = `day-status rounded-full status-${status}`;
             badge.textContent = displayStatus;
