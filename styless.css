@@ -21,14 +21,13 @@ body {
 /* Classe utilitária para os status nas listas (Mobile e Visão Diária) */
 .day-status {
     display: inline-block;
-    padding: 0.25rem 0.75rem; /* Ajuste de espaçamento para ficar bonito */
-    border-radius: 9999px;    /* Bordas totalmente arredondadas (estilo pílula) */
+    padding: 0.25rem 0.75rem; 
+    border-radius: 9999px;    
     font-weight: 600;
     font-size: 0.8rem;
 }
 
 /* Calendar (Estilos para Desktop/Grid) */
-/* Este é o container que é adicionado no JS APENAS no desktop */
 @media (min-width: 768px) {
     .calendar-grid-container {
         display: grid;
@@ -42,7 +41,6 @@ body {
 }
 
 .calendar-cell {
-    /* Estilo de célula é mais relevante para o GRID (desktop) */
     background-color: white;
     min-height: 80px;
     padding: 8px;
@@ -59,11 +57,10 @@ body {
 .day-status-badge {
     text-align: center;
     padding: 2px 6px;
-    border-radius: 9999px; /* Alterado de 4px para 9999px (Arredondado) */
+    border-radius: 9999px;
     font-size: 0.75rem;
     font-weight: 600;
     line-height: 1.3;
-    /* Ajuste de margem para o mobile/list */
     margin-top: 4px;
 }
 @media (min-width: 768px) {
@@ -80,52 +77,45 @@ body {
     box-shadow: inset 0 0 0 3px #4f46e5; /* Indigo 600 */
 }
 
-/* Status Colors: keep names matching classes in app.js (status-T, status-F, status-FE, status-OFF-SHIFT, etc.) */
-
-/* Request 2: Cores mais vivas e contrastadas */
-/* Request 3: Bordas Arredondadas (adicionado border-radius: 9999px em todos) */
-
+/* Status Colors */
 .status-T {
-    background-color: #ECFDF5; /* Green 50 / 100 */
-    color: #065F46; /* Green 800 */
-    border: 1px solid #A7F3D0; /* Green 300 */
-    border-radius: 9999px; /* Arredondado */
-} /* Trabalhando */
+    background-color: #ECFDF5; 
+    color: #065F46; 
+    border: 1px solid #A7F3D0; 
+    border-radius: 9999px; 
+} 
 
 .status-F {
-    background-color: #FFFBEB; /* Amber 50 / 100 */
-    color: #92400E; /* Amber 800 */
-    border: 1px solid #FCD34D; /* Amber 400 */
-    border-radius: 9999px; /* Arredondado */
-} /* Folga (F) */
+    background-color: #FFFBEB; 
+    color: #92400E; 
+    border: 1px solid #FCD34D; 
+    border-radius: 9999px; 
+} 
 
 .status-FE {
-    background-color: #FEF2F2; /* Red 50 / 100 */
-    color: #991B1B; /* Red 800 */
-    border: 1px solid #FCA5A5; /* Red 400 */
-    border-radius: 9999px; /* Arredondado */
-} /* Férias (FE) */
+    background-color: #FEF2F2; 
+    color: #991B1B; 
+    border: 1px solid #FCA5A5; 
+    border-radius: 9999px; 
+} 
 
-/* EXPEDIENTE ENCERRADO: Fúcsia para maior contraste */
-.status-OFF-SHIFT {
-    background-color: #FAE8FF; /* Fuchsia 50 / 100 */
-    color: #86198F;             /* Fuchsia 800 */
-    border: 1px solid #F0ABFC; /* Fuchsia 400 */
-    border-radius: 9999px; /* Arredondado */
+.status-OFF-SHIFT, .status-F_EFFECTIVE {
+    background-color: #FAE8FF; 
+    color: #86198F;             
+    border: 1px solid #F0ABFC; 
+    border-radius: 9999px; 
 }
 
-/* Folga Sábado: Azul Claro */
 .status-FS {
-    background-color: #F0F9FF; /* Sky 50 / 100 */
-    color: #075985;             /* Sky 800 */
-    border: 1px solid #7DD3FC; /* Sky 300 */
-    border-radius: 9999px; /* Arredondado */
+    background-color: #F0F9FF; 
+    color: #075985;             
+    border: 1px solid #7DD3FC; 
+    border-radius: 9999px; 
 }
 
-/* Folga Domingo: Índigo */
 .status-FD {
-    background-color: #EEF2FF; /* Indigo 50 / 100 */
-    color: #3730A3;             /* Indigo 800 */
-    border: 1px solid #A5B4FC; /* Indigo 300 */
-    border-radius: 9999px; /* Arredondado */
+    background-color: #EEF2FF; 
+    color: #3730A3;             
+    border: 1px solid #A5B4FC; 
+    border-radius: 9999px; 
 }
