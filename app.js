@@ -1,4 +1,4 @@
-// app.js - Versão Final (Correção Inteligente de Virada de Ano)
+// app.js - Versão Final (Correção Inteligente de Virada de Ano + Cores Vibrantes)
 // Depende de: JSONs mensais em ./data/escala-YYYY-MM.json
 
 // ==========================================
@@ -16,7 +16,7 @@ const systemDay = currentDateObj.getDate();
 const availableMonths = [
     { year: 2025, month: 10 }, // Novembro 2025 (Mês 10)
     { year: 2025, month: 11 }, // Dezembro 2025 (Mês 11)
-    { year: 2026, month: 0 }   // Janeiro 2026 (Mês 0)
+    //{ year: 2026, month: 0 }   // Janeiro 2026 (Mês 0)
     // Para adicionar Fevereiro 2026, adicione: { year: 2026, month: 1 }
 ];
 
@@ -375,7 +375,8 @@ const centerTextPlugin = {
         
         const slaGoal = 75; 
         const isSlaMet = workingPct >= slaGoal;
-        const primaryColor = isSlaMet ? '#10b981' : '#ef4444';
+        // Cores vibrantes para o texto central também
+        const primaryColor = isSlaMet ? '#16a34a' : '#dc2626';
         
         ctx.save();
         const centerX = width / 2;
@@ -407,7 +408,13 @@ function updateChart(working, off, offShift, vacation) {
         `Expediente Encerrado (${offShift})`,
         `Férias (${vacation})`
     ];
-    const colors = ['#10b981','#fcd34d','#f9a8d4','#ef4444']; 
+    
+    // CORES VIBRANTES E CONTRASTANTES AQUI:
+    // Trabalhando: Green-600 (vibrante)
+    // Folga: Amber-500 (amarelo ouro forte)
+    // Exp. Encerrado: Fuchsia-600 (roxo vibrante)
+    // Férias: Red-600 (vermelho intenso)
+    const colors = ['#16a34a', '#f59e0b', '#c026d3', '#dc2626']; 
     
     const filteredData = [], filteredLabels = [], filteredColors = [];
     dataPoints.forEach((d,i)=>{ 
