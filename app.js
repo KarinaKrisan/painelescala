@@ -1,95 +1,576 @@
+// app.js - Versão Final Robusta (Correção de Ano + Tendência Mensal + IDs Corrigidos)
+// Depende de: JSONs mensais em ./data/escala-YYYY-MM.json
+
 // ==========================================
-// CARD DO COLABORADOR (DESIGN PREMIUM)
+// CONFIGURAÇÕES INICIAIS / UTILITÁRIAS
 // ==========================================
-function updatePersonalView(name) {
-    const employee = scheduleData[name];
-    if (!employee) return;
-    
-    const infoCard = document.getElementById('personalInfoCard');
-    const calendarContainer = document.getElementById('calendarContainer');
-    
-    // Definição de Cores baseada no Grupo (Líder vs Operador)
-    const isLeader = employee.info.Grupo === "Líder de Célula";
-    
-    // Degradê do cabeçalho
-    const gradientClass = isLeader 
-        ? 'bg-gradient-to-r from-purple-700 to-pink-600' 
-        : 'bg-gradient-to-r from-indigo-600 to-blue-600';
-        
-    // Cor dos ícones internos
-    const iconBgClass = isLeader ? 'bg-purple-50 text-purple-600' : 'bg-indigo-50 text-indigo-600';
+const currentDateObj = new Date();
+const monthNames = ["Janeiro","Fevereiro","Março","Abril","Maio","Junho","Julho","Agosto","Setembro","Outubro","Novembro","Dezembro"];
 
-    // Garante que o container esteja visível e limpa classes antigas de cor sólida
-    infoCard.className = `hidden bg-white rounded-2xl shadow-xl border border-gray-100 overflow-hidden mb-8 transition-all duration-500 ease-out transform translate-y-4 opacity-0`;
-    
-    // HTML do Novo Card
-    infoCard.innerHTML = `
-        <div class="${gradientClass} p-6 relative overflow-hidden">
-            <div class="absolute top-0 right-0 -mr-10 -mt-10 w-40 h-40 rounded-full bg-white opacity-10 blur-2xl"></div>
-            
-            <div class="relative z-10 flex items-center gap-5">
-                <div class="bg-white/20 backdrop-blur-sm p-3 rounded-full border border-white/30 shadow-inner">
-                    <svg xmlns="http://www.w3.org/2000/svg" class="h-8 w-8 text-white" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M16 7a4 4 0 11-8 0 4 4 0 018 0zM12 14a7 7 0 00-7 7h14a7 7 0 00-7-7z" />
-                    </svg>
-                </div>
-                
-                <div class="flex-1 text-white">
-                    <h2 class="text-2xl md:text-3xl font-bold tracking-tight leading-tight">${name}</h2>
-                    <p class="text-white/90 text-sm font-medium uppercase tracking-wider mt-1 opacity-90 border-l-2 border-white/40 pl-2">
-                        ${employee.info.Grupo}
-                    </p>
-                </div>
-            </div>
-        </div>
+const systemYear = currentDateObj.getFullYear();
+const systemMonth = currentDateObj.getMonth();
+const systemDay = currentDateObj.getDate();
 
-        <div class="p-6 md:p-8 grid grid-cols-1 md:grid-cols-3 gap-6 md:gap-8 bg-white">
-            
-            <div class="flex items-start gap-4 p-3 rounded-xl hover:bg-gray-50 transition-colors">
-                <div class="p-3 ${iconBgClass} rounded-lg shrink-0">
-                    <svg xmlns="http://www.w3.org/2000/svg" class="h-6 w-6" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 21V5a2 2 0 00-2-2H7a2 2 0 00-2 2v16m14 0h2m-2 0h-5m-9 0H3m2 0h5M9 7h1m-1 4h1m4-4h1m-1 4h1m-5 10v-5a1 1 0 011-1h2a1 1 0 011 1v5m-4 0h4" />
-                    </svg>
-                </div>
-                <div>
-                    <p class="text-xs font-bold text-gray-400 uppercase tracking-wide mb-1">Célula / Projeto</p>
-                    <p class="text-gray-800 font-bold text-lg leading-tight">${employee.info.Célula}</p>
-                </div>
-            </div>
+// Ajuste de meses disponíveis
+const availableMonths = [
+    { year: 2025, month: 10 }, // Novembro 2025 (Mês 10)
+    { year: 2025, month: 11 }//, // Dezembro 2025 (Mês 11)
+    //{ year: 2026, month: 0 }//, // Janeiro 2026 (Mês 0)
+    // Para adicionar Fevereiro 2026, adicione: { year: 2026, month: 1 }
+];
 
-            <div class="flex items-start gap-4 p-3 rounded-xl hover:bg-gray-50 transition-colors">
-                <div class="p-3 ${iconBgClass} rounded-lg shrink-0">
-                    <svg xmlns="http://www.w3.org/2000/svg" class="h-6 w-6" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M20.354 15.354A9 9 0 018.646 3.646 9.003 9.003 0 0012 21a9.003 9.003 0 008.354-5.646z" />
-                    </svg>
-                </div>
-                <div>
-                    <p class="text-xs font-bold text-gray-400 uppercase tracking-wide mb-1">Turno</p>
-                    <p class="text-gray-800 font-bold text-lg leading-tight">${employee.info.Turno || 'Padrão'}</p>
-                </div>
-            </div>
+let selectedMonthObj = availableMonths.find(m => m.year === systemYear && m.month === systemMonth) || availableMonths[0];
+let currentDay = systemDay;
 
-            <div class="flex items-start gap-4 p-3 rounded-xl hover:bg-gray-50 transition-colors">
-                <div class="p-3 ${iconBgClass} rounded-lg shrink-0">
-                    <svg xmlns="http://www.w3.org/2000/svg" class="h-6 w-6" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z" />
-                    </svg>
-                </div>
-                <div>
-                    <p class="text-xs font-bold text-gray-400 uppercase tracking-wide mb-1">Horário de Trabalho</p>
-                    <p class="text-gray-800 font-bold text-lg leading-tight">${employee.info.Horário || '--:--'}</p>
-                </div>
-            </div>
-        </div>
-    `;
+let rawSchedule = {};    
+let scheduleData = {};   
+let dailyChart = null;
+let isTrendMode = false; // Estado do Gráfico
 
-    infoCard.classList.remove('hidden');
-    
-    // Animação de entrada suave (Slide up + Fade in)
-    setTimeout(() => {
-         infoCard.classList.remove('translate-y-4', 'opacity-0'); 
-    }, 50);
-   
-    calendarContainer.classList.remove('hidden');
-    updateCalendar(employee.schedule);
+const daysOfWeek = ["Dom","Seg","Ter","Qua","Qui","Sex","Sáb"];
+const statusMap = { 'T':'Trabalhando','F':'Folga','FS':'Folga Sáb','FD':'Folga Dom','FE':'Férias','OFF-SHIFT':'Exp.Encerrado', 'F_EFFECTIVE': 'Exp.Encerrado' };
+
+function pad(n){ return n < 10 ? '0' + n : '' + n; }
+
+// ==========================================
+// CARREGAMENTO JSON
+// ==========================================
+async function loadMonthlyJson(year, month) {
+    const filePath = `./data/escala-${year}-${String(month+1).padStart(2,'0')}.json`;
+    try {
+        const resp = await fetch(filePath);
+        if (!resp.ok) return {};
+        return await resp.json();
+    } catch (err) {
+        console.error('Erro ao carregar JSON:', err);
+        return {};
+    }
 }
+
+// ==========================================
+// LÓGICA DE PARSE E GERAÇÃO DE ESCALA
+// ==========================================
+function generate12x36Schedule(startWorkingDay, totalDays) {
+    const schedule = new Array(totalDays).fill('F');
+    for (let d = startWorkingDay; d <= totalDays; d += 2) schedule[d-1] = 'T';
+    return schedule;
+}
+
+function generate5x2ScheduleDefaultForMonth(monthObj) {
+    const totalDays = new Date(monthObj.year, monthObj.month+1, 0).getDate();
+    const arr = [];
+    for (let d=1; d<=totalDays; d++){
+        const dow = new Date(monthObj.year, monthObj.month, d).getDay();
+        arr.push((dow===0||dow===6) ? 'F' : 'T');
+    }
+    return arr;
+}
+
+function parseDayListForMonth(dayString, monthObj) {
+    if (!dayString) return [];
+    const totalDays = new Date(monthObj.year, monthObj.month+1, 0).getDate();
+    const days = new Set();
+    const normalized = String(dayString).replace(/\b(at[eé]|até|a)\b/gi,' a ').replace(/–|—/g,'-').replace(/\s+/g,' ').trim();
+    const parts = normalized.split(',').map(p=>p.trim()).filter(p=>p.length>0);
+
+    parts.forEach(part=>{
+        const dateRange = part.match(/^(\d{1,2})\/(\d{1,2})(?:\/(\d{2,4}))?\s*(?:a|-)\s*(\d{1,2})\/(\d{1,2})(?:\/(\d{2,4}))?$/);
+        if (dateRange) {
+            let [, sD, sM, sY, eD, eM, eY] = dateRange;
+            sD = parseInt(sD,10); sM = parseInt(sM,10)-1; eD = parseInt(eD,10); eM = parseInt(eM,10)-1;
+            let sYear = sY ? parseInt(sY,10) : monthObj.year;
+            let eYear = eY ? parseInt(eY,10) : monthObj.year;
+            
+            // Correção virada de ano
+            if (!sY && !eY && sM > eM) {
+                if (monthObj.month <= eM) { sYear--; eYear = monthObj.year; } 
+                else { sYear = monthObj.year; eYear++; }
+            }
+            
+            const start = new Date(sYear, sM, sD);
+            const end = new Date(eYear, eM, eD);
+            for (let dt = new Date(start); dt <= end; dt.setDate(dt.getDate()+1)){
+                if (dt.getFullYear() === monthObj.year && dt.getMonth() === monthObj.month) days.add(dt.getDate());
+            }
+            return;
+        }
+
+        const single = part.match(/^(\d{1,2})\/(\d{1,2})(?:\/(\d{2,4}))?$/);
+        if (single) {
+            const d = parseInt(single[1],10), m = parseInt(single[2],10)-1;
+            const y = single[3] ? parseInt(single[3],10) : monthObj.year;
+            if (m === monthObj.month && y === monthObj.year) days.add(d);
+            return;
+        }
+        
+        const simple = part.match(/^(\d{1,2})-(\d{1,2})$/);
+        if (simple) { for(let x=parseInt(simple[1]); x<=parseInt(simple[2]); x++) if(x>=1 && x<=totalDays) days.add(x); return; }
+        
+        const number = part.match(/^(\d{1,2})$/);
+        if (number) { const v=parseInt(number[1]); if(v>=1 && v<=totalDays) days.add(v); return; }
+
+        if (/fins? de semana|fim de semana/i.test(part)) {
+            for (let d=1; d<=totalDays; d++){ const dow = new Date(monthObj.year, monthObj.month, d).getDay(); if (dow===0||dow===6) days.add(d); }
+            return;
+        }
+        if (/segunda a sexta/i.test(part)) {
+            for (let d=1; d<=totalDays; d++){ const dow = new Date(monthObj.year, monthObj.month, d).getDay(); if (dow>=1 && dow<=5) days.add(d); }
+            return;
+        }
+    });
+    return Array.from(days).sort((a,b)=>a-b);
+}
+
+function buildFinalScheduleForMonth(employeeData, monthObj) {
+    const totalDays = new Date(monthObj.year, monthObj.month+1, 0).getDate();
+    const schedule = new Array(totalDays).fill(null);
+
+    const parseTtoArray = (t) => {
+        if (!t) return [];
+        if (Array.isArray(t) && t.length === totalDays && typeof t[0] === 'string') return t;
+        if (typeof t === 'string' && /12x36/i.test(t)) {
+            const m = t.match(/iniciado no dia\s*(\d{1,2})/i);
+            return generate12x36Schedule(m ? parseInt(m[1]) : 1, totalDays);
+        }
+        if (typeof t === 'string' && /segunda a sexta/i.test(t)) return generate5x2ScheduleDefaultForMonth(monthObj);
+        if (typeof t === 'string') {
+            const parsed = parseDayListForMonth(t, monthObj);
+            if(parsed.length){ const a=new Array(totalDays).fill('F'); parsed.forEach(d=>a[d-1]='T'); return a; }
+        }
+        if (Array.isArray(t)) {
+            const arr = new Array(totalDays).fill('F');
+            let hasValid = false;
+            const baseStr = t.find(x=>typeof x==='string');
+            if(baseStr) { const b=parseTtoArray(baseStr); for(let k=0;k<totalDays;k++) if(b[k]==='T') arr[k]='T'; hasValid=true; }
+            t.filter(x=>typeof x==='number').forEach(d=>{ if(d>=1 && d<=totalDays){ arr[d-1]='T'; hasValid=true; }});
+            if(hasValid) return arr;
+        }
+        return [];
+    };
+
+    const vacDays = parseDayListForMonth(employeeData.FE, monthObj);
+    vacDays.forEach(d => { if (d>=1 && d<=totalDays) schedule[d-1] = 'FE'; });
+
+    const tParsed = parseTtoArray(employeeData.T);
+    if (Array.isArray(tParsed) && tParsed.length === totalDays) {
+        for (let i=0; i<totalDays; i++) { if (schedule[i] !== 'FE' && tParsed[i] === 'T') schedule[i] = 'T'; }
+    }
+
+    parseDayListForMonth(employeeData.FD, monthObj).forEach(d => { if(schedule[d-1]!=='FE') schedule[d-1]='FD'; });
+    parseDayListForMonth(employeeData.FS, monthObj).forEach(d => { if(schedule[d-1]!=='FE' && schedule[d-1]!=='FD') schedule[d-1]='FS'; });
+    parseDayListForMonth(employeeData.F, monthObj).forEach(d => { if(schedule[d-1]!=='FE') schedule[d-1]='F'; });
+
+    for (let i=0;i<totalDays;i++) if (!schedule[i]) schedule[i] = employeeData.T ? 'T' : 'F';
+    return schedule;
+}
+
+function parseSingleTimeRange(rangeStr) {
+    if (!rangeStr || typeof rangeStr !== 'string') return null;
+    const m = rangeStr.match(/(\d{1,2}):(\d{2})\s*às\s*(\d{1,2}):(\d{2})/);
+    if (!m) return null;
+    return { startTotal: parseInt(m[1])*60 + parseInt(m[2]), endTotal: parseInt(m[3])*60 + parseInt(m[4]) };
+}
+
+function isWorkingTime(timeRange) {
+    if (!timeRange || /12x36/i.test(timeRange)) return true;
+    const now = new Date();
+    const curr = now.getHours()*60 + now.getMinutes();
+    const ranges = Array.isArray(timeRange) ? timeRange : [timeRange];
+    
+    for (const r of ranges) {
+        const p = parseSingleTimeRange(r);
+        if (!p) continue;
+        if (p.startTotal > p.endTotal) { if (curr >= p.startTotal || curr <= p.endTotal) return true; }
+        else { if (curr >= p.startTotal && curr <= p.endTotal) return true; }
+    }
+    return false;
+}
+
+function rebuildScheduleDataForSelectedMonth() {
+    const monthObj = { year: selectedMonthObj.year, month: selectedMonthObj.month };
+    scheduleData = {};
+    if (!rawSchedule) return;
+
+    Object.keys(rawSchedule).forEach(name => {
+        scheduleData[name] = {
+            info: rawSchedule[name],
+            schedule: buildFinalScheduleForMonth(rawSchedule[name], monthObj)
+        };
+    });
+
+    const totalDays = new Date(monthObj.year, monthObj.month+1, 0).getDate();
+    const slider = document.getElementById('dateSlider');
+    if (slider) {
+        slider.max = totalDays;
+        document.getElementById('sliderMaxLabel').textContent = `Dia ${totalDays}`;
+        if (currentDay > totalDays) currentDay = totalDays;
+        slider.value = currentDay;
+    }
+    initSelect();
+}
+
+// ==========================================
+// FUNÇÕES DE GRÁFICO (DONUT E LINHA)
+// ==========================================
+
+function toggleChartMode() {
+    isTrendMode = !isTrendMode;
+    const btn = document.getElementById("btnToggleChart");
+    const title = document.getElementById("chartTitle");
+    
+    if (isTrendMode) {
+        if(btn) btn.textContent = "Ver Visão Diária";
+        if(title) title.textContent = "Tendência de Capacidade (Mês)";
+        renderMonthlyTrendChart();
+    } else {
+        if(btn) btn.textContent = "Ver Tendência Mensal";
+        if(title) title.textContent = "Capacidade Operacional Atual";
+        updateDailyView();
+    }
+}
+
+const centerTextPlugin = {
+    id: 'centerTextPlugin',
+    beforeDraw: (chart) => {
+        if (chart.config.type !== 'doughnut') return;
+        const { ctx, width, height, data } = chart;
+        const total = data.datasets[0].data.reduce((a, b) => a + b, 0);
+        const wIdx = data.labels.findIndex(l => l.includes('Trabalhando'));
+        const wCount = wIdx !== -1 ? data.datasets[0].data[wIdx] : 0;
+        const pct = total > 0 ? ((wCount / total) * 100).toFixed(0) : 0;
+        
+        ctx.save();
+        ctx.font = 'bolder 3rem sans-serif';
+        ctx.fillStyle = pct >= 75 ? '#10b981' : '#ef4444';
+        ctx.textAlign = 'center';
+        ctx.textBaseline = 'middle';
+        ctx.fillText(`${pct}%`, width/2, height/2 - 15);
+        ctx.font = '500 0.8rem sans-serif';
+        ctx.fillStyle = '#6b7280';
+        ctx.fillText('CAPACIDADE', width/2, height/2 + 25);
+        ctx.restore();
+    }
+};
+
+function renderMonthlyTrendChart() {
+    const monthObj = { year: selectedMonthObj.year, month: selectedMonthObj.month };
+    const totalDays = new Date(monthObj.year, monthObj.month + 1, 0).getDate();
+    
+    const labels = [];
+    const dataPoints = [];
+    const pointColors = [];
+
+    for (let d = 1; d <= totalDays; d++) {
+        let working = 0;
+        let totalStaff = 0;
+
+        Object.keys(scheduleData).forEach(name => {
+            const employee = scheduleData[name];
+            if(!employee.schedule) return;
+            const status = employee.schedule[d-1];
+            
+            if (status === 'T') working++;
+            if (status !== 'FE') totalStaff++;
+        });
+
+        const percentage = totalStaff > 0 ? ((working / totalStaff) * 100).toFixed(0) : 0;
+        labels.push(d);
+        dataPoints.push(percentage);
+        pointColors.push(percentage < 75 ? '#ef4444' : '#10b981');
+    }
+
+    const ctx = document.getElementById('dailyChart').getContext('2d');
+    if (dailyChart) { dailyChart.destroy(); dailyChart = null; }
+
+    dailyChart = new Chart(ctx, {
+        type: 'line',
+        data: {
+            labels: labels,
+            datasets: [{
+                label: 'Capacidade (%)',
+                data: dataPoints,
+                borderColor: '#4f46e5',
+                backgroundColor: 'rgba(79, 70, 229, 0.1)',
+                pointBackgroundColor: pointColors,
+                pointRadius: 4,
+                pointHoverRadius: 7,
+                fill: true,
+                tension: 0.3
+            }]
+        },
+        options: {
+            responsive: true,
+            maintainAspectRatio: false,
+            interaction: { mode: 'index', intersect: false },
+            plugins: {
+                legend: { display: false },
+                tooltip: { callbacks: { label: (c) => ` ${c.raw}% da Equipe` } },
+                centerTextPlugin: false
+            },
+            scales: {
+                y: { min: 0, max: 100, ticks: { callback: v => v+'%' }, grid: { color: '#f3f4f6' } },
+                x: { grid: { display: false } }
+            },
+            onClick: (e, activeEls) => {
+                if(activeEls.length > 0) {
+                    const day = activeEls[0].index + 1;
+                    currentDay = day;
+                    const slider = document.getElementById('dateSlider');
+                    if(slider) slider.value = day;
+                    toggleChartMode();
+                }
+            }
+        },
+        plugins: [{
+            id: 'targetLine',
+            beforeDraw: (chart) => {
+                const { ctx, chartArea: { left, right }, scales: { y } } = chart;
+                const yValue = y.getPixelForValue(75);
+                if(yValue) {
+                    ctx.save();
+                    ctx.beginPath();
+                    ctx.strokeStyle = '#9ca3af';
+                    ctx.lineWidth = 1;
+                    ctx.setLineDash([5, 5]);
+                    ctx.moveTo(left, yValue);
+                    ctx.lineTo(right, yValue);
+                    ctx.stroke();
+                    ctx.fillStyle = '#6b7280';
+                    ctx.font = '10px sans-serif';
+                    ctx.fillText('Meta 75%', left + 5, yValue - 5);
+                    ctx.restore();
+                }
+            }
+        }]
+    });
+}
+
+function updateDailyChartDonut(working, off, offShift, vacation) {
+    const labels = [`Trabalhando (${working})`, `Folga (${off})`, `Encerrado (${offShift})`, `Férias (${vacation})`];
+    const rawColors = ['#10b981','#fcd34d','#f9a8d4','#ef4444'];
+    const fData=[], fLabels=[], fColors=[];
+    [working, off, offShift, vacation].forEach((d,i)=>{ 
+        if(d>0 || (working+off+offShift+vacation)===0){ fData.push(d); fLabels.push(labels[i]); fColors.push(rawColors[i]); }
+    });
+
+    const ctx = document.getElementById('dailyChart').getContext('2d');
+    if (dailyChart) {
+        if (dailyChart.config.type !== 'doughnut') {
+            dailyChart.destroy();
+            dailyChart = null;
+        }
+    }
+
+    if (!dailyChart) {
+        dailyChart = new Chart(ctx, {
+            type: 'doughnut',
+            data: { labels: fLabels, datasets:[{ data: fData, backgroundColor: fColors, hoverOffset:4 }] },
+            options: {
+                responsive: true,
+                maintainAspectRatio: false,
+                cutout: '70%',
+                plugins: { legend: { position:'bottom', labels:{ padding:15, boxWidth: 10 } } }
+            },
+            plugins: [centerTextPlugin]
+        });
+    } else {
+        dailyChart.data.labels = fLabels;
+        dailyChart.data.datasets[0].data = fData;
+        dailyChart.data.datasets[0].backgroundColor = fColors;
+        dailyChart.update();
+    }
+}
+
+function updateDailyView() {
+    if (isTrendMode) {
+        isTrendMode = false;
+        const btn = document.getElementById("btnToggleChart");
+        if(btn) btn.textContent = "Ver Tendência Mensal";
+        const title = document.getElementById("chartTitle");
+        if(title) title.textContent = "Capacidade Operacional Atual";
+    }
+
+    const currentDateLabel = document.getElementById('currentDateLabel');
+    const monthObj = { year: selectedMonthObj.year, month: selectedMonthObj.month };
+    const dayOfWeekIndex = new Date(monthObj.year, monthObj.month, currentDay).getDay();
+    const now = new Date();
+    const isToday = (now.getDate() === currentDay && now.getMonth() === systemMonth && now.getFullYear() === systemYear);
+    
+    currentDateLabel.textContent = `${daysOfWeek[dayOfWeekIndex]}, ${pad(currentDay)}/${pad(monthObj.month+1)}/${monthObj.year}`;
+
+    let w=0, o=0, v=0, os=0;
+    let wH='', oH='', vH='', osH='';
+
+    if (Object.keys(scheduleData).length === 0) {
+        updateDailyChartDonut(0,0,0,0);
+        return;
+    }
+
+    Object.keys(scheduleData).forEach(name=>{
+        const emp = scheduleData[name];
+        let status = emp.schedule[currentDay-1] || 'F';
+        let display = status;
+
+        if (status === 'FE') { v++; display='FE'; }
+        else if (isToday && status === 'T') {
+            if (!isWorkingTime(emp.info.Horário)) { os++; display='OFF-SHIFT'; status='F_EFFECTIVE'; }
+            else w++;
+        }
+        else if (status === 'T') w++;
+        else o++; 
+
+        const row = `
+            <li class="flex justify-between items-center text-sm p-3 rounded hover:bg-indigo-50 border-b border-gray-100 last:border-0 transition-colors">
+                <div class="flex flex-col"><span class="font-semibold text-gray-700">${name}</span><span class="text-xs text-gray-400">${emp.info.Horário||''}</span></div>
+                <span class="day-status status-${display}">${statusMap[display]||display}</span>
+            </li>`;
+
+        if (status==='T') wH+=row;
+        else if (status==='F_EFFECTIVE') osH+=row;
+        else if (['FE'].includes(status)) vH+=row;
+        else oH+=row;
+    });
+
+    document.getElementById('kpiWorking').textContent = w;
+    document.getElementById('kpiOffShift').textContent = os;
+    document.getElementById('kpiOff').textContent = o;
+    document.getElementById('kpiVacation').textContent = v;
+
+    document.getElementById('listWorking').innerHTML = wH || '<li class="text-gray-400 text-sm text-center py-4">Ninguém.</li>';
+    document.getElementById('listOffShift').innerHTML = osH || '<li class="text-gray-400 text-sm text-center py-4">Ninguém.</li>';
+    document.getElementById('listOff').innerHTML = oH || '<li class="text-gray-400 text-sm text-center py-4">Ninguém.</li>';
+    document.getElementById('listVacation').innerHTML = vH || '<li class="text-gray-400 text-sm text-center py-4">Ninguém.</li>';
+
+    updateDailyChartDonut(w, o, os, v);
+}
+
+// ==========================================
+// VIEWS PESSOAL & INICIALIZAÇÃO
+// ==========================================
+function initSelect() {
+    const select = document.getElementById('employeeSelect');
+    if (!select) return;
+    select.innerHTML = '<option value="">Selecione seu nome</option>';
+    Object.keys(scheduleData).sort().forEach(name=>{
+        const opt = document.createElement('option'); opt.value=name; opt.textContent=name; select.appendChild(opt);
+    });
+    const newSelect = select.cloneNode(true);
+    select.parentNode.replaceChild(newSelect, select);
+    newSelect.addEventListener('change', e => {
+        const name = e.target.value;
+        if(name) updatePersonalView(name);
+        else document.getElementById('personalInfoCard').classList.add('hidden');
+    });
+}
+
+function updatePersonalView(name) {
+    const emp = scheduleData[name];
+    if (!emp) return;
+    const card = document.getElementById('personalInfoCard');
+    const isLeader = emp.info.Grupo === "Líder de Célula";
+    card.className = `hidden ${isLeader?'bg-purple-700':'bg-indigo-600'} p-6 rounded-xl mb-6 shadow-xl text-white flex flex-col transition-opacity duration-300 opacity-100`;
+    card.innerHTML = `<h2 class="text-2xl font-bold">${name}</h2><p>${emp.info.Grupo} - ${emp.info.Horário}</p>`;
+    card.classList.remove('hidden');
+    document.getElementById('calendarContainer').classList.remove('hidden');
+    updateCalendar(emp.schedule);
+}
+
+function updateCalendar(schedule) {
+    const grid = document.getElementById('calendarGrid');
+    const isMobile = window.innerWidth <= 767;
+    grid.innerHTML = '';
+    
+    if(isMobile) {
+        grid.className = 'space-y-2';
+        schedule.forEach((st, i) => {
+            grid.insertAdjacentHTML('beforeend', `<div class="flex justify-between bg-white p-3 rounded shadow status-${st}"><span>Dia ${i+1}</span><span>${statusMap[st]||st}</span></div>`);
+        });
+    } else {
+        grid.className = 'calendar-grid-container';
+        const m = { y: selectedMonthObj.year, mo: selectedMonthObj.month };
+        const empty = new Date(m.y, m.mo, 1).getDay();
+        for(let i=0;i<empty;i++) grid.insertAdjacentHTML('beforeend','<div class="calendar-cell bg-gray-50"></div>');
+        schedule.forEach((st, i) => {
+             grid.insertAdjacentHTML('beforeend', `<div class="calendar-cell bg-white border"><div class="day-number">${i+1}</div><div class="day-status-badge status-${st}">${statusMap[st]||st}</div></div>`);
+        });
+    }
+}
+
+function updateWeekendTable() {
+    const container = document.getElementById('weekendPlantaoContainer');
+    if (!container) return;
+    container.innerHTML = '';
+    const m = { y: selectedMonthObj.year, mo: selectedMonthObj.month };
+    const total = new Date(m.y, m.mo+1, 0).getDate();
+    
+    for (let d=1; d<=total; d++){
+        const dow = new Date(m.y, m.mo, d).getDay();
+        if (dow === 6) { 
+            const sat = d, sun = d+1 <= total ? d+1 : null;
+            let satW=[], sunW=[];
+            Object.keys(scheduleData).forEach(n=>{
+                if(scheduleData[n].schedule[sat-1]==='T') satW.push(n);
+                if(sun && scheduleData[n].schedule[sun-1]==='T') sunW.push(n);
+            });
+            if(satW.length || sunW.length) {
+                container.insertAdjacentHTML('beforeend', 
+                    `<div class="bg-white p-4 rounded shadow border">
+                        <h3 class="font-bold text-indigo-700 mb-2">Fim de Semana ${sat}/${m.mo+1}</h3>
+                        <p class="text-sm"><strong>Sáb:</strong> ${satW.join(', ') || '-'}</p>
+                        <p class="text-sm"><strong>Dom:</strong> ${sunW.join(', ') || '-'}</p>
+                    </div>`
+                );
+            }
+        }
+    }
+}
+
+function initTabs() {
+    document.querySelectorAll('.tab-button').forEach(b => {
+        b.addEventListener('click', () => {
+            document.querySelectorAll('.tab-button').forEach(x=>x.classList.remove('active'));
+            document.querySelectorAll('.tab-content').forEach(x=>x.classList.add('hidden'));
+            b.classList.add('active');
+            document.getElementById(`${b.dataset.tab}View`).classList.remove('hidden');
+            if(b.dataset.tab==='personal') updateWeekendTable();
+        });
+    });
+}
+
+function initGlobal() {
+    loadMonthlyJson(selectedMonthObj.year, selectedMonthObj.month).then(json => {
+        rawSchedule = json;
+        initTabs();
+        
+        const header = document.querySelector('header');
+        if(!document.getElementById('monthSel')) {
+            const sel = document.createElement('select'); sel.id='monthSel';
+            sel.className = 'mt-2 p-2 rounded border';
+            availableMonths.forEach(m => {
+                const opt = document.createElement('option'); opt.value=`${m.year}-${m.month}`;
+                opt.textContent = `${monthNames[m.month]}/${m.year}`;
+                if(m.month===selectedMonthObj.month) opt.selected=true;
+                sel.appendChild(opt);
+            });
+            sel.addEventListener('change', e=>{
+                const [y,mo] = e.target.value.split('-').map(Number);
+                selectedMonthObj={year:y, month:mo};
+                initGlobal(); 
+            });
+            header.appendChild(sel);
+        }
+
+        rebuildScheduleDataForSelectedMonth();
+        
+        const ds = document.getElementById('dateSlider');
+        if (ds) ds.addEventListener('input', e => { currentDay = parseInt(e.target.value); updateDailyView(); });
+
+        updateDailyView();
+        
+        const now = new Date(), night = new Date(now);
+        night.setHours(24,0,0,0);
+        setTimeout(() => location.reload(), night - now);
+    });
+}
+
+document.addEventListener('DOMContentLoaded', initGlobal);
