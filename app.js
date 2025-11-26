@@ -1,4 +1,4 @@
-// app.js - Versão Completa com Gráfico de Tendência e Correção de Ano
+// app.js - Versão Final Robusta (Correção de Ano + Tendência Mensal + IDs Corrigidos)
 // Depende de: JSONs mensais em ./data/escala-YYYY-MM.json
 
 // ==========================================
@@ -11,12 +11,11 @@ const systemYear = currentDateObj.getFullYear();
 const systemMonth = currentDateObj.getMonth();
 const systemDay = currentDateObj.getDate();
 
-// Ajuste de meses disponíveis (Exemplo: Nov/25, Dez/25, Jan/26)
+// Ajuste de meses disponíveis
 const availableMonths = [
-    { year: 2025, month: 10 }, // Novembro 2025 (Mês 10)
-    { year: 2025, month: 11 }//, // Dezembro 2025 (Mês 11)
-    //{ year: 2026, month: 0 }//, // Janeiro 2026 (Mês 0)
-    // Para adicionar Fevereiro 2026, adicione: { year: 2026, month: 1 }
+    { year: 2025, month: 10 }, 
+    { year: 2025, month: 11 }, 
+    { year: 2026, month: 0 }   
 ];
 
 let selectedMonthObj = availableMonths.find(m => m.year === systemYear && m.month === systemMonth) || availableMonths[0];
@@ -25,7 +24,7 @@ let currentDay = systemDay;
 let rawSchedule = {};    
 let scheduleData = {};   
 let dailyChart = null;
-let isTrendMode = false; // Estado do gráfico (Donut vs Linha)
+let isTrendMode = false; // Estado do Gráfico
 
 const daysOfWeek = ["Dom","Seg","Ter","Qua","Qui","Sex","Sáb"];
 const statusMap = { 'T':'Trabalhando','F':'Folga','FS':'Folga Sáb','FD':'Folga Dom','FE':'Férias','OFF-SHIFT':'Exp.Encerrado', 'F_EFFECTIVE': 'Exp.Encerrado' };
@@ -213,25 +212,26 @@ function rebuildScheduleDataForSelectedMonth() {
 // FUNÇÕES DE GRÁFICO (DONUT E LINHA)
 // ==========================================
 
-// Alterna entre os modos de gráfico
 function toggleChartMode() {
     isTrendMode = !isTrendMode;
-    const btn = document.querySelector("button[onclick='toggleChartMode()']");
+    const btn = document.getElementById("btnToggleChart");
+    const title = document.getElementById("chartTitle");
     
     if (isTrendMode) {
         if(btn) btn.textContent = "Ver Visão Diária";
+        if(title) title.textContent = "Tendência de Capacidade (Mês)";
         renderMonthlyTrendChart();
     } else {
         if(btn) btn.textContent = "Ver Tendência Mensal";
+        if(title) title.textContent = "Capacidade Operacional Atual";
         updateDailyView();
     }
 }
 
-// Plugin para texto no centro do Donut
 const centerTextPlugin = {
     id: 'centerTextPlugin',
     beforeDraw: (chart) => {
-        if (chart.config.type !== 'doughnut') return; // Não desenha se for linha
+        if (chart.config.type !== 'doughnut') return;
         const { ctx, width, height, data } = chart;
         const total = data.datasets[0].data.reduce((a, b) => a + b, 0);
         const wIdx = data.labels.findIndex(l => l.includes('Trabalhando'));
@@ -251,11 +251,7 @@ const centerTextPlugin = {
     }
 };
 
-// Renderiza o Gráfico de Linha (Tendência)
 function renderMonthlyTrendChart() {
-    const title = document.getElementById("chartTitle");
-    if(title) title.textContent = "Tendência de Capacidade (Mês)";
-    
     const monthObj = { year: selectedMonthObj.year, month: selectedMonthObj.month };
     const totalDays = new Date(monthObj.year, monthObj.month + 1, 0).getDate();
     
@@ -272,8 +268,6 @@ function renderMonthlyTrendChart() {
             if(!employee.schedule) return;
             const status = employee.schedule[d-1];
             
-            // T = Trabalhando. FE = Férias (não conta na força total disponível do dia para cálculo de % real)
-            // Lógica: Capacidade = Pessoas Disponíveis (não férias) que estão trabalhando
             if (status === 'T') working++;
             if (status !== 'FE') totalStaff++;
         });
@@ -284,9 +278,9 @@ function renderMonthlyTrendChart() {
         pointColors.push(percentage < 75 ? '#ef4444' : '#10b981');
     }
 
-    if (dailyChart) dailyChart.destroy();
-
     const ctx = document.getElementById('dailyChart').getContext('2d');
+    if (dailyChart) { dailyChart.destroy(); dailyChart = null; }
+
     dailyChart = new Chart(ctx, {
         type: 'line',
         data: {
@@ -306,21 +300,23 @@ function renderMonthlyTrendChart() {
         options: {
             responsive: true,
             maintainAspectRatio: false,
+            interaction: { mode: 'index', intersect: false },
             plugins: {
                 legend: { display: false },
-                tooltip: { callbacks: { label: (c) => `${c.raw}% Capacidade` } },
-                centerTextPlugin: false // Desativa o texto central no modo linha
+                tooltip: { callbacks: { label: (c) => ` ${c.raw}% da Equipe` } },
+                centerTextPlugin: false
             },
             scales: {
-                y: { min: 0, max: 100, ticks: { callback: v => v+'%' } },
+                y: { min: 0, max: 100, ticks: { callback: v => v+'%' }, grid: { color: '#f3f4f6' } },
                 x: { grid: { display: false } }
             },
             onClick: (e, activeEls) => {
                 if(activeEls.length > 0) {
                     const day = activeEls[0].index + 1;
                     currentDay = day;
-                    document.getElementById('dateSlider').value = day;
-                    toggleChartMode(); // Volta para a visão diária
+                    const slider = document.getElementById('dateSlider');
+                    if(slider) slider.value = day;
+                    toggleChartMode();
                 }
             }
         },
@@ -329,76 +325,68 @@ function renderMonthlyTrendChart() {
             beforeDraw: (chart) => {
                 const { ctx, chartArea: { left, right }, scales: { y } } = chart;
                 const yValue = y.getPixelForValue(75);
-                ctx.save();
-                ctx.beginPath();
-                ctx.strokeStyle = '#9ca3af';
-                ctx.lineWidth = 1;
-                ctx.setLineDash([5, 5]);
-                ctx.moveTo(left, yValue);
-                ctx.lineTo(right, yValue);
-                ctx.stroke();
-                ctx.fillStyle = '#6b7280';
-                ctx.font = '10px sans-serif';
-                ctx.fillText('Meta 75%', left + 5, yValue - 5);
-                ctx.restore();
+                if(yValue) {
+                    ctx.save();
+                    ctx.beginPath();
+                    ctx.strokeStyle = '#9ca3af';
+                    ctx.lineWidth = 1;
+                    ctx.setLineDash([5, 5]);
+                    ctx.moveTo(left, yValue);
+                    ctx.lineTo(right, yValue);
+                    ctx.stroke();
+                    ctx.fillStyle = '#6b7280';
+                    ctx.font = '10px sans-serif';
+                    ctx.fillText('Meta 75%', left + 5, yValue - 5);
+                    ctx.restore();
+                }
             }
         }]
     });
 }
 
-// Renderiza o Donut (Visão Diária)
 function updateDailyChartDonut(working, off, offShift, vacation) {
-    const title = document.getElementById("chartTitle");
-    if(title) title.textContent = "Capacidade Operacional Atual";
-
-    const total = working + off + offShift + vacation;
     const labels = [`Trabalhando (${working})`, `Folga (${off})`, `Encerrado (${offShift})`, `Férias (${vacation})`];
     const rawColors = ['#10b981','#fcd34d','#f9a8d4','#ef4444'];
-    
-    // Filtra zerados para limpar o gráfico
     const fData=[], fLabels=[], fColors=[];
     [working, off, offShift, vacation].forEach((d,i)=>{ 
-        if(d>0 || total===0){ fData.push(d); fLabels.push(labels[i]); fColors.push(rawColors[i]); }
+        if(d>0 || (working+off+offShift+vacation)===0){ fData.push(d); fLabels.push(labels[i]); fColors.push(rawColors[i]); }
     });
 
+    const ctx = document.getElementById('dailyChart').getContext('2d');
     if (dailyChart) {
-        // Se o gráfico anterior era linha, destrói para criar donut
         if (dailyChart.config.type !== 'doughnut') {
             dailyChart.destroy();
-            createNewDonut(fLabels, fData, fColors);
-        } else {
-            dailyChart.data.labels = fLabels;
-            dailyChart.data.datasets[0].data = fData;
-            dailyChart.data.datasets[0].backgroundColor = fColors;
-            dailyChart.update();
+            dailyChart = null;
         }
+    }
+
+    if (!dailyChart) {
+        dailyChart = new Chart(ctx, {
+            type: 'doughnut',
+            data: { labels: fLabels, datasets:[{ data: fData, backgroundColor: fColors, hoverOffset:4 }] },
+            options: {
+                responsive: true,
+                maintainAspectRatio: false,
+                cutout: '70%',
+                plugins: { legend: { position:'bottom', labels:{ padding:15, boxWidth: 10 } } }
+            },
+            plugins: [centerTextPlugin]
+        });
     } else {
-        createNewDonut(fLabels, fData, fColors);
+        dailyChart.data.labels = fLabels;
+        dailyChart.data.datasets[0].data = fData;
+        dailyChart.data.datasets[0].backgroundColor = fColors;
+        dailyChart.update();
     }
 }
 
-function createNewDonut(labels, dataArr, colors) {
-    const ctx = document.getElementById('dailyChart').getContext('2d');
-    dailyChart = new Chart(ctx, {
-        type: 'doughnut',
-        data: { labels: labels, datasets:[{ data: dataArr, backgroundColor: colors, hoverOffset:4 }] },
-        options: {
-            responsive: true,
-            maintainAspectRatio: false,
-            cutout: '70%',
-            plugins: { legend: { position:'bottom', labels:{ padding:15, boxWidth: 10 } } }
-        },
-        plugins: [centerTextPlugin]
-    });
-}
-
-// Atualiza toda a tela (Lista + Gráfico)
 function updateDailyView() {
-    // Se estiver em modo tendência e mudar o dia (pelo slider), volta para donut
     if (isTrendMode) {
         isTrendMode = false;
-        const btn = document.querySelector("button[onclick='toggleChartMode()']");
+        const btn = document.getElementById("btnToggleChart");
         if(btn) btn.textContent = "Ver Tendência Mensal";
+        const title = document.getElementById("chartTitle");
+        if(title) title.textContent = "Capacidade Operacional Atual";
     }
 
     const currentDateLabel = document.getElementById('currentDateLabel');
@@ -428,7 +416,7 @@ function updateDailyView() {
             else w++;
         }
         else if (status === 'T') w++;
-        else o++; // F, FD, FS
+        else o++; 
 
         const row = `
             <li class="flex justify-between items-center text-sm p-3 rounded hover:bg-indigo-50 border-b border-gray-100 last:border-0 transition-colors">
@@ -491,7 +479,6 @@ function updateCalendar(schedule) {
     const isMobile = window.innerWidth <= 767;
     grid.innerHTML = '';
     
-    // Simples renderização (adaptar conforme CSS original para manter layout)
     if(isMobile) {
         grid.className = 'space-y-2';
         schedule.forEach((st, i) => {
@@ -517,7 +504,7 @@ function updateWeekendTable() {
     
     for (let d=1; d<=total; d++){
         const dow = new Date(m.y, m.mo, d).getDay();
-        if (dow === 6) { // Sábado
+        if (dow === 6) { 
             const sat = d, sun = d+1 <= total ? d+1 : null;
             let satW=[], sunW=[];
             Object.keys(scheduleData).forEach(n=>{
@@ -554,7 +541,6 @@ function initGlobal() {
         rawSchedule = json;
         initTabs();
         
-        // Month Select
         const header = document.querySelector('header');
         if(!document.getElementById('monthSel')) {
             const sel = document.createElement('select'); sel.id='monthSel';
@@ -568,7 +554,7 @@ function initGlobal() {
             sel.addEventListener('change', e=>{
                 const [y,mo] = e.target.value.split('-').map(Number);
                 selectedMonthObj={year:y, month:mo};
-                initGlobal(); // Reload
+                initGlobal(); 
             });
             header.appendChild(sel);
         }
@@ -580,7 +566,6 @@ function initGlobal() {
 
         updateDailyView();
         
-        // Timer de meia noite
         const now = new Date(), night = new Date(now);
         night.setHours(24,0,0,0);
         setTimeout(() => location.reload(), night - now);
