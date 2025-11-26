@@ -22,6 +22,7 @@ body {
    - white-space: nowrap (Impede que 'Exp. Encerrado' quebre em duas linhas)
    - flex-shrink: 0 (Impede que a tag diminua se o nome da pessoa for longo)
    - font-size: 0.75rem (Leve redução para ficar mais harmônico)
+   - border-radius: 9999px (ARREDONDADO TOTAL)
 */
 .day-status {
     display: inline-flex;       /* Alterado de block para inline-flex para melhor alinhamento */
@@ -30,7 +31,7 @@ body {
     white-space: nowrap;        /* IMPEDE QUEBRA DE LINHA */
     flex-shrink: 0;             /* IMPEDE ESMAGAMENTO */
     padding: 0.25rem 0.6rem;    /* Padding lateral ajustado */
-    border-radius: 9999px;      
+    border-radius: 9999px;      /* Borda arredondada */
     font-weight: 700;           /* Um pouco mais de peso para leitura em tamanho menor */
     font-size: 0.75rem;         /* Tamanho 12px equivalente ao text-xs do Tailwind */
     line-height: 1;
@@ -66,7 +67,7 @@ body {
 .day-status-badge {
     text-align: center;
     padding: 2px 6px;
-    border-radius: 9999px; 
+    border-radius: 9999px; /* Arredondado no Grid também */
     font-size: 0.70rem; /* Levemente menor no calendário */
     font-weight: 600;
     line-height: 1.3;
