@@ -1,4 +1,4 @@
-// app.js - Versão D (com Gráfico KPI centralizado)
+// app.js - Versão Final Corrigida
 // Depende de: employeeMetadata (escala-data.js) e JSONs mensais em ./data/escala-YYYY-MM.json
 
 // ==========================================
@@ -312,13 +312,11 @@ function updateDailyChart(working, off, offShift, vacation) {
         formatLabel(vacation, 'Férias')
     ];
 
-    // Cores: Verde (Trabalhando), Âmbar (Folga), Fúcsia (Exp. Enc.), Vermelho (Férias) (Solicitação 2)
-    // Cores mais vivas e contrastadas:
+    // Cores mais vivas e contrastadas (Solicitação 2):
     const colors = ['#059669','#F59E0B','#D946EF','#DC2626'];
 
     const filteredData = [], filteredLabels = [], filteredColors = [];
     dataPoints.forEach((d,i)=>{
-        // Mostrar zero count apenas se o total for 0, ou para manter o layout de 4 cores se o total for > 0
         if (d>0 || total===0){
             filteredData.push(d);
             filteredLabels.push(labels[i]);
@@ -390,7 +388,7 @@ function updateDailyChart(working, off, offShift, vacation) {
 }
 
 // ==========================================
-// UPDATE VIEW / MAIN LOGIC
+// UPDATE VIEW / MAIN LOGIC (CORRIGIDO)
 // ==========================================
 
 function formatDate(day) {
@@ -399,7 +397,6 @@ function formatDate(day) {
 }
 
 function updateDailyView() {
-    // ...
     const date = new Date(selectedMonthObj.year, selectedMonthObj.month, currentDay);
     const dayName = daysOfWeek[date.getDay()];
     document.getElementById('currentDateLabel').textContent = `${dayName}, ${currentDay} de ${monthNames[selectedMonthObj.month]}`;
@@ -417,26 +414,22 @@ function updateDailyView() {
     Object.keys(scheduleData).forEach(name => {
         const employee = scheduleData[name];
         const daySchedule = employee.schedule[currentDay-1];
-        let kpiStatus = daySchedule;
         let displayStatus = daySchedule;
         const horarioRaw = employee.info.Horário || employee.info.Horario;
 
-        // Tenta inferir se o expediente T está fora do horário (só se for dia de T)
-        if (kpiStatus === 'T') {
+        // 1. Tenta inferir se o expediente T está fora do horário
+        if (daySchedule === 'T') {
             const isWorking = isWorkingTime(horarioRaw);
             if (!isWorking) {
-                offShiftCount++;
                 displayStatus = 'OFF-SHIFT';
-                kpiStatus = 'F_EFFECTIVE'; // For KPI logic, outside working time is effectively 'Off'
+                offShiftCount++;
             } else {
                 workingCount++;
             }
-        } else if (kpiStatus === 'T') {
-            workingCount++;
-        } else if (['F','FS','FD'].includes(kpiStatus)) {
-            offCount++;
-        } else if (kpiStatus === 'FE') { // AQUI CONTA AS FÉRIAS
+        } else if (daySchedule === 'FE') {
             vacationCount++;
+        } else if (['F','FS','FD'].includes(daySchedule)) {
+            offCount++;
         }
         
         const itemHtml = `
@@ -451,10 +444,10 @@ function updateDailyView() {
             </li>
         `;
         
-        if (kpiStatus === 'T') workingHtml += itemHtml;
-        else if (kpiStatus === 'F_EFFECTIVE') offShiftHtml += itemHtml;
-        else if (['F','FS','FD'].includes(kpiStatus)) offHtml += itemHtml;
-        else if (kpiStatus === 'FE') vacationHtml += itemHtml;
+        if (displayStatus === 'T') workingHtml += itemHtml;
+        else if (displayStatus === 'OFF-SHIFT') offShiftHtml += itemHtml;
+        else if (['F','FS','FD'].includes(displayStatus)) offHtml += itemHtml;
+        else if (displayStatus === 'FE') vacationHtml += itemHtml;
     });
 
     // Update KPI counters
@@ -482,18 +475,220 @@ function updateDailyView() {
 // ==========================================
 
 function updatePersonalView(employeeName) {
-    // ... (no changes here)
+    // Busca a seção de conteúdo.
+    const container = document.getElementById('personalViewContainer');
+    if (!container) return;
+
+    // Se nenhum nome é fornecido, esconde a seção ou mostra um placeholder.
+    if (!employeeName) {
+        container.innerHTML = '<p class="text-center text-gray-500 py-10">Selecione um colaborador para ver a escala individual.</p>';
+        return;
+    }
+
+    const employee = scheduleData[employeeName];
+    if (!employee) {
+        container.innerHTML = `<p class="text-center text-red-500 py-10">Dados de escala não encontrados para ${employeeName}.</p>`;
+        return;
+    }
+
+    // Cria o cabeçalho
+    const headerHtml = `
+        <div class="mb-6 border-b pb-4">
+            <h3 class="text-2xl font-bold text-gray-800">${employeeName}</h3>
+            <p class="text-sm text-gray-500">
+                ${employee.info.Grupo} (${employee.info.Célula || 'N/A'}) | Horário Padrão: ${employee.info.Horário || 'N/A'}
+            </p>
+        </div>
+    `;
+
+    // Renderiza o calendário (o container real do grid)
+    const calendarHtml = renderCalendar(employee);
+
+    container.innerHTML = headerHtml + calendarHtml;
+
+    // Adiciona o listener para rolagem horizontal (só no mobile/small screen)
+    const scrollContainer = document.getElementById('calendarScrollContainer');
+    if (scrollContainer && window.innerWidth < 768) {
+        const currentDayCell = scrollContainer.querySelector('.current-day');
+        if (currentDayCell) {
+            currentDayCell.scrollIntoView({ behavior: 'smooth', block: 'nearest' });
+        }
+    }
 }
 
 function renderCalendar(employee) {
-    // ... (no changes here)
+    const totalDays = employee.schedule.length;
+    let calendarHtml = '';
+
+    // Cabeçalho da Semana (visível no desktop)
+    const weekHeaderHtml = daysOfWeek.map(d => 
+        `<div class="text-center font-semibold text-xs py-2 bg-gray-200 text-gray-700">${d}</div>`
+    ).join('');
+
+    // Preenchimento do primeiro dia para alinhar (desktop)
+    const firstDayDate = new Date(selectedMonthObj.year, selectedMonthObj.month, 1);
+    const offset = firstDayDate.getDay(); // 0 (Domingo) a 6 (Sábado)
+
+    let dayCells = new Array(offset).fill(
+        '<div class="calendar-cell bg-gray-50"></div>'
+    ).join('');
+
+    // Células de Dias
+    for (let day=1; day<=totalDays; day++) {
+        const status = employee.schedule[day-1];
+        const isCurrentDay = (selectedMonthObj.year === systemYear && selectedMonthObj.month === systemMonth && day === systemDay);
+        
+        dayCells += `
+            <div class="calendar-cell ${isCurrentDay ? 'current-day' : ''}">
+                <span class="day-number">${day}</span>
+                <span class="day-status-badge status-${status}">${statusMap[status] || status}</span>
+            </div>
+        `;
+    }
+
+    // Estrutura final com cabeçalho e células
+    return `
+        <div class="hidden md:grid calendar-grid-container">
+            ${weekHeaderHtml}
+            ${dayCells}
+        </div>
+        
+        <div id="calendarScrollContainer" class="md:hidden overflow-x-scroll whitespace-nowrap py-3 -mx-4 px-4 bg-white border-y border-gray-200 shadow-inner">
+            ${employee.schedule.map((status, index) => {
+                const day = index + 1;
+                const date = new Date(selectedMonthObj.year, selectedMonthObj.month, day);
+                const dayName = daysOfWeek[date.getDay()];
+                const isCurrentDay = (selectedMonthObj.year === systemYear && selectedMonthObj.month === systemMonth && day === systemDay);
+                
+                return `
+                    <div class="inline-block w-40 p-3 mx-1 bg-white border border-gray-200 rounded-lg shadow-sm ${isCurrentDay ? 'current-day' : ''}">
+                        <div class="font-semibold text-sm mb-1">${dayName}, ${day}</div>
+                        <span class="day-status-badge status-${status}">${statusMap[status] || status}</span>
+                    </div>
+                `;
+            }).join('')}
+        </div>
+    `;
 }
 
 // ==========================================
 // TABELA DE PLANTÃO DE FIM DE SEMANA
 // ==========================================
 function updateWeekendTable() {
-    // ... (no changes here)
+    const container = document.getElementById('weekendPlantaoContainer');
+    if (!container) return;
+    
+    // Obter o primeiro dia do mês
+    const firstDayDate = new Date(selectedMonthObj.year, selectedMonthObj.month, 1);
+    const totalDays = new Date(selectedMonthObj.year, selectedMonthObj.month + 1, 0).getDate();
+    
+    let weekendData = {};
+    
+    // Agrupar colaboradores por dia de fim de semana
+    Object.keys(scheduleData).forEach(name => {
+        const schedule = scheduleData[name].schedule;
+        
+        for (let day = 1; day <= totalDays; day++) {
+            const date = new Date(selectedMonthObj.year, selectedMonthObj.month, day);
+            const dow = date.getDay(); // 0=Dom, 6=Sáb
+            const status = schedule[day - 1];
+            
+            if (dow === 0 || dow === 6) { // Fim de semana
+                const dayKey = day;
+                
+                if (status === 'T') {
+                    if (!weekendData[dayKey]) weekendData[dayKey] = { date: formatDate(day), saturday: dow === 6, employees: [] };
+                    weekendData[dayKey].employees.push({ name: name, status: status, colorClass: 'status-T' });
+                }
+            }
+        }
+    });
+
+    // Ordenar os dias
+    const sortedDays = Object.keys(weekendData).sort((a,b)=>parseInt(a,10)-parseInt(b,10));
+    
+    let tableHtml = '';
+    
+    // Criar os cartões de Plantão (agrupados por fim de semana)
+    let currentWeekend = null;
+    let weekendCards = [];
+
+    sortedDays.forEach(dayKey => {
+        const dayData = weekendData[dayKey];
+        const day = parseInt(dayKey, 10);
+        const isSaturday = dayData.saturday;
+
+        if (isSaturday) {
+            // Inicia um novo fim de semana
+            currentWeekend = { 
+                startDay: day, 
+                saturdayData: dayData, 
+                sundayData: null 
+            };
+            weekendCards.push(currentWeekend);
+        } else if (currentWeekend && day === currentWeekend.startDay + 1) {
+            // Adiciona o domingo ao fim de semana atual
+            currentWeekend.sundayData = dayData;
+            currentWeekend = null; // Fim do agrupamento
+        } else {
+            // Se for um domingo que não segue um sábado, trata como um fim de semana de um dia
+            currentWeekend = { startDay: day, saturdayData: null, sundayData: dayData };
+            weekendCards.push(currentWeekend);
+            currentWeekend = null;
+        }
+    });
+
+
+    // Geração do HTML dos cartões
+    weekendCards.forEach(wk => {
+        const sat = wk.saturdayData;
+        const sun = wk.sundayData;
+
+        // Se tiver apenas um dia (por exemplo, mês começa/termina no meio do fim de semana)
+        const title = (sat && sun) 
+            ? `Plantão: ${sat.date} e ${sun.date}` 
+            : (sat ? `Plantão: ${sat.date} (Sáb)` : `Plantão: ${sun.date} (Dom)`);
+            
+        const satEmployees = sat ? sat.employees.map(e => `
+            <li class="flex justify-between items-center text-sm mb-1">
+                <span class="font-medium text-gray-700">${e.name}</span>
+                <span class="day-status-badge ${e.colorClass}">${statusMap[e.status]}</span>
+            </li>
+        `).join('') : '<li class="text-gray-400 text-sm text-center py-2">Ninguém escalado.</li>';
+
+        const sunEmployees = sun ? sun.employees.map(e => `
+            <li class="flex justify-between items-center text-sm mb-1">
+                <span class="font-medium text-gray-700">${e.name}</span>
+                <span class="day-status-badge ${e.colorClass}">${statusMap[e.status]}</span>
+            </li>
+        `).join('') : '<li class="text-gray-400 text-sm text-center py-2">Ninguém escalado.</li>';
+        
+        tableHtml += `
+            <div class="bg-white p-6 rounded-xl shadow-lg border border-gray-200">
+                <h4 class="text-lg font-bold text-indigo-700 mb-4">${title}</h4>
+                
+                ${sat ? `
+                <div class="mb-4 pb-4 border-b border-gray-100">
+                    <h5 class="font-semibold text-gray-700 mb-2">${sat.date} - Sábado</h5>
+                    <ul class="space-y-1">
+                        ${satEmployees}
+                    </ul>
+                </div>
+                ` : ''}
+
+                ${sun ? `
+                <div>
+                    <h5 class="font-semibold text-gray-700 mb-2">${sun.date} - Domingo</h5>
+                    <ul class="space-y-1">
+                        ${sunEmployees}
+                    </ul>
+                </div>
+                ` : ''}
+            </div>
+        `;
+    });
+
+    container.innerHTML = tableHtml || '<p class="text-center text-gray-500 py-10">Não há fins de semana para o mês selecionado ou os dados de escala estão incompletos.</p>';
 }
 
 
@@ -501,19 +696,129 @@ function updateWeekendTable() {
 // TABS E INICIALIZAÇÃO DO DAILY VIEW
 // ==========================================
 function initTabs() {
-    // ... (no changes here)
+    const tabButtons = document.querySelectorAll('.tab-button');
+    const sections = document.querySelectorAll('.content-section');
+
+    const switchTab = (tabName) => {
+        tabButtons.forEach(btn => {
+            btn.classList.remove('active', 'border-indigo-600', 'bg-indigo-50', 'text-indigo-700', 'font-bold');
+            btn.classList.add('border-transparent', 'hover:bg-gray-50', 'font-medium');
+            if (btn.getAttribute('data-tab') === tabName) {
+                btn.classList.add('active', 'bg-indigo-50', 'text-indigo-700', 'font-bold');
+                btn.classList.remove('border-transparent', 'hover:bg-gray-50', 'font-medium');
+            }
+        });
+
+        sections.forEach(section => {
+            section.classList.add('hidden');
+            if (section.id === `${tabName}View`) {
+                section.classList.remove('hidden');
+            }
+        });
+
+        if (tabName === 'daily') {
+            updateDailyView();
+        } else if (tabName === 'weekend') {
+            updateWeekendTable();
+        } else if (tabName === 'personal') {
+            const select = document.getElementById('employeeSelect');
+            updatePersonalView(select.value);
+        }
+    };
+
+    tabButtons.forEach(btn => {
+        btn.addEventListener('click', () => {
+            switchTab(btn.getAttribute('data-tab'));
+        });
+    });
+
+    switchTab('daily'); // Inicia na aba diária
 }
 
 function initSelect() {
-    // ... (no changes here)
+    const select = document.getElementById('employeeSelect');
+    if (!select) return;
+
+    // Popula o select com os nomes dos colaboradores (ordenados)
+    const names = Object.keys(employeeMetadata).sort();
+    
+    // Adiciona a opção padrão (vazia)
+    select.innerHTML = '<option value="">-- Selecione um Colaborador --</option>';
+
+    names.forEach(name => {
+        const option = document.createElement('option');
+        option.value = name;
+        option.textContent = name;
+        select.appendChild(option);
+    });
+
+    // Adiciona o listener para atualizar a visualização individual
+    select.addEventListener('change', (e) => {
+        updatePersonalView(e.target.value);
+    });
+}
+
+function initMonthSelect() {
+    const select = document.getElementById('monthSelect');
+    if (!select) return;
+
+    select.innerHTML = '';
+    availableMonths.forEach((m, index) => {
+        const option = document.createElement('option');
+        option.value = index;
+        option.textContent = `${monthNames[m.month]} de ${m.year}`;
+        if (m.year === selectedMonthObj.year && m.month === selectedMonthObj.month) {
+            option.selected = true;
+        }
+        select.appendChild(option);
+    });
+
+    select.addEventListener('change', async (e) => {
+        const index = parseInt(e.target.value, 10);
+        selectedMonthObj = availableMonths[index];
+        
+        // Recarrega os dados do mês e atualiza a view
+        const json = await loadMonthlyJson(selectedMonthObj.year, selectedMonthObj.month);
+        rawSchedule = json || {};
+        
+        rebuildScheduleDataForSelectedMonth();
+        document.getElementById('headerDate').textContent = `Mês de Referência: ${monthNames[selectedMonthObj.month]} de ${selectedMonthObj.year}`;
+        
+        // Se a aba pessoal estiver ativa, precisa re-renderizar
+        const activeTab = document.querySelector('.tab-button.active').getAttribute('data-tab');
+        if (activeTab === 'personal') {
+            const employeeName = document.getElementById('employeeSelect').value;
+            updatePersonalView(employeeName);
+        }
+        
+        // Atualiza a visualização diária e de fim de semana
+        updateDailyView();
+        updateWeekendTable();
+    });
 }
 
 function initDailyView() {
-    // ... (no changes here)
+    const slider = document.getElementById('dateSlider');
+    if (slider) {
+        slider.addEventListener('input', (e) => {
+            currentDay = parseInt(e.target.value, 10);
+            updateDailyView();
+        });
+    }
 }
 
 function scheduleMidnightUpdate() {
-    // ... (no changes here)
+    const now = new Date();
+    const midnight = new Date(now);
+    midnight.setDate(now.getDate() + 1);
+    midnight.setHours(0, 0, 0, 0);
+
+    const timeToMidnight = midnight.getTime() - now.getTime();
+
+    setTimeout(() => { 
+        updateDailyView(); 
+        setInterval(updateDailyView, 24*60*60*1000); 
+    }, timeToMidnight + 1000);
 }
 
 function initGlobal() {
