@@ -1,4 +1,4 @@
-// app.js - Versão Final Robusta (Correção Leitura de Célula)
+// app.js - Versão Final (Fontes Reduzidas no Card Pessoal + Bolinha de Status)
 // Depende de: JSONs mensais em ./data/escala-YYYY-MM.json
 
 // ==========================================
@@ -462,7 +462,7 @@ function initSelect() {
 }
 
 // ==========================================
-// ATUALIZAÇÃO DO CARD PESSOAL (NOVO ESTILO PREMIUM)
+// ATUALIZAÇÃO DO CARD PESSOAL (ESTILO PREMIUM + STATUS)
 // ==========================================
 function updatePersonalView(name) {
     const emp = scheduleData[name];
@@ -472,9 +472,6 @@ function updatePersonalView(name) {
     // Dados extraídos ou defaults
     const cargo = emp.info.Cargo || emp.info.Grupo || 'Colaborador';
     const horario = emp.info.Horário || '--:--';
-    
-    // CORREÇÃO: Tenta ler Célula, Celula ou CELULA do JSON. 
-    // Só usa padrão se realmente não existir.
     const celula = emp.info.Célula || emp.info.Celula || emp.info.CELULA || 'Sitelbra/ B2B';
     
     let turno = emp.info.Turno;
@@ -486,17 +483,43 @@ function updatePersonalView(name) {
         } else { turno = 'Comercial'; }
     } else if(!turno) { turno = 'Comercial'; }
 
+    // --- LÓGICA DE STATUS DO DIA (BOLINHA) ---
+    // Pega o status do dia atual (currentDay é global no app.js)
+    const statusToday = emp.schedule[currentDay - 1] || 'F';
+    
+    // Define as cores baseadas no status
+    let dotClass = "";
+    
+    switch(statusToday) {
+        case 'T': // Trabalhando -> Verde
+            dotClass = "bg-green-400 shadow-[0_0_8px_rgba(74,222,128,0.8)]";
+            break;
+        case 'F': // Folga -> Amarelo
+            dotClass = "bg-yellow-400 shadow-[0_0_8px_rgba(250,204,21,0.8)]";
+            break;
+        case 'FE': // Férias -> Vermelho
+            dotClass = "bg-red-500 shadow-[0_0_8px_rgba(239,68,68,0.8)]";
+            break;
+        case 'FS': // Folga Sábado -> Azul Claro (Sky)
+            dotClass = "bg-sky-400 shadow-[0_0_8px_rgba(56,189,248,0.8)]";
+            break;
+        case 'FD': // Folga Domingo -> Azul Escuro (Blue intenso)
+            dotClass = "bg-blue-600 shadow-[0_0_8px_rgba(37,99,235,0.8)]";
+            break;
+        default: // Padrão -> Cinza
+            dotClass = "bg-gray-400 shadow-[0_0_8px_rgba(156,163,175,0.8)]";
+    }
+
     // Estilo e Exibição do Card
     card.classList.remove('hidden');
-    // Usando gradient from-violet-600 to-purple-600 para dar o tom da imagem
     card.className = "mb-8 bg-gradient-to-r from-violet-700 to-purple-600 rounded-2xl shadow-xl overflow-hidden text-white transform transition-all duration-300";
 
     card.innerHTML = `
-        <div class="px-6 py-5">
-            <h2 class="text-3xl font-extrabold tracking-tight mb-1">${name}</h2>
+        <div class="px-6 py-4"> <h2 class="text-xl md:text-2xl font-extrabold tracking-tight mb-1">${name}</h2>
+            
             <div class="flex items-center gap-2">
-                <span class="w-2 h-2 rounded-full bg-green-400 shadow-[0_0_8px_rgba(74,222,128,0.8)]"></span>
-                <p class="text-purple-200 text-sm font-semibold uppercase tracking-widest">${cargo}</p>
+                <span class="w-2 h-2 rounded-full ${dotClass}"></span>
+                <p class="text-purple-200 text-xs font-semibold uppercase tracking-widest">${cargo}</p>
             </div>
         </div>
 
@@ -506,17 +529,17 @@ function updatePersonalView(name) {
             
             <div class="flex-1 py-4 px-2 text-center border-r border-white/10 hover:bg-white/5 transition-colors">
                 <span class="block text-[10px] md:text-xs text-purple-200 font-bold uppercase mb-1 tracking-wider opacity-80">Célula</span>
-                <span class="block text-sm md:text-lg font-bold text-white whitespace-nowrap">${celula}</span>
+                <span class="block text-xs md:text-sm font-bold text-white whitespace-nowrap">${celula}</span>
             </div>
 
             <div class="flex-1 py-4 px-2 text-center border-r border-white/10 hover:bg-white/5 transition-colors">
                 <span class="block text-[10px] md:text-xs text-purple-200 font-bold uppercase mb-1 tracking-wider opacity-80">Turno</span>
-                <span class="block text-sm md:text-lg font-bold text-white whitespace-nowrap">${turno}</span>
+                <span class="block text-xs md:text-sm font-bold text-white whitespace-nowrap">${turno}</span>
             </div>
 
             <div class="flex-1 py-4 px-2 text-center hover:bg-white/5 transition-colors">
                 <span class="block text-[10px] md:text-xs text-purple-200 font-bold uppercase mb-1 tracking-wider opacity-80">Horário</span>
-                <span class="block text-sm md:text-lg font-bold text-white whitespace-nowrap">${horario}</span>
+                <span class="block text-xs md:text-sm font-bold text-white whitespace-nowrap">${horario}</span>
             </div>
         </div>
     `;
