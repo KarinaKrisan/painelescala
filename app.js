@@ -1,4 +1,4 @@
-// app.js - Versão Final (Card Claro/Light Mode + Fontes Ajustadas + Status Completo)
+// app.js - Versão Final (Cores dos dias no Mobile Ajustadas: FS Azul Claro / FD Azul Escuro)
 // Depende de: JSONs mensais em ./data/escala-YYYY-MM.json
 
 // ==========================================
@@ -525,7 +525,6 @@ function updatePersonalView(name) {
 
     // Estilo e Exibição do Card (MODO CLARO)
     card.classList.remove('hidden');
-    // Mudança: Fundo Branco com borda suave, removendo gradiente escuro
     card.className = "mb-8 bg-white rounded-2xl shadow-xl border border-gray-100 overflow-hidden transform transition-all duration-300";
 
     card.innerHTML = `
@@ -576,15 +575,19 @@ function updateCalendar(schedule) {
             // Definição de classes base para a pílula (rounded-full garante o formato oval)
             let pillClasses = "flex justify-between items-center p-3 px-5 rounded-full border shadow-sm transition-all hover:shadow-md";
             
-            // Aplicação de cores conforme o status, com destaque para 'T' (Trabalhando)
+            // Aplicação de cores conforme o status (ATUALIZADO)
             if(st === 'T') {
-                pillClasses += " bg-green-100 text-green-800 border-green-200"; // Estilo Trabalhando (Verde Claro)
-            } else if (st.startsWith('F') && st !== 'FE') { // Folga, Folga Sáb, Folga Dom
-                pillClasses += " bg-orange-100 text-orange-800 border-orange-200"; // Estilo Folga (Laranja/Amarelo Claro)
+                pillClasses += " bg-green-100 text-green-800 border-green-200"; // Trabalhando
+            } else if (st === 'FS') {
+                pillClasses += " bg-sky-100 text-sky-800 border-sky-200"; // Folga Sábado (Azul Claro)
+            } else if (st === 'FD') {
+                pillClasses += " bg-blue-100 text-blue-800 border-blue-200"; // Folga Domingo (Azul Escuro/Padrão)
+            } else if (st === 'F') {
+                pillClasses += " bg-yellow-100 text-yellow-800 border-yellow-200"; // Folga Comum (Amarelo)
             } else if (st === 'FE') {
-                pillClasses += " bg-red-100 text-red-800 border-red-200"; // Estilo Férias (Vermelho Claro)
+                pillClasses += " bg-red-100 text-red-800 border-red-200"; // Férias
             } else {
-                pillClasses += " bg-gray-100 text-gray-800 border-gray-200"; // Outros (Cinza Claro)
+                pillClasses += " bg-gray-100 text-gray-800 border-gray-200"; // Outros
             }
 
             grid.insertAdjacentHTML('beforeend', `
