@@ -1,4 +1,4 @@
-// app.js - Versão Final (Fontes Reduzidas no Card Pessoal + Bolinha de Status)
+// app.js - Versão Final (Fontes Reduzidas + Bolinha de Status com Exp. Encerrado)
 // Depende de: JSONs mensais em ./data/escala-YYYY-MM.json
 
 // ==========================================
@@ -462,7 +462,7 @@ function initSelect() {
 }
 
 // ==========================================
-// ATUALIZAÇÃO DO CARD PESSOAL (ESTILO PREMIUM + STATUS)
+// ATUALIZAÇÃO DO CARD PESSOAL (ESTILO PREMIUM + STATUS COMPLETO)
 // ==========================================
 function updatePersonalView(name) {
     const emp = scheduleData[name];
@@ -484,15 +484,30 @@ function updatePersonalView(name) {
     } else if(!turno) { turno = 'Comercial'; }
 
     // --- LÓGICA DE STATUS DO DIA (BOLINHA) ---
-    // Pega o status do dia atual (currentDay é global no app.js)
-    const statusToday = emp.schedule[currentDay - 1] || 'F';
+    // Pega o status base (T, F, FE...) do dia selecionado
+    let statusToday = emp.schedule[currentDay - 1] || 'F';
     
+    // VERIFICAÇÃO PARA EXPEDIENTE ENCERRADO (ROXO)
+    // Se hoje é realmente hoje, e o status é T, mas passou do horário:
+    const now = new Date();
+    const isToday = (now.getDate() === currentDay && now.getMonth() === systemMonth && now.getFullYear() === systemYear);
+
+    if (statusToday === 'T' && isToday) {
+        // Se NÃO estiver dentro do horário de trabalho, muda status para mostrar bolinha roxa
+        if (!isWorkingTime(emp.info.Horário)) {
+            statusToday = 'OFF-SHIFT';
+        }
+    }
+
     // Define as cores baseadas no status
     let dotClass = "";
     
     switch(statusToday) {
         case 'T': // Trabalhando -> Verde
             dotClass = "bg-green-400 shadow-[0_0_8px_rgba(74,222,128,0.8)]";
+            break;
+        case 'OFF-SHIFT': // Expediente Encerrado -> Roxo (NOVO)
+            dotClass = "bg-purple-500 shadow-[0_0_8px_rgba(168,85,247,0.8)]";
             break;
         case 'F': // Folga -> Amarelo
             dotClass = "bg-yellow-400 shadow-[0_0_8px_rgba(250,204,21,0.8)]";
