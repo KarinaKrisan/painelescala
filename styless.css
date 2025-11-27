@@ -119,3 +119,8 @@ body {
     border: 1px solid #A5B4FC; 
     border-radius: 9999px; 
 }
+
+/* Card em tons de cinza */
+.card-grayscale {
+    filter: grayscale(1);
+}
