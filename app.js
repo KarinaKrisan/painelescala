@@ -525,7 +525,7 @@ function updatePersonalView(name) {
 
     // Estilo e Exibição do Card (MODO CLARO)
     card.classList.remove('hidden');
-    card.className = "mb-8 bg-gray-50 rounded-2xl shadow-xl border border-gray-200 overflow-hidden transform transition-all duration-300";
+    card.className = "mb-8 bg-white rounded-2xl shadow-xl border border-gray-100 overflow-hidden transform transition-all duration-300";
 
     card.innerHTML = `
         <div class="px-6 py-4"> <h2 class="text-xl md:text-2xl font-extrabold tracking-tight mb-1 text-gray-800">${name}</h2>
