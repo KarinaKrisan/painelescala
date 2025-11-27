@@ -1,4 +1,4 @@
-// app.js - Versão Final Robusta (Card Pessoal Estilo Premium Roxo)
+// app.js - Versão Final Robusta (Correção Leitura de Célula)
 // Depende de: JSONs mensais em ./data/escala-YYYY-MM.json
 
 // ==========================================
@@ -473,8 +473,9 @@ function updatePersonalView(name) {
     const cargo = emp.info.Cargo || emp.info.Grupo || 'Colaborador';
     const horario = emp.info.Horário || '--:--';
     
-    // Fallback para Célula e Turno
-    const celula = emp.info.Celula || 'Sitelbra/ B2B';
+    // CORREÇÃO: Tenta ler Célula, Celula ou CELULA do JSON. 
+    // Só usa padrão se realmente não existir.
+    const celula = emp.info.Célula || emp.info.Celula || emp.info.CELULA || 'Sitelbra/ B2B';
     
     let turno = emp.info.Turno;
     if(!turno && horario !== '--:--') {
@@ -525,7 +526,7 @@ function updatePersonalView(name) {
 }
 
 // ==========================================
-// ATUALIZAÇÃO DO CALENDÁRIO (MOBILE EM PÍLULAS)
+// ATUALIZAÇÃO DO CALENDÁRIO (MOBILE EM PÍLULAS OVAIS)
 // ==========================================
 function updateCalendar(schedule) {
     const grid = document.getElementById('calendarGrid');
@@ -535,18 +536,18 @@ function updateCalendar(schedule) {
     if(isMobile) {
         grid.className = 'space-y-3 mt-4'; // Espaçamento entre as pílulas
         schedule.forEach((st, i) => {
-            // Definição de classes base para a pílula
+            // Definição de classes base para a pílula (rounded-full garante o formato oval)
             let pillClasses = "flex justify-between items-center p-3 px-5 rounded-full border shadow-sm transition-all hover:shadow-md";
             
             // Aplicação de cores conforme o status, com destaque para 'T' (Trabalhando)
             if(st === 'T') {
-                pillClasses += " bg-green-100 text-green-800 border-green-200"; // Estilo Trabalhando
+                pillClasses += " bg-green-100 text-green-800 border-green-200"; // Estilo Trabalhando (Verde Claro)
             } else if (st.startsWith('F') && st !== 'FE') { // Folga, Folga Sáb, Folga Dom
-                pillClasses += " bg-orange-100 text-orange-800 border-orange-200"; // Estilo Folga (Laranja/Amarelo)
+                pillClasses += " bg-orange-100 text-orange-800 border-orange-200"; // Estilo Folga (Laranja/Amarelo Claro)
             } else if (st === 'FE') {
-                pillClasses += " bg-red-100 text-red-800 border-red-200"; // Estilo Férias
+                pillClasses += " bg-red-100 text-red-800 border-red-200"; // Estilo Férias (Vermelho Claro)
             } else {
-                pillClasses += " bg-gray-100 text-gray-800 border-gray-200"; // Outros
+                pillClasses += " bg-gray-100 text-gray-800 border-gray-200"; // Outros (Cinza Claro)
             }
 
             grid.insertAdjacentHTML('beforeend', `
