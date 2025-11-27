@@ -1,4 +1,4 @@
-// app.js - Versão Final Robusta (Visual Cards Fim de Semana - Tags Pílula com Fundo Claro)
+// app.js - Versão Final Robusta (Card Pessoal Estilo Premium)
 // Depende de: JSONs mensais em ./data/escala-YYYY-MM.json
 
 // ==========================================
@@ -462,14 +462,65 @@ function initSelect() {
     });
 }
 
+// ==========================================
+// ATUALIZAÇÃO DO CARD PESSOAL (NOVO ESTILO)
+// ==========================================
 function updatePersonalView(name) {
     const emp = scheduleData[name];
     if (!emp) return;
     const card = document.getElementById('personalInfoCard');
-    const isLeader = emp.info.Grupo === "Líder de Célula";
-    card.className = `hidden ${isLeader?'bg-purple-700':'bg-indigo-600'} p-6 rounded-xl mb-6 shadow-xl text-white flex flex-col transition-opacity duration-300 opacity-100`;
-    card.innerHTML = `<h2 class="text-2xl font-bold">${name}</h2><p>${emp.info.Grupo} - ${emp.info.Horário}</p>`;
+    
+    // Extração de dados com fallback
+    const cargo = emp.info.Cargo || emp.info.Grupo || 'Colaborador';
+    const celula = emp.info.Celula || 'Sitelbra/ B2B'; // Default conforme imagem
+    const horario = emp.info.Horário || '--:--';
+    
+    // Lógica para deduzir Turno se não existir
+    let turno = emp.info.Turno;
+    if (!turno && horario) {
+        const startH = parseInt(horario.split(':')[0]);
+        if (!isNaN(startH)) {
+            if (startH >= 18 || startH <= 5) turno = 'Noturno';
+            else turno = 'Comercial';
+        } else {
+            turno = 'Comercial';
+        }
+    }
+    
+    // Configura container (Visível e com sombra)
     card.classList.remove('hidden');
+    card.className = "mb-8 rounded-2xl shadow-2xl overflow-hidden transform transition-all hover:scale-[1.01] duration-300";
+
+    // Template HTML refeito com Gradiente Roxo e Grid de Dados
+    card.innerHTML = `
+        <div class="bg-gradient-to-r from-purple-700 via-purple-600 to-indigo-600 text-white">
+            <div class="px-8 py-6 pb-2">
+                <h2 class="text-4xl font-extrabold tracking-tight mb-1">${name}</h2>
+                <p class="text-purple-200 text-sm font-semibold uppercase tracking-widest border-l-2 border-purple-300 pl-3">${cargo}</p>
+            </div>
+
+            <div class="h-px w-full bg-gradient-to-r from-transparent via-purple-400 to-transparent opacity-30 my-2"></div>
+
+            <div class="flex flex-row items-center justify-between bg-black/10 backdrop-blur-sm border-t border-white/10">
+                
+                <div class="flex-1 py-4 px-2 text-center border-r border-white/10 hover:bg-white/5 transition-colors">
+                    <span class="block text-[10px] md:text-xs text-purple-200 font-bold uppercase mb-1 tracking-wider opacity-80">Célula</span>
+                    <span class="block text-sm md:text-lg font-bold text-white whitespace-nowrap">${celula}</span>
+                </div>
+
+                <div class="flex-1 py-4 px-2 text-center border-r border-white/10 hover:bg-white/5 transition-colors">
+                    <span class="block text-[10px] md:text-xs text-purple-200 font-bold uppercase mb-1 tracking-wider opacity-80">Turno</span>
+                    <span class="block text-sm md:text-lg font-bold text-white whitespace-nowrap">${turno}</span>
+                </div>
+
+                <div class="flex-1 py-4 px-2 text-center hover:bg-white/5 transition-colors">
+                    <span class="block text-[10px] md:text-xs text-purple-200 font-bold uppercase mb-1 tracking-wider opacity-80">Horário</span>
+                    <span class="block text-sm md:text-lg font-bold text-white whitespace-nowrap">${horario}</span>
+                </div>
+            </div>
+        </div>
+    `;
+
     document.getElementById('calendarContainer').classList.remove('hidden');
     updateCalendar(emp.schedule);
 }
@@ -527,18 +578,18 @@ function updateWeekendTable() {
             if(satW.length || sunW.length) {
                 
                 // Função auxiliar para gerar as tags
-                // ATUALIZADO: bgColorClass adicionado como parâmetro
                 const makeTags = (list, bgColorClass, borderColorClass, textColorClass) => {
                     if(!list.length) return '<span class="text-gray-400 text-sm italic pl-1">Sem escala</span>';
                     return list.map(name => 
-                        // Uso de ${bgColorClass} ao invés de bg-white
+                        // Uso de ${bgColorClass} garantindo a cor dentro
                         `<span class="inline-block ${bgColorClass} border ${borderColorClass} ${textColorClass} px-3 py-1 rounded-full text-sm font-medium shadow-sm mb-2 mr-2">${name}</span>`
                     ).join('');
                 };
 
-                // Definição das cores de fundo "clarinho" (blue-50 e purple-50) e bordas suaves
-                const satTags = makeTags(satW, 'bg-blue-50', 'border-blue-200', 'text-blue-700');
-                const sunTags = makeTags(sunW, 'bg-purple-50', 'border-purple-200', 'text-purple-700');
+                // Definição das cores INTENSIFICADAS (blue-100 / purple-100)
+                // Isso garante que o fundo fique colorido igual a imagem de referência
+                const satTags = makeTags(satW, 'bg-blue-100', 'border-blue-300', 'text-blue-800');
+                const sunTags = makeTags(sunW, 'bg-purple-100', 'border-purple-300', 'text-purple-800');
                 
                 // Strings formatadas conforme solicitado
                 const labelSat = `sábado (${fmtDate(satDate)})`;
