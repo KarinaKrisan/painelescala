@@ -1,4 +1,4 @@
-// app.js - Versão Final (Fontes Reduzidas + Bolinha de Status com Exp. Encerrado)
+// app.js - Versão Final (Card Claro/Light Mode + Fontes Ajustadas + Status Completo)
 // Depende de: JSONs mensais em ./data/escala-YYYY-MM.json
 
 // ==========================================
@@ -462,7 +462,7 @@ function initSelect() {
 }
 
 // ==========================================
-// ATUALIZAÇÃO DO CARD PESSOAL (ESTILO PREMIUM + STATUS COMPLETO)
+// ATUALIZAÇÃO DO CARD PESSOAL (VERSÃO CLARA/CLEAN + STATUS COMPLETO)
 // ==========================================
 function updatePersonalView(name) {
     const emp = scheduleData[name];
@@ -488,12 +488,10 @@ function updatePersonalView(name) {
     let statusToday = emp.schedule[currentDay - 1] || 'F';
     
     // VERIFICAÇÃO PARA EXPEDIENTE ENCERRADO (ROXO)
-    // Se hoje é realmente hoje, e o status é T, mas passou do horário:
     const now = new Date();
     const isToday = (now.getDate() === currentDay && now.getMonth() === systemMonth && now.getFullYear() === systemYear);
 
     if (statusToday === 'T' && isToday) {
-        // Se NÃO estiver dentro do horário de trabalho, muda status para mostrar bolinha roxa
         if (!isWorkingTime(emp.info.Horário)) {
             statusToday = 'OFF-SHIFT';
         }
@@ -506,7 +504,7 @@ function updatePersonalView(name) {
         case 'T': // Trabalhando -> Verde
             dotClass = "bg-green-400 shadow-[0_0_8px_rgba(74,222,128,0.8)]";
             break;
-        case 'OFF-SHIFT': // Expediente Encerrado -> Roxo (NOVO)
+        case 'OFF-SHIFT': // Expediente Encerrado -> Roxo
             dotClass = "bg-purple-500 shadow-[0_0_8px_rgba(168,85,247,0.8)]";
             break;
         case 'F': // Folga -> Amarelo
@@ -525,36 +523,37 @@ function updatePersonalView(name) {
             dotClass = "bg-gray-400 shadow-[0_0_8px_rgba(156,163,175,0.8)]";
     }
 
-    // Estilo e Exibição do Card
+    // Estilo e Exibição do Card (MODO CLARO)
     card.classList.remove('hidden');
-    card.className = "mb-8 bg-gradient-to-r from-violet-700 to-purple-600 rounded-2xl shadow-xl overflow-hidden text-white transform transition-all duration-300";
+    // Mudança: Fundo Branco com borda suave, removendo gradiente escuro
+    card.className = "mb-8 bg-white rounded-2xl shadow-xl border border-gray-100 overflow-hidden transform transition-all duration-300";
 
     card.innerHTML = `
-        <div class="px-6 py-4"> <h2 class="text-xl md:text-2xl font-extrabold tracking-tight mb-1">${name}</h2>
+        <div class="px-6 py-4"> <h2 class="text-xl md:text-2xl font-extrabold tracking-tight mb-1 text-gray-800">${name}</h2>
             
             <div class="flex items-center gap-2">
                 <span class="w-2 h-2 rounded-full ${dotClass}"></span>
-                <p class="text-purple-200 text-xs font-semibold uppercase tracking-widest">${cargo}</p>
+                <p class="text-indigo-500 text-xs font-semibold uppercase tracking-widest">${cargo}</p>
             </div>
         </div>
 
-        <div class="h-px w-full bg-white opacity-20"></div>
+        <div class="h-px w-full bg-gray-100"></div>
 
-        <div class="flex flex-row items-center justify-between bg-black/10 backdrop-blur-sm">
+        <div class="flex flex-row items-center justify-between bg-gray-50/50">
             
-            <div class="flex-1 py-4 px-2 text-center border-r border-white/10 hover:bg-white/5 transition-colors">
-                <span class="block text-[10px] md:text-xs text-purple-200 font-bold uppercase mb-1 tracking-wider opacity-80">Célula</span>
-                <span class="block text-xs md:text-sm font-bold text-white whitespace-nowrap">${celula}</span>
+            <div class="flex-1 py-4 px-2 text-center border-r border-gray-200 hover:bg-gray-100 transition-colors">
+                <span class="block text-[10px] md:text-xs text-gray-400 font-bold uppercase mb-1 tracking-wider">Célula</span>
+                <span class="block text-xs md:text-sm font-bold text-gray-700 whitespace-nowrap">${celula}</span>
             </div>
 
-            <div class="flex-1 py-4 px-2 text-center border-r border-white/10 hover:bg-white/5 transition-colors">
-                <span class="block text-[10px] md:text-xs text-purple-200 font-bold uppercase mb-1 tracking-wider opacity-80">Turno</span>
-                <span class="block text-xs md:text-sm font-bold text-white whitespace-nowrap">${turno}</span>
+            <div class="flex-1 py-4 px-2 text-center border-r border-gray-200 hover:bg-gray-100 transition-colors">
+                <span class="block text-[10px] md:text-xs text-gray-400 font-bold uppercase mb-1 tracking-wider">Turno</span>
+                <span class="block text-xs md:text-sm font-bold text-gray-700 whitespace-nowrap">${turno}</span>
             </div>
 
-            <div class="flex-1 py-4 px-2 text-center hover:bg-white/5 transition-colors">
-                <span class="block text-[10px] md:text-xs text-purple-200 font-bold uppercase mb-1 tracking-wider opacity-80">Horário</span>
-                <span class="block text-xs md:text-sm font-bold text-white whitespace-nowrap">${horario}</span>
+            <div class="flex-1 py-4 px-2 text-center hover:bg-gray-100 transition-colors">
+                <span class="block text-[10px] md:text-xs text-gray-400 font-bold uppercase mb-1 tracking-wider">Horário</span>
+                <span class="block text-xs md:text-sm font-bold text-gray-700 whitespace-nowrap">${horario}</span>
             </div>
         </div>
     `;
