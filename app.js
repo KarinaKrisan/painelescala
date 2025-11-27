@@ -1,4 +1,4 @@
-// app.js - Versão Final Robusta (Card Pessoal Estilo Premium)
+// app.js - Versão Final Robusta (Calendário Mobile em Pílulas Coloridas)
 // Depende de: JSONs mensais em ./data/escala-YYYY-MM.json
 
 // ==========================================
@@ -463,7 +463,7 @@ function initSelect() {
 }
 
 // ==========================================
-// ATUALIZAÇÃO DO CARD PESSOAL (NOVO ESTILO)
+// ATUALIZAÇÃO DO CARD PESSOAL (ESTILO PREMIUM)
 // ==========================================
 function updatePersonalView(name) {
     const emp = scheduleData[name];
@@ -525,17 +525,40 @@ function updatePersonalView(name) {
     updateCalendar(emp.schedule);
 }
 
+// ==========================================
+// ATUALIZAÇÃO DO CALENDÁRIO (MOBILE EM PÍLULAS)
+// ==========================================
 function updateCalendar(schedule) {
     const grid = document.getElementById('calendarGrid');
     const isMobile = window.innerWidth <= 767;
     grid.innerHTML = '';
     
     if(isMobile) {
-        grid.className = 'space-y-2';
+        grid.className = 'space-y-3 mt-4'; // Espaçamento entre as pílulas
         schedule.forEach((st, i) => {
-            grid.insertAdjacentHTML('beforeend', `<div class="flex justify-between bg-white p-3 rounded shadow status-${st}"><span>Dia ${i+1}</span><span>${statusMap[st]||st}</span></div>`);
+            // Definição de classes base para a pílula
+            let pillClasses = "flex justify-between items-center p-3 px-5 rounded-full border shadow-sm transition-all hover:shadow-md";
+            
+            // Aplicação de cores conforme o status, com destaque para 'T' (Trabalhando)
+            if(st === 'T') {
+                pillClasses += " bg-green-100 text-green-800 border-green-200"; // Estilo Trabalhando
+            } else if (st.startsWith('F') && st !== 'FE') { // Folga, Folga Sáb, Folga Dom
+                pillClasses += " bg-orange-100 text-orange-800 border-orange-200"; // Estilo Folga (Laranja/Amarelo)
+            } else if (st === 'FE') {
+                pillClasses += " bg-red-100 text-red-800 border-red-200"; // Estilo Férias
+            } else {
+                pillClasses += " bg-gray-100 text-gray-800 border-gray-200"; // Outros
+            }
+
+            grid.insertAdjacentHTML('beforeend', `
+                <div class="${pillClasses}">
+                    <span class="font-medium">Dia ${i+1}</span>
+                    <span class="font-bold">${statusMap[st]||st}</span>
+                </div>
+            `);
         });
     } else {
+        // Visualização Desktop (mantida)
         grid.className = 'calendar-grid-container';
         const m = { y: selectedMonthObj.year, mo: selectedMonthObj.month };
         const empty = new Date(m.y, m.mo, 1).getDay();
@@ -587,7 +610,6 @@ function updateWeekendTable() {
                 };
 
                 // Definição das cores INTENSIFICADAS (blue-100 / purple-100)
-                // Isso garante que o fundo fique colorido igual a imagem de referência
                 const satTags = makeTags(satW, 'bg-blue-100', 'border-blue-300', 'text-blue-800');
                 const sunTags = makeTags(sunW, 'bg-purple-100', 'border-purple-300', 'text-purple-800');
                 
