@@ -1,5 +1,5 @@
 // ==========================================
-// ATUALIZAÇÃO DO CARD PESSOAL (AJUSTADO: COR CREME/LARANJA CLARO + NOME MENOR)
+// ATUALIZAÇÃO DO CARD PESSOAL (AJUSTADO: FUNDO CINZA CLARO + NOME PEQUENO)
 // ==========================================
 function updatePersonalView(name) {
     const emp = scheduleData[name];
@@ -21,10 +21,8 @@ function updatePersonalView(name) {
     } else if(!turno) { turno = 'Comercial'; }
 
     // --- LÓGICA DE STATUS DO DIA (BOLINHA) ---
-    // Pega o status base (T, F, FE...) do dia selecionado
     let statusToday = emp.schedule[currentDay - 1] || 'F';
     
-    // VERIFICAÇÃO PARA EXPEDIENTE ENCERRADO
     const now = new Date();
     const isToday = (now.getDate() === currentDay && now.getMonth() === systemMonth && now.getFullYear() === systemYear);
 
@@ -34,36 +32,22 @@ function updatePersonalView(name) {
         }
     }
 
-    // Define as cores da bolinha baseadas no status
+    // Cores da bolinha
     let dotClass = "";
-    
     switch(statusToday) {
-        case 'T': // Trabalhando -> Verde
-            dotClass = "bg-green-400 shadow-[0_0_8px_rgba(74,222,128,0.8)]";
-            break;
-        case 'OFF-SHIFT': // Expediente Encerrado -> Roxo
-            dotClass = "bg-purple-500 shadow-[0_0_8px_rgba(168,85,247,0.8)]";
-            break;
-        case 'F': // Folga -> Amarelo
-            dotClass = "bg-yellow-400 shadow-[0_0_8px_rgba(250,204,21,0.8)]";
-            break;
-        case 'FE': // Férias -> Vermelho
-            dotClass = "bg-red-500 shadow-[0_0_8px_rgba(239,68,68,0.8)]";
-            break;
-        case 'FS': // Folga Sábado -> Azul Claro
-            dotClass = "bg-sky-400 shadow-[0_0_8px_rgba(56,189,248,0.8)]";
-            break;
-        case 'FD': // Folga Domingo -> Azul Escuro
-            dotClass = "bg-blue-600 shadow-[0_0_8px_rgba(37,99,235,0.8)]";
-            break;
-        default: // Padrão -> Cinza
-            dotClass = "bg-gray-400 shadow-[0_0_8px_rgba(156,163,175,0.8)]";
+        case 'T': dotClass = "bg-green-400 shadow-[0_0_8px_rgba(74,222,128,0.8)]"; break;
+        case 'OFF-SHIFT': dotClass = "bg-purple-500 shadow-[0_0_8px_rgba(168,85,247,0.8)]"; break;
+        case 'F': dotClass = "bg-yellow-400 shadow-[0_0_8px_rgba(250,204,21,0.8)]"; break;
+        case 'FE': dotClass = "bg-red-500 shadow-[0_0_8px_rgba(239,68,68,0.8)]"; break;
+        case 'FS': dotClass = "bg-sky-400 shadow-[0_0_8px_rgba(56,189,248,0.8)]"; break;
+        case 'FD': dotClass = "bg-blue-600 shadow-[0_0_8px_rgba(37,99,235,0.8)]"; break;
+        default: dotClass = "bg-gray-400 shadow-[0_0_8px_rgba(156,163,175,0.8)]";
     }
 
     // Estilo e Exibição do Card
-    // MUDANÇA AQUI: bg-orange-50 (Tom pastel/creme) e border-orange-100
+    // CORRIGIDO: bg-gray-100 (Cinza Claro visível)
     card.classList.remove('hidden');
-    card.className = "mb-8 bg-orange-50 rounded-2xl shadow-xl border border-orange-100 overflow-hidden transform transition-all duration-300";
+    card.className = "mb-8 bg-gray-100 rounded-2xl shadow-xl border border-gray-200 overflow-hidden transform transition-all duration-300";
 
     card.innerHTML = `
         <div class="px-6 py-4"> 
@@ -75,22 +59,22 @@ function updatePersonalView(name) {
             </div>
         </div>
 
-        <div class="h-px w-full bg-orange-200/50"></div>
+        <div class="h-px w-full bg-gray-200"></div>
 
-        <div class="flex flex-row items-center justify-between bg-orange-50/50">
+        <div class="flex flex-row items-center justify-between bg-gray-200/50">
             
-            <div class="flex-1 py-4 px-2 text-center border-r border-orange-200/50 hover:bg-orange-100 transition-colors">
-                <span class="block text-[10px] md:text-xs text-gray-400 font-bold uppercase mb-1 tracking-wider">Célula</span>
+            <div class="flex-1 py-4 px-2 text-center border-r border-gray-300/50 hover:bg-gray-200 transition-colors">
+                <span class="block text-[10px] md:text-xs text-gray-500 font-bold uppercase mb-1 tracking-wider">Célula</span>
                 <span class="block text-xs md:text-sm font-bold text-gray-700 whitespace-nowrap">${celula}</span>
             </div>
 
-            <div class="flex-1 py-4 px-2 text-center border-r border-orange-200/50 hover:bg-orange-100 transition-colors">
-                <span class="block text-[10px] md:text-xs text-gray-400 font-bold uppercase mb-1 tracking-wider">Turno</span>
+            <div class="flex-1 py-4 px-2 text-center border-r border-gray-300/50 hover:bg-gray-200 transition-colors">
+                <span class="block text-[10px] md:text-xs text-gray-500 font-bold uppercase mb-1 tracking-wider">Turno</span>
                 <span class="block text-xs md:text-sm font-bold text-gray-700 whitespace-nowrap">${turno}</span>
             </div>
 
-            <div class="flex-1 py-4 px-2 text-center hover:bg-orange-100 transition-colors">
-                <span class="block text-[10px] md:text-xs text-gray-400 font-bold uppercase mb-1 tracking-wider">Horário</span>
+            <div class="flex-1 py-4 px-2 text-center hover:bg-gray-200 transition-colors">
+                <span class="block text-[10px] md:text-xs text-gray-500 font-bold uppercase mb-1 tracking-wider">Horário</span>
                 <span class="block text-xs md:text-sm font-bold text-gray-700 whitespace-nowrap">${horario}</span>
             </div>
         </div>
