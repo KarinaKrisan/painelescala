@@ -1,4 +1,4 @@
-// app.js - Versão Final Robusta (Calendário Mobile em Pílulas Coloridas)
+// app.js - Versão Final Robusta (Card Pessoal Estilo Premium Roxo)
 // Depende de: JSONs mensais em ./data/escala-YYYY-MM.json
 
 // ==========================================
@@ -15,7 +15,6 @@ const systemDay = currentDateObj.getDate();
 const availableMonths = [
     { year: 2025, month: 10 }, // Novembro 2025 (Mês 10)
     { year: 2025, month: 11 }//, // Dezembro 2025 (Mês 11)
-    //{ year: 2026, month: 0 }//, // Janeiro 2026 (Mês 0)
 ];
 
 let selectedMonthObj = availableMonths.find(m => m.year === systemYear && m.month === systemMonth) || availableMonths[0];
@@ -463,60 +462,60 @@ function initSelect() {
 }
 
 // ==========================================
-// ATUALIZAÇÃO DO CARD PESSOAL (ESTILO PREMIUM)
+// ATUALIZAÇÃO DO CARD PESSOAL (NOVO ESTILO PREMIUM)
 // ==========================================
 function updatePersonalView(name) {
     const emp = scheduleData[name];
     if (!emp) return;
     const card = document.getElementById('personalInfoCard');
     
-    // Extração de dados com fallback
+    // Dados extraídos ou defaults
     const cargo = emp.info.Cargo || emp.info.Grupo || 'Colaborador';
-    const celula = emp.info.Celula || 'Sitelbra/ B2B'; // Default conforme imagem
     const horario = emp.info.Horário || '--:--';
     
-    // Lógica para deduzir Turno se não existir
-    let turno = emp.info.Turno;
-    if (!turno && horario) {
-        const startH = parseInt(horario.split(':')[0]);
-        if (!isNaN(startH)) {
-            if (startH >= 18 || startH <= 5) turno = 'Noturno';
-            else turno = 'Comercial';
-        } else {
-            turno = 'Comercial';
-        }
-    }
+    // Fallback para Célula e Turno
+    const celula = emp.info.Celula || 'Sitelbra/ B2B';
     
-    // Configura container (Visível e com sombra)
-    card.classList.remove('hidden');
-    card.className = "mb-8 rounded-2xl shadow-2xl overflow-hidden transform transition-all hover:scale-[1.01] duration-300";
+    let turno = emp.info.Turno;
+    if(!turno && horario !== '--:--') {
+        const startH = parseInt(horario.split(':')[0]);
+        if(!isNaN(startH)) {
+            if(startH >= 18 || startH <= 5) turno = 'Noturno';
+            else turno = 'Comercial';
+        } else { turno = 'Comercial'; }
+    } else if(!turno) { turno = 'Comercial'; }
 
-    // Template HTML refeito com Gradiente Roxo e Grid de Dados
+    // Estilo e Exibição do Card
+    card.classList.remove('hidden');
+    // Usando gradient from-violet-600 to-purple-600 para dar o tom da imagem
+    card.className = "mb-8 bg-gradient-to-r from-violet-700 to-purple-600 rounded-2xl shadow-xl overflow-hidden text-white transform transition-all duration-300";
+
     card.innerHTML = `
-        <div class="bg-gradient-to-r from-purple-700 via-purple-600 to-indigo-600 text-white">
-            <div class="px-8 py-6 pb-2">
-                <h2 class="text-4xl font-extrabold tracking-tight mb-1">${name}</h2>
-                <p class="text-purple-200 text-sm font-semibold uppercase tracking-widest border-l-2 border-purple-300 pl-3">${cargo}</p>
+        <div class="px-6 py-5">
+            <h2 class="text-3xl font-extrabold tracking-tight mb-1">${name}</h2>
+            <div class="flex items-center gap-2">
+                <span class="w-2 h-2 rounded-full bg-green-400 shadow-[0_0_8px_rgba(74,222,128,0.8)]"></span>
+                <p class="text-purple-200 text-sm font-semibold uppercase tracking-widest">${cargo}</p>
+            </div>
+        </div>
+
+        <div class="h-px w-full bg-white opacity-20"></div>
+
+        <div class="flex flex-row items-center justify-between bg-black/10 backdrop-blur-sm">
+            
+            <div class="flex-1 py-4 px-2 text-center border-r border-white/10 hover:bg-white/5 transition-colors">
+                <span class="block text-[10px] md:text-xs text-purple-200 font-bold uppercase mb-1 tracking-wider opacity-80">Célula</span>
+                <span class="block text-sm md:text-lg font-bold text-white whitespace-nowrap">${celula}</span>
             </div>
 
-            <div class="h-px w-full bg-gradient-to-r from-transparent via-purple-400 to-transparent opacity-30 my-2"></div>
+            <div class="flex-1 py-4 px-2 text-center border-r border-white/10 hover:bg-white/5 transition-colors">
+                <span class="block text-[10px] md:text-xs text-purple-200 font-bold uppercase mb-1 tracking-wider opacity-80">Turno</span>
+                <span class="block text-sm md:text-lg font-bold text-white whitespace-nowrap">${turno}</span>
+            </div>
 
-            <div class="flex flex-row items-center justify-between bg-black/10 backdrop-blur-sm border-t border-white/10">
-                
-                <div class="flex-1 py-4 px-2 text-center border-r border-white/10 hover:bg-white/5 transition-colors">
-                    <span class="block text-[10px] md:text-xs text-purple-200 font-bold uppercase mb-1 tracking-wider opacity-80">Célula</span>
-                    <span class="block text-sm md:text-lg font-bold text-white whitespace-nowrap">${celula}</span>
-                </div>
-
-                <div class="flex-1 py-4 px-2 text-center border-r border-white/10 hover:bg-white/5 transition-colors">
-                    <span class="block text-[10px] md:text-xs text-purple-200 font-bold uppercase mb-1 tracking-wider opacity-80">Turno</span>
-                    <span class="block text-sm md:text-lg font-bold text-white whitespace-nowrap">${turno}</span>
-                </div>
-
-                <div class="flex-1 py-4 px-2 text-center hover:bg-white/5 transition-colors">
-                    <span class="block text-[10px] md:text-xs text-purple-200 font-bold uppercase mb-1 tracking-wider opacity-80">Horário</span>
-                    <span class="block text-sm md:text-lg font-bold text-white whitespace-nowrap">${horario}</span>
-                </div>
+            <div class="flex-1 py-4 px-2 text-center hover:bg-white/5 transition-colors">
+                <span class="block text-[10px] md:text-xs text-purple-200 font-bold uppercase mb-1 tracking-wider opacity-80">Horário</span>
+                <span class="block text-sm md:text-lg font-bold text-white whitespace-nowrap">${horario}</span>
             </div>
         </div>
     `;
