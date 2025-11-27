@@ -1,4 +1,4 @@
-// app.js - Versão Final Robusta (Visual Cards Fim de Semana - Título Centralizado)
+// app.js - Versão Final Robusta (Visual Cards Fim de Semana - Tags Pílula com Fundo Claro)
 // Depende de: JSONs mensais em ./data/escala-YYYY-MM.json
 
 // ==========================================
@@ -527,22 +527,23 @@ function updateWeekendTable() {
             if(satW.length || sunW.length) {
                 
                 // Função auxiliar para gerar as tags
-                // 'rounded-full' mantido para efeito pílula
-                const makeTags = (list, borderColorClass, textColorClass) => {
+                // ATUALIZADO: bgColorClass adicionado como parâmetro
+                const makeTags = (list, bgColorClass, borderColorClass, textColorClass) => {
                     if(!list.length) return '<span class="text-gray-400 text-sm italic pl-1">Sem escala</span>';
                     return list.map(name => 
-                        `<span class="inline-block bg-white border ${borderColorClass} ${textColorClass} px-3 py-1 rounded-full text-sm font-medium shadow-sm mb-2 mr-2">${name}</span>`
+                        // Uso de ${bgColorClass} ao invés de bg-white
+                        `<span class="inline-block ${bgColorClass} border ${borderColorClass} ${textColorClass} px-3 py-1 rounded-full text-sm font-medium shadow-sm mb-2 mr-2">${name}</span>`
                     ).join('');
                 };
 
-                const satTags = makeTags(satW, 'border-blue-400', 'text-blue-700');
-                const sunTags = makeTags(sunW, 'border-purple-400', 'text-purple-700');
+                // Definição das cores de fundo "clarinho" (blue-50 e purple-50) e bordas suaves
+                const satTags = makeTags(satW, 'bg-blue-50', 'border-blue-200', 'text-blue-700');
+                const sunTags = makeTags(sunW, 'bg-purple-50', 'border-purple-200', 'text-purple-700');
                 
                 // Strings formatadas conforme solicitado
                 const labelSat = `sábado (${fmtDate(satDate)})`;
                 const labelSun = sunDate ? `domingo (${fmtDate(sunDate)})` : 'domingo';
 
-                // ADICIONADO: 'justify-center' na div do header para centralizar o texto
                 const cardHTML = `
                 <div class="bg-white rounded-xl shadow-lg overflow-hidden border border-gray-100 mb-8 max-w-md mx-auto md:mx-0">
                     <div class="bg-gradient-to-r from-blue-600 to-blue-500 p-4 flex items-center justify-center text-white shadow-md">
