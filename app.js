@@ -1,10 +1,12 @@
-// app.js - Versão Limpa (Login Separado)
+// app.js - Versão Final Corrigida
+// Integração Completa: Auth + Firestore + Edição Ciclo + Atualização em Tempo Real
+
 // ==========================================
 // 1. IMPORTAÇÕES FIREBASE (WEB SDK)
 // ==========================================
 import { initializeApp } from "https://www.gstatic.com/firebasejs/11.0.2/firebase-app.js";
 import { getFirestore, doc, getDoc, setDoc } from "https://www.gstatic.com/firebasejs/11.0.2/firebase-firestore.js";
-import { getAuth, onAuthStateChanged, signOut } from "https://www.gstatic.com/firebasejs/11.0.2/firebase-auth.js";
+import { getAuth, signInWithEmailAndPassword, onAuthStateChanged, signOut } from "https://www.gstatic.com/firebasejs/11.0.2/firebase-auth.js";
 
 // ==========================================
 // 2. CONFIGURAÇÃO (SUAS CHAVES)
@@ -63,29 +65,45 @@ const daysOfWeek = ["Dom","Seg","Ter","Qua","Qui","Sex","Sáb"];
 function pad(n){ return n < 10 ? '0' + n : '' + n; }
 
 // ==========================================
-// 4. LÓGICA DE AUTENTICAÇÃO (Painel)
+// 4. LÓGICA DE AUTENTICAÇÃO
 // ==========================================
+const loginModal = document.getElementById('loginModal');
 const adminToolbar = document.getElementById('adminToolbar');
-const btnOpenLogin = document.getElementById('btnOpenLogin'); // Agora é um link
+const btnOpenLogin = document.getElementById('btnOpenLogin');
 const btnLogout = document.getElementById('btnLogout');
 
-// Logout
-if(btnLogout) btnLogout.addEventListener('click', () => {
-    signOut(auth);
-    window.location.reload();
+if(btnOpenLogin) btnOpenLogin.addEventListener('click', () => loginModal.classList.remove('hidden'));
+document.getElementById('btnCloseLogin').addEventListener('click', () => loginModal.classList.add('hidden'));
+
+document.getElementById('loginForm').addEventListener('submit', async (e) => {
+    e.preventDefault();
+    const email = document.getElementById('emailInput').value;
+    const pass = document.getElementById('passwordInput').value;
+    const errorMsg = document.getElementById('loginError');
+
+    try {
+        await signInWithEmailAndPassword(auth, email, pass);
+        loginModal.classList.add('hidden');
+        errorMsg.classList.add('hidden');
+        document.getElementById('emailInput').value = '';
+        document.getElementById('passwordInput').value = '';
+    } catch (error) {
+        console.error("Erro login:", error);
+        errorMsg.textContent = "Erro: Verifique e-mail e senha.";
+        errorMsg.classList.remove('hidden');
+    }
 });
 
-// Monitorar Estado do Usuário
+if(btnLogout) btnLogout.addEventListener('click', () => signOut(auth));
+
 onAuthStateChanged(auth, (user) => {
     if (user) {
-        // Logado como Admin
         isAdmin = true;
         adminToolbar.classList.remove('hidden');
         if(btnOpenLogin) btnOpenLogin.classList.add('hidden');
         document.getElementById('adminEditHint').classList.remove('hidden');
         document.body.style.paddingTop = "50px"; 
     } else {
-        // Visitante
         isAdmin = false;
         adminToolbar.classList.add('hidden');
         if(btnOpenLogin) btnOpenLogin.classList.remove('hidden');
@@ -98,7 +116,7 @@ onAuthStateChanged(auth, (user) => {
 });
 
 // ==========================================
-// 5. CARREGAMENTO DE DADOS (FIRESTORE)
+// 5. CARREGAMENTO DE DADOS
 // ==========================================
 async function loadDataFromCloud() {
     const docId = `escala-${selectedMonthObj.year}-${String(selectedMonthObj.month+1).padStart(2,'0')}`;
@@ -119,11 +137,10 @@ async function loadDataFromCloud() {
         }
     } catch (e) {
         console.error("Erro ao baixar dados:", e);
-        // alert("Erro ao conectar no banco de dados.");
+        alert("Erro ao conectar no banco de dados.");
     }
 }
 
-// Salvar na Nuvem
 async function saveToCloud() {
     if(!isAdmin) return;
     const btn = document.getElementById('btnSaveCloud');
