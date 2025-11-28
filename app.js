@@ -1,5 +1,5 @@
 // app.js - Versão Cloud (Firebase)
-// Integração Completa: Correção de visibilidade do calendário ao limpar seleção
+// Integração Completa: Modo de Edição Simplificado (Clique para Alternar/Ciclo)
 
 // ==========================================
 // 1. IMPORTAÇÕES FIREBASE (WEB SDK)
@@ -496,7 +496,6 @@ function initSelect() {
         const opt = document.createElement('option'); opt.value=name; opt.textContent=name; select.appendChild(opt);
     });
     
-    // CORREÇÃO AQUI: Substituir para limpar listeners E lógica de esconder calendário
     const newSelect = select.cloneNode(true);
     select.parentNode.replaceChild(newSelect, select);
     
@@ -505,7 +504,6 @@ function initSelect() {
         if(name) {
             updatePersonalView(name);
         } else {
-            // SE NÃO TIVER SELEÇÃO (vazio), ESCONDE TUDO
             document.getElementById('personalInfoCard').classList.add('hidden');
             document.getElementById('calendarContainer').classList.add('hidden');
         }
@@ -525,7 +523,6 @@ function updatePersonalView(name) {
     let statusToday = emp.schedule[currentDay - 1] || 'F';
     let displayStatus = statusToday;
 
-    // Lógica para Expediente Encerrado (Roxo)
     const now = new Date();
     const isToday = (now.getDate() === currentDay && 
                      now.getMonth() === selectedMonthObj.month && 
@@ -537,7 +534,6 @@ function updatePersonalView(name) {
         }
     }
 
-    // Mapa de Cores da Bolinha
     const colorClasses = {
         'T': 'bg-green-500 shadow-[0_0_8px_rgba(34,197,94,0.8)]',
         'F': 'bg-yellow-400 shadow-[0_0_8px_rgba(250,204,21,0.8)]',
@@ -582,93 +578,7 @@ function updatePersonalView(name) {
 }
 
 // ----------------------------------------------------
-// NOVO: SISTEMA DE MENU DE CONTEXTO (DESKTOP)
-// ----------------------------------------------------
-
-const statusOptions = [
-    { code: 'T', label: 'Trabalhando', dotColor: 'bg-green-600' },
-    { code: 'F', label: 'Folga', dotColor: 'bg-yellow-500' },
-    { code: 'FS', label: 'Folga Sáb', dotColor: 'bg-sky-500' },
-    { code: 'FD', label: 'Folga Dom', dotColor: 'bg-blue-600' },
-    { code: 'FE', label: 'Férias', dotColor: 'bg-red-600' },
-    { code: 'OFF-SHIFT', label: 'Exp. Encerrado', dotColor: 'bg-fuchsia-600' }
-];
-
-let currentEditTarget = null; // { name: string, index: number }
-
-function openDesktopEditMenu(event, name, dayIndex) {
-    event.stopPropagation(); 
-    
-    const targetEl = event.currentTarget; 
-    const menu = document.getElementById('statusContextMenu');
-    
-    currentEditTarget = { name, index: dayIndex };
-
-    const currentStatus = scheduleData[name].schedule[dayIndex];
-    menu.innerHTML = statusOptions.map(opt => `
-        <button onclick="window.applyStatusFromMenu('${opt.code}')" 
-                class="w-full text-left px-4 py-2 text-sm font-medium transition-colors border-b border-gray-100 last:border-0 flex items-center justify-between group hover:bg-gray-100 text-gray-700">
-            <span class="flex items-center gap-2">
-                <span class="w-2.5 h-2.5 rounded-full ${opt.dotColor}"></span>
-                ${opt.label}
-            </span>
-            ${currentStatus === opt.code ? '<i class="fas fa-check text-indigo-600 text-xs"></i>' : ''}
-        </button>
-    `).join('');
-
-    menu.style.visibility = 'hidden';
-    menu.classList.remove('hidden');
-
-    const rect = targetEl.getBoundingClientRect(); 
-    const menuHeight = menu.offsetHeight;
-    const windowHeight = window.innerHeight;
-
-    let topPos = rect.bottom + window.scrollY + 4; 
-    let leftPos = rect.left + window.scrollX;
-
-    if (rect.bottom + menuHeight + 10 > windowHeight) {
-        topPos = (rect.top + window.scrollY) - menuHeight - 4;
-    }
-
-    menu.style.top = `${topPos}px`;
-    menu.style.left = `${leftPos}px`;
-    menu.style.minWidth = `${rect.width}px`; 
-    menu.style.visibility = 'visible';
-
-    setTimeout(() => {
-        document.addEventListener('click', closeDesktopEditMenu);
-    }, 0);
-}
-
-function closeDesktopEditMenu() {
-    const menu = document.getElementById('statusContextMenu');
-    if(menu) menu.classList.add('hidden');
-    document.removeEventListener('click', closeDesktopEditMenu);
-}
-
-window.applyStatusFromMenu = async function(statusCode) {
-    if (!currentEditTarget || !isAdmin) return;
-    
-    const { name, index } = currentEditTarget;
-    const emp = scheduleData[name];
-
-    emp.schedule[index] = statusCode;
-    rawSchedule[name].calculatedSchedule = emp.schedule;
-
-    hasUnsavedChanges = true;
-    const statusEl = document.getElementById('saveStatus');
-    if(statusEl) {
-        statusEl.textContent = "Alterações pendentes!";
-        statusEl.className = "text-xs text-yellow-300 font-bold animate-pulse";
-    }
-
-    updateCalendar(name, emp.schedule);
-    updateDailyView();
-    closeDesktopEditMenu();
-};
-
-// ----------------------------------------------------
-// FIM SISTEMA DE MENU
+// Lógica de Edição: CICLO (Modo Simples)
 // ----------------------------------------------------
 
 function cycleStatus(current) {
@@ -684,9 +594,14 @@ async function handleCellClick(name, dayIndex) {
     const newStatus = cycleStatus(emp.schedule[dayIndex]);
     emp.schedule[dayIndex] = newStatus;
     rawSchedule[name].calculatedSchedule = emp.schedule;
+    
     hasUnsavedChanges = true;
-    document.getElementById('saveStatus').textContent = "Alterações pendentes!";
-    document.getElementById('saveStatus').className = "text-xs text-yellow-300 font-bold animate-pulse";
+    const statusEl = document.getElementById('saveStatus');
+    if(statusEl) {
+        statusEl.textContent = "Alterações pendentes!";
+        statusEl.className = "text-xs text-yellow-300 font-bold animate-pulse";
+    }
+    
     updateCalendar(name, emp.schedule);
     updateDailyView();
 }
@@ -731,8 +646,8 @@ function updateCalendar(name, schedule) {
             
             if(isAdmin) {
                 badge.classList.add('cursor-pointer', 'hover:opacity-80', 'ring-2', 'ring-transparent', 'hover:ring-indigo-300', 'transition-all');
-                badge.title = "Clique para alterar";
-                badge.onclick = (e) => openDesktopEditMenu(e, name, i);
+                badge.title = "Clique para alterar (Ciclo)";
+                badge.onclick = () => handleCellClick(name, i);
             }
 
             cell.innerHTML = `<div class="day-number">${i+1}</div>`;
