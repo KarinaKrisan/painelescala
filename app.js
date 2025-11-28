@@ -1,4 +1,4 @@
-// app.js - Versão "Floating Capsule" (Barra Inferior)
+// app.js - Versão com Card de Colaborador Cinza
 // ==========================================
 // 1. IMPORTAÇÕES FIREBASE (WEB SDK)
 // ==========================================
@@ -540,28 +540,29 @@ function updatePersonalView(name) {
     let dotClass = colorClasses[displayStatus] || 'bg-gray-400 shadow-none';
 
     card.classList.remove('hidden');
-    card.className = "mb-8 bg-gray-50 rounded-2xl shadow-xl overflow-hidden transform transition-all duration-300";
+    // ALTERAÇÃO AQUI: CARD CINZA (bg-gray-200) e Borda Cinza (border-gray-300)
+    card.className = "mb-8 bg-gray-200 rounded-2xl shadow-xl overflow-hidden transform transition-all duration-300 border border-gray-300";
 
     card.innerHTML = `
         <div class="px-6 py-4">
-            <h2 class="text-xl md:text-2xl font-extrabold tracking-tight mb-1 text-gray-900">${name}</h2>
+            <h2 class="text-xl md:text-2xl font-extrabold tracking-tight mb-1 text-gray-800">${name}</h2>
             <div class="flex items-center gap-2">
                 <span class="w-2 h-2 rounded-full ${dotClass}"></span>
-                <p class="text-indigo-500 text-xs font-semibold uppercase tracking-widest">${cargo}</p>
+                <p class="text-indigo-600 text-xs font-semibold uppercase tracking-widest">${cargo}</p>
             </div>
         </div>
-        <div class="h-px w-full bg-gray-200"></div>
-        <div class="flex flex-row items-center justify-between bg-gray-100">
+        <div class="h-px w-full bg-gray-300"></div>
+        <div class="flex flex-row items-center justify-between bg-gray-300/50">
             <div class="flex-1 py-4 px-2 text-center border-r border-gray-300">
-                <span class="block text-[10px] md:text-xs text-gray-500 font-bold uppercase mb-1 tracking-wider">Célula</span>
+                <span class="block text-[10px] md:text-xs text-gray-600 font-bold uppercase mb-1 tracking-wider">Célula</span>
                 <span class="block text-xs md:text-sm font-bold text-gray-800 whitespace-nowrap">${celula}</span>
             </div>
             <div class="flex-1 py-4 px-2 text-center border-r border-gray-300">
-                <span class="block text-[10px] md:text-xs text-gray-500 font-bold uppercase mb-1 tracking-wider">Turno</span>
+                <span class="block text-[10px] md:text-xs text-gray-600 font-bold uppercase mb-1 tracking-wider">Turno</span>
                 <span class="block text-xs md:text-sm font-bold text-gray-800 whitespace-nowrap">${turno}</span>
             </div>
             <div class="flex-1 py-4 px-2 text-center">
-                <span class="block text-[10px] md:text-xs text-gray-500 font-bold uppercase mb-1 tracking-wider">Horário</span>
+                <span class="block text-[10px] md:text-xs text-gray-600 font-bold uppercase mb-1 tracking-wider">Horário</span>
                 <span class="block text-xs md:text-sm font-bold text-gray-800 whitespace-nowrap">${horario}</span>
             </div>
         </div>
