@@ -1,6 +1,6 @@
 // app.js - Versão Cloud (Firebase)
-// Integração Completa: Auth + Firestore + Edição Visual
-// CORREÇÃO APLICADA: Seleção correta de Ano/Mês ao recarregar.
+// Integração Completa: Auth + Firestore + Edição Visual (Menu Desktop)
+// CORREÇÃO APLICADA: Menu de contexto para edição desktop.
 
 // ==========================================
 // 1. IMPORTAÇÕES FIREBASE (WEB SDK)
@@ -31,39 +31,34 @@ const auth = getAuth(app);
 // ==========================================
 let isAdmin = false;
 let hasUnsavedChanges = false;
-let scheduleData = {}; // Armazena os dados atuais na memória
-let rawSchedule = {};  // Dados brutos do DB
+let scheduleData = {}; 
+let rawSchedule = {};  
 let dailyChart = null;
 let isTrendMode = false;
 let currentDay = new Date().getDate();
 
 const currentDateObj = new Date();
 const monthNames = ["Janeiro","Fevereiro","Março","Abril","Maio","Junho","Julho","Agosto","Setembro","Outubro","Novembro","Dezembro"];
-// Sistema focado no mês atual real
 const systemYear = currentDateObj.getFullYear();
 const systemMonth = currentDateObj.getMonth(); 
 
-// Ajuste de meses disponíveis (Novembro/25 até Dezembro/26)
 const availableMonths = [
-    { year: 2025, month: 10 }, // Novembro 2025
-    { year: 2025, month: 11 }, // Dezembro 2025
-    
-    // 2026 COMPLETO
-    { year: 2026, month: 0 },  // Janeiro
-    { year: 2026, month: 1 },  // Fevereiro
-    { year: 2026, month: 2 },  // Março
-    { year: 2026, month: 3 },  // Abril
-    { year: 2026, month: 4 },  // Maio
-    { year: 2026, month: 5 },  // Junho
-    { year: 2026, month: 6 },  // Julho
-    { year: 2026, month: 7 },  // Agosto
-    { year: 2026, month: 8 },  // Setembro
-    { year: 2026, month: 9 },  // Outubro
-    { year: 2026, month: 10 }, // Novembro
-    { year: 2026, month: 11 }  // Dezembro
+    { year: 2025, month: 10 }, 
+    { year: 2025, month: 11 }, 
+    { year: 2026, month: 0 }, 
+    { year: 2026, month: 1 }, 
+    { year: 2026, month: 2 }, 
+    { year: 2026, month: 3 }, 
+    { year: 2026, month: 4 }, 
+    { year: 2026, month: 5 }, 
+    { year: 2026, month: 6 }, 
+    { year: 2026, month: 7 }, 
+    { year: 2026, month: 8 }, 
+    { year: 2026, month: 9 }, 
+    { year: 2026, month: 10 }, 
+    { year: 2026, month: 11 }  
 ];
 
-// Tenta encontrar o mês atual na lista. Se não achar, pega o último.
 let selectedMonthObj = availableMonths.find(m => m.year === systemYear && m.month === systemMonth) || availableMonths[availableMonths.length-1];
 
 const statusMap = { 'T':'Trabalhando','F':'Folga','FS':'Folga Sáb','FD':'Folga Dom','FE':'Férias','OFF-SHIFT':'Exp.Encerrado', 'F_EFFECTIVE': 'Exp.Encerrado' };
@@ -79,13 +74,9 @@ const adminToolbar = document.getElementById('adminToolbar');
 const btnOpenLogin = document.getElementById('btnOpenLogin');
 const btnLogout = document.getElementById('btnLogout');
 
-// Abrir Modal
 if(btnOpenLogin) btnOpenLogin.addEventListener('click', () => loginModal.classList.remove('hidden'));
-
-// Fechar Modal
 document.getElementById('btnCloseLogin').addEventListener('click', () => loginModal.classList.add('hidden'));
 
-// Login Form
 document.getElementById('loginForm').addEventListener('submit', async (e) => {
     e.preventDefault();
     const email = document.getElementById('emailInput').value;
@@ -96,7 +87,6 @@ document.getElementById('loginForm').addEventListener('submit', async (e) => {
         await signInWithEmailAndPassword(auth, email, pass);
         loginModal.classList.add('hidden');
         errorMsg.classList.add('hidden');
-        // Limpar campos
         document.getElementById('emailInput').value = '';
         document.getElementById('passwordInput').value = '';
     } catch (error) {
@@ -106,27 +96,22 @@ document.getElementById('loginForm').addEventListener('submit', async (e) => {
     }
 });
 
-// Logout
 if(btnLogout) btnLogout.addEventListener('click', () => signOut(auth));
 
-// Monitorar Estado do Usuário
 onAuthStateChanged(auth, (user) => {
     if (user) {
-        // Logado como Admin
         isAdmin = true;
         adminToolbar.classList.remove('hidden');
         if(btnOpenLogin) btnOpenLogin.classList.add('hidden');
         document.getElementById('adminEditHint').classList.remove('hidden');
-        document.body.style.paddingTop = "50px"; // Espaço para barra
+        document.body.style.paddingTop = "50px"; 
     } else {
-        // Visitante
         isAdmin = false;
         adminToolbar.classList.add('hidden');
         if(btnOpenLogin) btnOpenLogin.classList.remove('hidden');
         document.getElementById('adminEditHint').classList.add('hidden');
         document.body.style.paddingTop = "0";
     }
-    // Recarrega a view para aplicar permissões de clique
     updateDailyView();
     const sel = document.getElementById('employeeSelect');
     if(sel && sel.value) updatePersonalView(sel.value);
@@ -136,17 +121,14 @@ onAuthStateChanged(auth, (user) => {
 // 5. CARREGAMENTO DE DADOS (FIRESTORE)
 // ==========================================
 async function loadDataFromCloud() {
-    // ID do documento: "escala-2025-11" (Ano-MesIndex)
-    // Atenção: month+1 para bater com o padrão salvo (11 para novembro)
     const docId = `escala-${selectedMonthObj.year}-${String(selectedMonthObj.month+1).padStart(2,'0')}`;
-    
     try {
         const docRef = doc(db, "escalas", docId);
         const docSnap = await getDoc(docRef);
 
         if (docSnap.exists()) {
             rawSchedule = docSnap.data();
-            processScheduleData(); // Processa dados brutos para formato visual
+            processScheduleData(); 
             updateDailyView();
             initSelect();
         } else {
@@ -161,7 +143,6 @@ async function loadDataFromCloud() {
     }
 }
 
-// Salvar na Nuvem
 async function saveToCloud() {
     if(!isAdmin) return;
     const btn = document.getElementById('btnSaveCloud');
@@ -196,7 +177,6 @@ document.getElementById('btnSaveCloud').addEventListener('click', saveToCloud);
 // ==========================================
 // 6. PROCESSAMENTO DE DADOS
 // ==========================================
-
 function generate5x2ScheduleDefaultForMonth(monthObj) {
     const totalDays = new Date(monthObj.year, monthObj.month+1, 0).getDate();
     const arr = [];
@@ -209,7 +189,7 @@ function generate5x2ScheduleDefaultForMonth(monthObj) {
 
 function parseDayListForMonth(dayString, monthObj) {
     if (!dayString) return [];
-    if (Array.isArray(dayString)) return dayString; // Se já for array
+    if (Array.isArray(dayString)) return dayString; 
 
     const totalDays = new Date(monthObj.year, monthObj.month+1, 0).getDate();
     const days = new Set();
@@ -236,14 +216,11 @@ function parseDayListForMonth(dayString, monthObj) {
 function buildFinalScheduleForMonth(employeeData, monthObj) {
     const totalDays = new Date(monthObj.year, monthObj.month+1, 0).getDate();
     
-    // Se já tivermos um array explícito salvo (modo edição), usamos ele.
     if (employeeData.calculatedSchedule && Array.isArray(employeeData.calculatedSchedule)) {
         return employeeData.calculatedSchedule;
     }
 
     const schedule = new Array(totalDays).fill(null);
-
-    // Parse T
     let tArr = [];
     if(typeof employeeData.T === 'string' && /segunda a sexta/i.test(employeeData.T)) tArr = generate5x2ScheduleDefaultForMonth(monthObj);
     else if(Array.isArray(employeeData.T)) {
@@ -252,7 +229,6 @@ function buildFinalScheduleForMonth(employeeData, monthObj) {
         tArr = arr;
     }
 
-    // Parse F, FE, FS, FD
     const vacDays = parseDayListForMonth(employeeData.FE, monthObj);
     vacDays.forEach(d => { if (d>=1 && d<=totalDays) schedule[d-1] = 'FE'; });
 
@@ -262,14 +238,12 @@ function buildFinalScheduleForMonth(employeeData, monthObj) {
     const fdDays = parseDayListForMonth(employeeData.FD, monthObj);
     fdDays.forEach(d => { if(schedule[d-1] !== 'FE') schedule[d-1] = 'FD'; });
 
-    // Preencher resto com T se estiver no array T, senao F
     for(let i=0; i<totalDays; i++) {
         if(!schedule[i]) {
             if(tArr[i] === 'T') schedule[i] = 'T';
             else schedule[i] = 'F';
         }
     }
-    
     return schedule;
 }
 
@@ -283,11 +257,9 @@ function processScheduleData() {
             info: rawSchedule[name],
             schedule: finalArr
         };
-        // Salva o calculado de volta no raw para persistência futura se editar
         rawSchedule[name].calculatedSchedule = finalArr;
     });
 
-    // Setup Slider
     const totalDays = new Date(selectedMonthObj.year, selectedMonthObj.month+1, 0).getDate();
     const slider = document.getElementById('dateSlider');
     if (slider) {
@@ -301,7 +273,6 @@ function processScheduleData() {
 // ==========================================
 // 7. INTERFACE E GRÁFICOS
 // ==========================================
-
 function parseSingleTimeRange(rangeStr) {
     if (!rangeStr || typeof rangeStr !== 'string') return null;
     const m = rangeStr.match(/(\d{1,2}):(\d{2})\s*às\s*(\d{1,2}):(\d{2})/);
@@ -323,7 +294,6 @@ function isWorkingTime(timeRange) {
     return false;
 }
 
-// Chart Toggle
 window.toggleChartMode = function() {
     isTrendMode = !isTrendMode;
     const btn = document.getElementById("btnToggleChart");
@@ -466,7 +436,6 @@ function updateDailyView() {
     const currentDateLabel = document.getElementById('currentDateLabel');
     const dayOfWeekIndex = new Date(selectedMonthObj.year, selectedMonthObj.month, currentDay).getDay();
     const now = new Date();
-    // Verifica se é "hoje" real
     const isToday = (now.getDate() === currentDay && now.getMonth() === selectedMonthObj.month && now.getFullYear() === selectedMonthObj.year);
     
     currentDateLabel.textContent = `${daysOfWeek[dayOfWeekIndex]}, ${pad(currentDay)}/${pad(selectedMonthObj.month+1)}/${selectedMonthObj.year}`;
@@ -529,7 +498,6 @@ function initSelect() {
         const opt = document.createElement('option'); opt.value=name; opt.textContent=name; select.appendChild(opt);
     });
     
-    // Clonar para limpar listeners antigos
     const newSelect = select.cloneNode(true);
     select.parentNode.replaceChild(newSelect, select);
     newSelect.addEventListener('change', e => {
@@ -550,7 +518,6 @@ function updatePersonalView(name) {
     let turno = emp.info.Turno || 'Comercial';
 
     let statusToday = emp.schedule[currentDay - 1] || 'F';
-    // Cores bolinha
     let dotClass = "bg-gray-400 shadow-[0_0_8px_rgba(156,163,175,0.8)]";
     if(statusToday==='T') dotClass = "bg-green-400 shadow-[0_0_8px_rgba(74,222,128,0.8)]";
     if(statusToday==='F') dotClass = "bg-yellow-400 shadow-[0_0_8px_rgba(250,204,21,0.8)]";
@@ -588,7 +555,95 @@ function updatePersonalView(name) {
     updateCalendar(name, emp.schedule);
 }
 
-// EDIÇÃO DE CÉLULAS
+// ----------------------------------------------------
+// NOVO: SISTEMA DE MENU DE CONTEXTO (DESKTOP)
+// ----------------------------------------------------
+
+// Definição das opções para o menu (com cores)
+const statusOptions = [
+    { code: 'T', label: 'Trabalhando', colorClass: 'text-green-700 hover:bg-green-50' },
+    { code: 'F', label: 'Folga', colorClass: 'text-yellow-700 hover:bg-yellow-50' },
+    { code: 'FS', label: 'Folga Sáb', colorClass: 'text-sky-700 hover:bg-sky-50' },
+    { code: 'FD', label: 'Folga Dom', colorClass: 'text-blue-700 hover:bg-blue-50' },
+    { code: 'FE', label: 'Férias', colorClass: 'text-red-700 hover:bg-red-50' },
+    { code: 'OFF-SHIFT', label: 'Exp. Encerrado', colorClass: 'text-fuchsia-700 hover:bg-fuchsia-50' }
+];
+
+let currentEditTarget = null; // { name: string, index: number }
+
+function openDesktopEditMenu(event, name, dayIndex) {
+    event.stopPropagation(); // Impede fechar ao clicar
+    const menu = document.getElementById('statusContextMenu');
+    
+    // Salva quem estamos editando
+    currentEditTarget = { name, index: dayIndex };
+
+    // Gera o HTML das opções
+    const currentStatus = scheduleData[name].schedule[dayIndex];
+    menu.innerHTML = statusOptions.map(opt => `
+        <button onclick="window.applyStatusFromMenu('${opt.code}')" 
+                class="w-full text-left px-4 py-3 text-sm font-semibold transition-colors border-b border-gray-100 last:border-0 flex items-center justify-between group ${opt.colorClass}">
+            <span>${opt.label}</span>
+            ${currentStatus === opt.code ? '<i class="fas fa-check"></i>' : ''}
+        </button>
+    `).join('');
+
+    // Posicionamento Inteligente (perto do mouse)
+    const rect = event.target.getBoundingClientRect();
+    let top = rect.bottom + window.scrollY;
+    let left = rect.left + window.scrollX;
+
+    // Se estiver muito à direita, joga o menu para a esquerda
+    if (left + 200 > window.innerWidth) {
+        left = rect.right - 200 + window.scrollX;
+    }
+
+    menu.style.top = `${top}px`;
+    menu.style.left = `${left}px`;
+    menu.classList.remove('hidden');
+
+    // Adiciona evento para fechar se clicar fora
+    document.addEventListener('click', closeDesktopEditMenu);
+}
+
+function closeDesktopEditMenu() {
+    const menu = document.getElementById('statusContextMenu');
+    if(menu) menu.classList.add('hidden');
+    document.removeEventListener('click', closeDesktopEditMenu);
+}
+
+// Função exposta globalmente para ser chamada pelo HTML gerado dinamicamente
+window.applyStatusFromMenu = async function(statusCode) {
+    if (!currentEditTarget || !isAdmin) return;
+    
+    const { name, index } = currentEditTarget;
+    const emp = scheduleData[name];
+
+    // Atualiza status
+    emp.schedule[index] = statusCode;
+    
+    // Persistência
+    rawSchedule[name].calculatedSchedule = emp.schedule;
+
+    // Feedback Visual
+    hasUnsavedChanges = true;
+    const statusEl = document.getElementById('saveStatus');
+    if(statusEl) {
+        statusEl.textContent = "Alterações pendentes!";
+        statusEl.className = "text-xs text-yellow-300 font-bold animate-pulse";
+    }
+
+    // Re-render
+    updateCalendar(name, emp.schedule);
+    updateDailyView();
+    closeDesktopEditMenu();
+};
+
+// ----------------------------------------------------
+// FIM SISTEMA DE MENU
+// ----------------------------------------------------
+
+// Lógica Antiga para Mobile (Ciclo)
 function cycleStatus(current) {
     const sequence = ['T', 'F', 'FS', 'FD', 'FE'];
     let idx = sequence.indexOf(current);
@@ -598,21 +653,13 @@ function cycleStatus(current) {
 
 async function handleCellClick(name, dayIndex) {
     if (!isAdmin) return;
-    
-    // Atualiza localmente
     const emp = scheduleData[name];
     const newStatus = cycleStatus(emp.schedule[dayIndex]);
     emp.schedule[dayIndex] = newStatus;
-    
-    // Atualiza rawSchedule (para persistir)
     rawSchedule[name].calculatedSchedule = emp.schedule;
-
-    // Feedback Visual
     hasUnsavedChanges = true;
     document.getElementById('saveStatus').textContent = "Alterações pendentes!";
     document.getElementById('saveStatus').className = "text-xs text-yellow-300 font-bold animate-pulse";
-    
-    // Re-render
     updateCalendar(name, emp.schedule);
     updateDailyView();
 }
@@ -623,6 +670,7 @@ function updateCalendar(name, schedule) {
     grid.innerHTML = '';
     
     if(isMobile) {
+        // --- MOBILE: USA CICLO (clique direto) ---
         grid.className = 'space-y-3 mt-4';
         schedule.forEach((st, i) => {
             let pillClasses = "flex justify-between items-center p-3 px-5 rounded-full border shadow-sm transition-all";
@@ -642,6 +690,7 @@ function updateCalendar(name, schedule) {
             grid.appendChild(el);
         });
     } else {
+        // --- DESKTOP: USA MENU DE CONTEXTO ---
         grid.className = 'calendar-grid-container';
         const m = { y: selectedMonthObj.year, mo: selectedMonthObj.month };
         const empty = new Date(m.y, m.mo, 1).getDay();
@@ -649,13 +698,16 @@ function updateCalendar(name, schedule) {
         
         schedule.forEach((st, i) => {
             const el = document.createElement('div');
-            el.className = "calendar-cell bg-white border relative";
+            el.className = "calendar-cell bg-white border relative transition-colors duration-150";
             if(isAdmin) {
-                el.classList.add('cursor-pointer', 'hover:bg-indigo-50');
-                el.title = "Clique para alterar status";
+                el.classList.add('cursor-pointer', 'hover:bg-indigo-50', 'hover:border-indigo-300');
+                el.title = "Clique para selecionar o status";
             }
             el.innerHTML = `<div class="day-number">${i+1}</div><div class="day-status-badge status-${st}">${statusMap[st]||st}</div>`;
-            if(isAdmin) el.onclick = () => handleCellClick(name, i);
+            
+            // AQUI MUDOU: Usa o menu flutuante no desktop
+            if(isAdmin) el.onclick = (e) => openDesktopEditMenu(e, name, i);
+            
             grid.appendChild(el);
         });
     }
@@ -667,7 +719,6 @@ function updateCalendar(name, schedule) {
 function initGlobal() {
     initTabs();
     
-    // Seletor de Mês
     const header = document.querySelector('header');
     if(!document.getElementById('monthSel')) {
         const sel = document.createElement('select'); sel.id='monthSel';
@@ -677,13 +728,9 @@ function initGlobal() {
             const opt = document.createElement('option'); 
             opt.value = `${m.year}-${m.month}`;
             opt.textContent = `${monthNames[m.month]}/${m.year}`;
-            
-            // --- CORREÇÃO AQUI ---
-            // Agora verifica Mês E Ano para marcar o selected corretamente
             if(m.month === selectedMonthObj.month && m.year === selectedMonthObj.year) {
                 opt.selected = true;
             }
-            
             sel.appendChild(opt);
         });
         
@@ -718,7 +765,6 @@ function initTabs() {
     });
 }
 
-// Funções globais necessárias
 function updateWeekendTable(specificName) {
     const container = document.getElementById('weekendPlantaoContainer');
     if (!container) return;
@@ -767,5 +813,4 @@ function updateWeekendTable(specificName) {
     }
 }
 
-// Iniciar
 document.addEventListener('DOMContentLoaded', initGlobal);
