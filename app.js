@@ -1,6 +1,6 @@
 // app.js - Versão Cloud (Firebase)
 // Integração Completa: Auth + Firestore + Edição Visual (Menu Desktop)
-// CORREÇÃO APLICADA: Menu de contexto para edição desktop.
+// CORREÇÃO: Menu de contexto agora detecta bordas e abre para cima se necessário.
 
 // ==========================================
 // 1. IMPORTAÇÕES FIREBASE (WEB SDK)
@@ -571,6 +571,7 @@ const statusOptions = [
 
 let currentEditTarget = null; // { name: string, index: number }
 
+// CORREÇÃO: Função atualizada para calcular limites da tela
 function openDesktopEditMenu(event, name, dayIndex) {
     event.stopPropagation(); // Impede fechar ao clicar
     const menu = document.getElementById('statusContextMenu');
@@ -578,32 +579,53 @@ function openDesktopEditMenu(event, name, dayIndex) {
     // Salva quem estamos editando
     currentEditTarget = { name, index: dayIndex };
 
-    // Gera o HTML das opções
+    // 1. Gera o HTML das opções
     const currentStatus = scheduleData[name].schedule[dayIndex];
     menu.innerHTML = statusOptions.map(opt => `
         <button onclick="window.applyStatusFromMenu('${opt.code}')" 
-                class="w-full text-left px-4 py-3 text-sm font-semibold transition-colors border-b border-gray-100 last:border-0 flex items-center justify-between group ${opt.colorClass}">
-            <span>${opt.label}</span>
-            ${currentStatus === opt.code ? '<i class="fas fa-check"></i>' : ''}
+                class="w-full text-left px-4 py-3 text-sm font-semibold transition-colors border-b border-gray-100 last:border-0 flex items-center justify-between group ${opt.colorClass} hover:pl-5 transition-all">
+            <span class="flex items-center gap-2">
+                <span class="w-2 h-2 rounded-full bg-current opacity-70"></span>
+                ${opt.label}
+            </span>
+            ${currentStatus === opt.code ? '<i class="fas fa-check text-indigo-600"></i>' : ''}
         </button>
     `).join('');
 
-    // Posicionamento Inteligente (perto do mouse)
-    const rect = event.target.getBoundingClientRect();
-    let top = rect.bottom + window.scrollY;
-    let left = rect.left + window.scrollX;
-
-    // Se estiver muito à direita, joga o menu para a esquerda
-    if (left + 200 > window.innerWidth) {
-        left = rect.right - 200 + window.scrollX;
-    }
-
-    menu.style.top = `${top}px`;
-    menu.style.left = `${left}px`;
+    // 2. Mostra o menu temporariamente (invisível) para o navegador calcular a altura dele
+    menu.style.visibility = 'hidden';
     menu.classList.remove('hidden');
 
+    // 3. Cálculos de Posição Inteligente
+    const rect = event.target.getBoundingClientRect(); // Posição do quadrado clicado
+    const menuHeight = menu.offsetHeight;
+    const menuWidth = menu.offsetWidth;
+    const windowHeight = window.innerHeight;
+    const windowWidth = window.innerWidth;
+
+    let topPos = rect.bottom + window.scrollY;
+    let leftPos = rect.left + window.scrollX;
+
+    // CORREÇÃO VERTICAL: Se o menu for passar do fim da tela, abre PARA CIMA
+    if (rect.bottom + menuHeight + 10 > windowHeight) {
+        topPos = (rect.top + window.scrollY) - menuHeight;
+    }
+
+    // CORREÇÃO HORIZONTAL: Se o menu for passar da direita da tela, alinha à ESQUERDA do clique
+    if (rect.left + menuWidth + 10 > windowWidth) {
+        leftPos = (rect.right + window.scrollX) - menuWidth;
+    }
+
+    // 4. Aplica as posições e torna visível
+    menu.style.top = `${topPos}px`;
+    menu.style.left = `${leftPos}px`;
+    menu.style.visibility = 'visible';
+
     // Adiciona evento para fechar se clicar fora
-    document.addEventListener('click', closeDesktopEditMenu);
+    // Timeout pequeno para não registrar o clique atual como "clique fora" imediatamente
+    setTimeout(() => {
+        document.addEventListener('click', closeDesktopEditMenu);
+    }, 0);
 }
 
 function closeDesktopEditMenu() {
