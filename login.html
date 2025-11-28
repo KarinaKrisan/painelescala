@@ -1,0 +1,119 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Login Administrativo | Sitelbra</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css" />
+    <style>
+        body { font-family: 'Inter', sans-serif; }
+    </style>
+</head>
+<body class="bg-gray-100 h-screen flex items-center justify-center p-4">
+
+    <div class="bg-white rounded-2xl shadow-xl w-full max-w-md overflow-hidden flex flex-col md:flex-row">
+        
+        <div class="w-full p-8 md:p-10">
+            <div class="text-center mb-8">
+                <h1 class="text-2xl font-extrabold text-gray-900 mb-2">Acesso Restrito</h1>
+                <p class="text-sm text-gray-500">Gerenciamento de Escala Sitelbra</p>
+            </div>
+
+            <form id="loginPageForm" class="space-y-5">
+                <div>
+                    <label class="block text-sm font-medium text-gray-700 mb-1.5">E-mail Corporativo</label>
+                    <div class="relative">
+                        <div class="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
+                            <i class="fas fa-envelope text-gray-400"></i>
+                        </div>
+                        <input type="email" id="emailInput" class="w-full pl-10 pr-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500 outline-none transition-colors" placeholder="nome@exemplo.com" required>
+                    </div>
+                </div>
+
+                <div>
+                    <label class="block text-sm font-medium text-gray-700 mb-1.5">Senha</label>
+                    <div class="relative">
+                        <div class="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
+                            <i class="fas fa-lock text-gray-400"></i>
+                        </div>
+                        <input type="password" id="passwordInput" class="w-full pl-10 pr-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500 outline-none transition-colors" placeholder="••••••••" required>
+                    </div>
+                </div>
+
+                <div id="loginError" class="hidden bg-red-50 text-red-600 text-sm p-3 rounded-lg flex items-center">
+                    <i class="fas fa-exclamation-circle mr-2"></i>
+                    <span id="errorText">Erro de autenticação.</span>
+                </div>
+
+                <button type="submit" id="btnLogin" class="w-full bg-indigo-600 hover:bg-indigo-700 text-white font-bold py-3 rounded-lg transition-all transform active:scale-95 shadow-lg flex justify-center items-center gap-2">
+                    <span>Entrar no Painel</span>
+                    <i class="fas fa-arrow-right"></i>
+                </button>
+            </form>
+
+            <div class="mt-8 text-center border-t border-gray-100 pt-6">
+                <a href="index.html" class="text-sm text-gray-500 hover:text-indigo-600 font-medium transition-colors">
+                    <i class="fas fa-arrow-left mr-1"></i> Voltar para Visão Diária
+                </a>
+            </div>
+        </div>
+    </div>
+
+    <script type="module">
+        import { initializeApp } from "https://www.gstatic.com/firebasejs/11.0.2/firebase-app.js";
+        import { getAuth, signInWithEmailAndPassword } from "https://www.gstatic.com/firebasejs/11.0.2/firebase-auth.js";
+
+        const firebaseConfig = {
+            apiKey: "AIzaSyCBKSPH7lfUt0VsQPhJX3a0CQ2wYcziQvM",
+            authDomain: "dadosescala.firebaseapp.com",
+            projectId: "dadosescala",
+            storageBucket: "dadosescala.firebasestorage.app",
+            messagingSenderId: "117221956502",
+            appId: "1:117221956502:web:e5a7f051daf3306b501bb7"
+        };
+
+        const app = initializeApp(firebaseConfig);
+        const auth = getAuth(app);
+
+        document.getElementById('loginPageForm').addEventListener('submit', async (e) => {
+            e.preventDefault();
+            const email = document.getElementById('emailInput').value;
+            const pass = document.getElementById('passwordInput').value;
+            const errorDiv = document.getElementById('loginError');
+            const btn = document.getElementById('btnLogin');
+
+            // Feedback visual de carregamento
+            btn.innerHTML = '<i class="fas fa-spinner fa-spin"></i> Verificando...';
+            btn.disabled = true;
+            btn.classList.add('opacity-75');
+            errorDiv.classList.add('hidden');
+
+            try {
+                await signInWithEmailAndPassword(auth, email, pass);
+                // Sucesso: Redireciona para o painel principal
+                window.location.href = "index.html";
+            } catch (error) {
+                console.error("Erro login:", error);
+                const errorText = document.getElementById('errorText');
+                
+                if(error.code === 'auth/invalid-credential' || error.code === 'auth/wrong-password') {
+                    errorText.textContent = "E-mail ou senha incorretos.";
+                } else if (error.code === 'auth/too-many-requests') {
+                    errorText.textContent = "Muitas tentativas. Tente mais tarde.";
+                } else {
+                    errorText.textContent = "Erro ao conectar. Verifique sua internet.";
+                }
+                
+                errorDiv.classList.remove('hidden');
+                
+                // Restaura botão
+                btn.innerHTML = '<span>Entrar no Painel</span><i class="fas fa-arrow-right"></i>';
+                btn.disabled = false;
+                btn.classList.remove('opacity-75');
+            }
+        });
+    </script>
+</body>
+</html>
