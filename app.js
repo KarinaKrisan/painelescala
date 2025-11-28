@@ -1,4 +1,4 @@
-// app.js - Versão com Card de Colaborador Cinza
+// app.js - Versão Floating Capsule (Barra Inferior)
 // ==========================================
 // 1. IMPORTAÇÕES FIREBASE (WEB SDK)
 // ==========================================
@@ -84,7 +84,7 @@ onAuthStateChanged(auth, (user) => {
         if(btnOpenLogin) btnOpenLogin.classList.add('hidden');
         document.getElementById('adminEditHint').classList.remove('hidden');
         
-        // CORREÇÃO: Adiciona padding no rodapé para a barra flutuante não cobrir o footer
+        // CORREÇÃO: Padding no rodapé para a barra flutuante não tapar
         document.body.style.paddingBottom = "100px"; 
     } else {
         // Visitante
@@ -143,9 +143,9 @@ async function saveToCloud() {
         
         hasUnsavedChanges = false;
         
-        // Estado Sucesso
+        // Estado Sucesso (Feedback na barra flutuante)
         status.textContent = "Sincronizado";
-        status.className = "text-xs text-gray-300 font-medium";
+        status.className = "text-xs text-gray-300 font-medium transition-colors";
         if(statusIcon) statusIcon.className = "w-1.5 h-1.5 rounded-full bg-emerald-500 shadow-[0_0_8px_rgba(16,185,129,0.6)]";
         
         setTimeout(() => {
@@ -540,7 +540,7 @@ function updatePersonalView(name) {
     let dotClass = colorClasses[displayStatus] || 'bg-gray-400 shadow-none';
 
     card.classList.remove('hidden');
-    // ALTERAÇÃO AQUI: CARD CINZA (bg-gray-200) e Borda Cinza (border-gray-300)
+    // CARD CINZA
     card.className = "mb-8 bg-gray-200 rounded-2xl shadow-xl overflow-hidden transform transition-all duration-300 border border-gray-300";
 
     card.innerHTML = `
