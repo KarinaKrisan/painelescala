@@ -1,5 +1,5 @@
 // app.js - Versão Cloud (Firebase)
-// Integração Completa: Auth + Firestore + Edição Visual (Menu Desktop na Tag) + Bolinha Status Dinâmica
+// Integração Completa: Correção de visibilidade do calendário ao limpar seleção
 
 // ==========================================
 // 1. IMPORTAÇÕES FIREBASE (WEB SDK)
@@ -496,12 +496,19 @@ function initSelect() {
         const opt = document.createElement('option'); opt.value=name; opt.textContent=name; select.appendChild(opt);
     });
     
+    // CORREÇÃO AQUI: Substituir para limpar listeners E lógica de esconder calendário
     const newSelect = select.cloneNode(true);
     select.parentNode.replaceChild(newSelect, select);
+    
     newSelect.addEventListener('change', e => {
         const name = e.target.value;
-        if(name) updatePersonalView(name);
-        else document.getElementById('personalInfoCard').classList.add('hidden');
+        if(name) {
+            updatePersonalView(name);
+        } else {
+            // SE NÃO TIVER SELEÇÃO (vazio), ESCONDE TUDO
+            document.getElementById('personalInfoCard').classList.add('hidden');
+            document.getElementById('calendarContainer').classList.add('hidden');
+        }
     });
 }
 
@@ -515,31 +522,29 @@ function updatePersonalView(name) {
     const celula = emp.info.Célula || emp.info.Celula || emp.info.CELULA || 'Sitelbra/ B2B';
     let turno = emp.info.Turno || 'Comercial';
 
-    // 1. Obtém status básico do dia
-    let status = emp.schedule[currentDay - 1] || 'F';
-    let displayStatus = status;
+    let statusToday = emp.schedule[currentDay - 1] || 'F';
+    let displayStatus = statusToday;
 
-    // 2. Lógica para "Expediente Encerrado" (Bolinha Roxa)
-    // Se for hoje, e estiver escalado ('T'), verifica se o horário já acabou
+    // Lógica para Expediente Encerrado (Roxo)
     const now = new Date();
     const isToday = (now.getDate() === currentDay && 
                      now.getMonth() === selectedMonthObj.month && 
                      now.getFullYear() === selectedMonthObj.year);
 
-    if (isToday && status === 'T') {
+    if (isToday && statusToday === 'T') {
         if (!isWorkingTime(emp.info.Horário)) {
             displayStatus = 'OFF-SHIFT';
         }
     }
 
-    // 3. Mapa de Cores da Bolinha
+    // Mapa de Cores da Bolinha
     const colorClasses = {
-        'T': 'bg-green-500 shadow-[0_0_8px_rgba(34,197,94,0.8)]',      // Verde
-        'F': 'bg-yellow-400 shadow-[0_0_8px_rgba(250,204,21,0.8)]',     // Amarelo
-        'FS': 'bg-sky-400 shadow-[0_0_8px_rgba(56,189,248,0.8)]',       // Azul Claro
-        'FD': 'bg-blue-700 shadow-[0_0_8px_rgba(29,78,216,0.8)]',       // Azul Escuro
-        'FE': 'bg-red-500 shadow-[0_0_8px_rgba(239,68,68,0.8)]',        // Vermelho
-        'OFF-SHIFT': 'bg-fuchsia-500 shadow-[0_0_8px_rgba(217,70,239,0.8)]' // Roxo (Exp. Encerrado)
+        'T': 'bg-green-500 shadow-[0_0_8px_rgba(34,197,94,0.8)]',
+        'F': 'bg-yellow-400 shadow-[0_0_8px_rgba(250,204,21,0.8)]',
+        'FS': 'bg-sky-400 shadow-[0_0_8px_rgba(56,189,248,0.8)]',
+        'FD': 'bg-blue-700 shadow-[0_0_8px_rgba(29,78,216,0.8)]',
+        'FE': 'bg-red-500 shadow-[0_0_8px_rgba(239,68,68,0.8)]',
+        'OFF-SHIFT': 'bg-fuchsia-500 shadow-[0_0_8px_rgba(217,70,239,0.8)]'
     };
 
     let dotClass = colorClasses[displayStatus] || 'bg-gray-400 shadow-none';
@@ -580,7 +585,6 @@ function updatePersonalView(name) {
 // NOVO: SISTEMA DE MENU DE CONTEXTO (DESKTOP)
 // ----------------------------------------------------
 
-// Cores das bolinhas identificadoras
 const statusOptions = [
     { code: 'T', label: 'Trabalhando', dotColor: 'bg-green-600' },
     { code: 'F', label: 'Folga', dotColor: 'bg-yellow-500' },
@@ -592,18 +596,14 @@ const statusOptions = [
 
 let currentEditTarget = null; // { name: string, index: number }
 
-// CORREÇÃO: Menu alinhado à TAG clicada
 function openDesktopEditMenu(event, name, dayIndex) {
-    event.stopPropagation(); // Impede fechar ao clicar
+    event.stopPropagation(); 
     
-    // O alvo é a própria TAG (badge), não a célula inteira
     const targetEl = event.currentTarget; 
     const menu = document.getElementById('statusContextMenu');
     
-    // Salva quem estamos editando
     currentEditTarget = { name, index: dayIndex };
 
-    // 1. Gera o HTML das opções (Design Dropdown Nativo)
     const currentStatus = scheduleData[name].schedule[dayIndex];
     menu.innerHTML = statusOptions.map(opt => `
         <button onclick="window.applyStatusFromMenu('${opt.code}')" 
@@ -616,30 +616,25 @@ function openDesktopEditMenu(event, name, dayIndex) {
         </button>
     `).join('');
 
-    // 2. Mostra o menu temporariamente para cálculos
     menu.style.visibility = 'hidden';
     menu.classList.remove('hidden');
 
-    // 3. Posicionamento Ancorado na TAG
-    const rect = targetEl.getBoundingClientRect(); // Posição da pílula colorida
+    const rect = targetEl.getBoundingClientRect(); 
     const menuHeight = menu.offsetHeight;
     const windowHeight = window.innerHeight;
 
-    let topPos = rect.bottom + window.scrollY + 4; // 4px de margem
+    let topPos = rect.bottom + window.scrollY + 4; 
     let leftPos = rect.left + window.scrollX;
 
-    // Se for passar do fim da tela, abre para cima da tag
     if (rect.bottom + menuHeight + 10 > windowHeight) {
         topPos = (rect.top + window.scrollY) - menuHeight - 4;
     }
 
-    // 4. Aplica
     menu.style.top = `${topPos}px`;
     menu.style.left = `${leftPos}px`;
-    menu.style.minWidth = `${rect.width}px`; // Garante que tenha pelo menos a largura da tag
+    menu.style.minWidth = `${rect.width}px`; 
     menu.style.visibility = 'visible';
 
-    // Fecha ao clicar fora
     setTimeout(() => {
         document.addEventListener('click', closeDesktopEditMenu);
     }, 0);
@@ -657,11 +652,9 @@ window.applyStatusFromMenu = async function(statusCode) {
     const { name, index } = currentEditTarget;
     const emp = scheduleData[name];
 
-    // Atualiza status
     emp.schedule[index] = statusCode;
     rawSchedule[name].calculatedSchedule = emp.schedule;
 
-    // Feedback Visual
     hasUnsavedChanges = true;
     const statusEl = document.getElementById('saveStatus');
     if(statusEl) {
@@ -669,7 +662,6 @@ window.applyStatusFromMenu = async function(statusCode) {
         statusEl.className = "text-xs text-yellow-300 font-bold animate-pulse";
     }
 
-    // Re-render
     updateCalendar(name, emp.schedule);
     updateDailyView();
     closeDesktopEditMenu();
@@ -679,7 +671,6 @@ window.applyStatusFromMenu = async function(statusCode) {
 // FIM SISTEMA DE MENU
 // ----------------------------------------------------
 
-// Lógica Mobile (Ciclo)
 function cycleStatus(current) {
     const sequence = ['T', 'F', 'FS', 'FD', 'FE'];
     let idx = sequence.indexOf(current);
@@ -706,7 +697,6 @@ function updateCalendar(name, schedule) {
     grid.innerHTML = '';
     
     if(isMobile) {
-        // MOBILE
         grid.className = 'space-y-3 mt-4';
         schedule.forEach((st, i) => {
             let pillClasses = "flex justify-between items-center p-3 px-5 rounded-full border shadow-sm transition-all";
@@ -726,7 +716,6 @@ function updateCalendar(name, schedule) {
             grid.appendChild(el);
         });
     } else {
-        // DESKTOP
         grid.className = 'calendar-grid-container';
         const m = { y: selectedMonthObj.year, mo: selectedMonthObj.month };
         const empty = new Date(m.y, m.mo, 1).getDay();
@@ -736,19 +725,16 @@ function updateCalendar(name, schedule) {
             const cell = document.createElement('div');
             cell.className = "calendar-cell bg-white border relative transition-colors duration-150";
             
-            // 1. Cria o Badge
             const badge = document.createElement('div');
             badge.className = `day-status-badge status-${st}`;
             badge.textContent = statusMap[st]||st;
             
-            // 2. Se for Admin, o clique vai APENAS no badge (tag)
             if(isAdmin) {
                 badge.classList.add('cursor-pointer', 'hover:opacity-80', 'ring-2', 'ring-transparent', 'hover:ring-indigo-300', 'transition-all');
                 badge.title = "Clique para alterar";
                 badge.onclick = (e) => openDesktopEditMenu(e, name, i);
             }
 
-            // Monta a célula
             cell.innerHTML = `<div class="day-number">${i+1}</div>`;
             cell.appendChild(badge);
             
