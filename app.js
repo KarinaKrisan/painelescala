@@ -1,6 +1,5 @@
 // app.js - Versão Cloud (Firebase)
-// Integração Completa: Auth + Firestore + Edição Visual (Menu Desktop)
-// CORREÇÃO: Menu de contexto agora detecta bordas e abre para cima se necessário.
+// Integração Completa: Auth + Firestore + Edição Visual (Menu Desktop na Tag)
 
 // ==========================================
 // 1. IMPORTAÇÕES FIREBASE (WEB SDK)
@@ -21,7 +20,6 @@ const firebaseConfig = {
   appId: "1:117221956502:web:e5a7f051daf3306b501bb7"
 };
 
-// Inicializa Firebase
 const app = initializeApp(firebaseConfig);
 const db = getFirestore(app);
 const auth = getAuth(app);
@@ -118,7 +116,7 @@ onAuthStateChanged(auth, (user) => {
 });
 
 // ==========================================
-// 5. CARREGAMENTO DE DADOS (FIRESTORE)
+// 5. CARREGAMENTO DE DADOS
 // ==========================================
 async function loadDataFromCloud() {
     const docId = `escala-${selectedMonthObj.year}-${String(selectedMonthObj.month+1).padStart(2,'0')}`;
@@ -132,7 +130,7 @@ async function loadDataFromCloud() {
             updateDailyView();
             initSelect();
         } else {
-            console.log("Nenhum documento encontrado para este mês.");
+            console.log("Nenhum documento encontrado.");
             rawSchedule = {}; 
             processScheduleData();
             updateDailyView();
@@ -559,70 +557,66 @@ function updatePersonalView(name) {
 // NOVO: SISTEMA DE MENU DE CONTEXTO (DESKTOP)
 // ----------------------------------------------------
 
-// Definição das opções para o menu (com cores)
+// Cores das bolinhas identificadoras
 const statusOptions = [
-    { code: 'T', label: 'Trabalhando', colorClass: 'text-green-700 hover:bg-green-50' },
-    { code: 'F', label: 'Folga', colorClass: 'text-yellow-700 hover:bg-yellow-50' },
-    { code: 'FS', label: 'Folga Sáb', colorClass: 'text-sky-700 hover:bg-sky-50' },
-    { code: 'FD', label: 'Folga Dom', colorClass: 'text-blue-700 hover:bg-blue-50' },
-    { code: 'FE', label: 'Férias', colorClass: 'text-red-700 hover:bg-red-50' },
-    { code: 'OFF-SHIFT', label: 'Exp. Encerrado', colorClass: 'text-fuchsia-700 hover:bg-fuchsia-50' }
+    { code: 'T', label: 'Trabalhando', dotColor: 'bg-green-600' },
+    { code: 'F', label: 'Folga', dotColor: 'bg-yellow-500' },
+    { code: 'FS', label: 'Folga Sáb', dotColor: 'bg-sky-500' },
+    { code: 'FD', label: 'Folga Dom', dotColor: 'bg-blue-600' },
+    { code: 'FE', label: 'Férias', dotColor: 'bg-red-600' },
+    { code: 'OFF-SHIFT', label: 'Exp. Encerrado', dotColor: 'bg-fuchsia-600' }
 ];
 
 let currentEditTarget = null; // { name: string, index: number }
 
-// CORREÇÃO: Função atualizada para calcular limites da tela
+// CORREÇÃO: Menu alinhado à TAG clicada
 function openDesktopEditMenu(event, name, dayIndex) {
     event.stopPropagation(); // Impede fechar ao clicar
+    
+    // O alvo é a própria TAG (badge), não a célula inteira
+    const targetEl = event.currentTarget; 
     const menu = document.getElementById('statusContextMenu');
     
     // Salva quem estamos editando
     currentEditTarget = { name, index: dayIndex };
 
-    // 1. Gera o HTML das opções
+    // 1. Gera o HTML das opções (Design Dropdown Nativo)
     const currentStatus = scheduleData[name].schedule[dayIndex];
     menu.innerHTML = statusOptions.map(opt => `
         <button onclick="window.applyStatusFromMenu('${opt.code}')" 
-                class="w-full text-left px-4 py-3 text-sm font-semibold transition-colors border-b border-gray-100 last:border-0 flex items-center justify-between group ${opt.colorClass} hover:pl-5 transition-all">
+                class="w-full text-left px-4 py-2 text-sm font-medium transition-colors border-b border-gray-100 last:border-0 flex items-center justify-between group hover:bg-gray-100 text-gray-700">
             <span class="flex items-center gap-2">
-                <span class="w-2 h-2 rounded-full bg-current opacity-70"></span>
+                <span class="w-2.5 h-2.5 rounded-full ${opt.dotColor}"></span>
                 ${opt.label}
             </span>
-            ${currentStatus === opt.code ? '<i class="fas fa-check text-indigo-600"></i>' : ''}
+            ${currentStatus === opt.code ? '<i class="fas fa-check text-indigo-600 text-xs"></i>' : ''}
         </button>
     `).join('');
 
-    // 2. Mostra o menu temporariamente (invisível) para o navegador calcular a altura dele
+    // 2. Mostra o menu temporariamente para cálculos
     menu.style.visibility = 'hidden';
     menu.classList.remove('hidden');
 
-    // 3. Cálculos de Posição Inteligente
-    const rect = event.target.getBoundingClientRect(); // Posição do quadrado clicado
+    // 3. Posicionamento Ancorado na TAG
+    const rect = targetEl.getBoundingClientRect(); // Posição da pílula colorida
     const menuHeight = menu.offsetHeight;
-    const menuWidth = menu.offsetWidth;
     const windowHeight = window.innerHeight;
-    const windowWidth = window.innerWidth;
 
-    let topPos = rect.bottom + window.scrollY;
+    let topPos = rect.bottom + window.scrollY + 4; // 4px de margem
     let leftPos = rect.left + window.scrollX;
 
-    // CORREÇÃO VERTICAL: Se o menu for passar do fim da tela, abre PARA CIMA
+    // Se for passar do fim da tela, abre para cima da tag
     if (rect.bottom + menuHeight + 10 > windowHeight) {
-        topPos = (rect.top + window.scrollY) - menuHeight;
+        topPos = (rect.top + window.scrollY) - menuHeight - 4;
     }
 
-    // CORREÇÃO HORIZONTAL: Se o menu for passar da direita da tela, alinha à ESQUERDA do clique
-    if (rect.left + menuWidth + 10 > windowWidth) {
-        leftPos = (rect.right + window.scrollX) - menuWidth;
-    }
-
-    // 4. Aplica as posições e torna visível
+    // 4. Aplica
     menu.style.top = `${topPos}px`;
     menu.style.left = `${leftPos}px`;
+    menu.style.minWidth = `${rect.width}px`; // Garante que tenha pelo menos a largura da tag
     menu.style.visibility = 'visible';
 
-    // Adiciona evento para fechar se clicar fora
-    // Timeout pequeno para não registrar o clique atual como "clique fora" imediatamente
+    // Fecha ao clicar fora
     setTimeout(() => {
         document.addEventListener('click', closeDesktopEditMenu);
     }, 0);
@@ -634,7 +628,6 @@ function closeDesktopEditMenu() {
     document.removeEventListener('click', closeDesktopEditMenu);
 }
 
-// Função exposta globalmente para ser chamada pelo HTML gerado dinamicamente
 window.applyStatusFromMenu = async function(statusCode) {
     if (!currentEditTarget || !isAdmin) return;
     
@@ -643,8 +636,6 @@ window.applyStatusFromMenu = async function(statusCode) {
 
     // Atualiza status
     emp.schedule[index] = statusCode;
-    
-    // Persistência
     rawSchedule[name].calculatedSchedule = emp.schedule;
 
     // Feedback Visual
@@ -665,7 +656,7 @@ window.applyStatusFromMenu = async function(statusCode) {
 // FIM SISTEMA DE MENU
 // ----------------------------------------------------
 
-// Lógica Antiga para Mobile (Ciclo)
+// Lógica Mobile (Ciclo)
 function cycleStatus(current) {
     const sequence = ['T', 'F', 'FS', 'FD', 'FE'];
     let idx = sequence.indexOf(current);
@@ -692,7 +683,7 @@ function updateCalendar(name, schedule) {
     grid.innerHTML = '';
     
     if(isMobile) {
-        // --- MOBILE: USA CICLO (clique direto) ---
+        // MOBILE
         grid.className = 'space-y-3 mt-4';
         schedule.forEach((st, i) => {
             let pillClasses = "flex justify-between items-center p-3 px-5 rounded-full border shadow-sm transition-all";
@@ -712,25 +703,33 @@ function updateCalendar(name, schedule) {
             grid.appendChild(el);
         });
     } else {
-        // --- DESKTOP: USA MENU DE CONTEXTO ---
+        // DESKTOP
         grid.className = 'calendar-grid-container';
         const m = { y: selectedMonthObj.year, mo: selectedMonthObj.month };
         const empty = new Date(m.y, m.mo, 1).getDay();
         for(let i=0;i<empty;i++) grid.insertAdjacentHTML('beforeend','<div class="calendar-cell bg-gray-50"></div>');
         
         schedule.forEach((st, i) => {
-            const el = document.createElement('div');
-            el.className = "calendar-cell bg-white border relative transition-colors duration-150";
+            const cell = document.createElement('div');
+            cell.className = "calendar-cell bg-white border relative transition-colors duration-150";
+            
+            // 1. Cria o Badge
+            const badge = document.createElement('div');
+            badge.className = `day-status-badge status-${st}`;
+            badge.textContent = statusMap[st]||st;
+            
+            // 2. Se for Admin, o clique vai APENAS no badge (tag)
             if(isAdmin) {
-                el.classList.add('cursor-pointer', 'hover:bg-indigo-50', 'hover:border-indigo-300');
-                el.title = "Clique para selecionar o status";
+                badge.classList.add('cursor-pointer', 'hover:opacity-80', 'ring-2', 'ring-transparent', 'hover:ring-indigo-300', 'transition-all');
+                badge.title = "Clique para alterar";
+                badge.onclick = (e) => openDesktopEditMenu(e, name, i);
             }
-            el.innerHTML = `<div class="day-number">${i+1}</div><div class="day-status-badge status-${st}">${statusMap[st]||st}</div>`;
+
+            // Monta a célula
+            cell.innerHTML = `<div class="day-number">${i+1}</div>`;
+            cell.appendChild(badge);
             
-            // AQUI MUDOU: Usa o menu flutuante no desktop
-            if(isAdmin) el.onclick = (e) => openDesktopEditMenu(e, name, i);
-            
-            grid.appendChild(el);
+            grid.appendChild(cell);
         });
     }
 }
