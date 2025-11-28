@@ -42,10 +42,24 @@ const monthNames = ["Janeiro","Fevereiro","Março","Abril","Maio","Junho","Julho
 const systemYear = currentDateObj.getFullYear();
 const systemMonth = currentDateObj.getMonth(); 
 
-// Meses disponíveis para navegar
+// Ajuste de meses disponíveis (Novembro/25 até Dezembro/26)
 const availableMonths = [
-    { year: 2025, month: 10 }, // Nov
-    { year: 2025, month: 11 }  // Dez
+    { year: 2025, month: 10 }, // Novembro 2025
+    { year: 2025, month: 11 }, // Dezembro 2025
+    
+    // 2026 COMPLETO
+    { year: 2026, month: 0 },  // Janeiro
+    { year: 2026, month: 1 },  // Fevereiro
+    { year: 2026, month: 2 },  // Março
+    { year: 2026, month: 3 },  // Abril
+    { year: 2026, month: 4 },  // Maio
+    { year: 2026, month: 5 },  // Junho
+    { year: 2026, month: 6 },  // Julho
+    { year: 2026, month: 7 },  // Agosto
+    { year: 2026, month: 8 },  // Setembro
+    { year: 2026, month: 9 },  // Outubro
+    { year: 2026, month: 10 }, // Novembro
+    { year: 2026, month: 11 }  // Dezembro
 ];
 let selectedMonthObj = availableMonths.find(m => m.year === systemYear && m.month === systemMonth) || availableMonths[availableMonths.length-1];
 
@@ -758,4 +772,5 @@ function updateWeekendTable(specificName) {
 
 // Iniciar
 document.addEventListener('DOMContentLoaded', initGlobal);
+
 
