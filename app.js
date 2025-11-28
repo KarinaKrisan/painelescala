@@ -12,12 +12,12 @@ import { getAuth, signInWithEmailAndPassword, onAuthStateChanged, signOut } from
 // 2. CONFIGURAÇÃO (SUAS CHAVES)
 // ==========================================
 const firebaseConfig = {
-    apiKey: "AIzaSyCBKSPH7LfUt0VsQPhJX3a0CQ2wYcziQvM",
-    authDomain: "dadosescala.firebaseapp.com",
-    projectId: "dadosescala",
-    storageBucket: "dadosescala.firebasestorage.app",
-    messagingSenderId: "117221956502",
-    appId: "1:117221956502:web:e5a7f051daf3306b501bb7"
+  apiKey: "AIzaSyCBKSPH7lfUt0VsQPhJX3a0CQ2wYcziQvM",
+  authDomain: "dadosescala.firebaseapp.com",
+  projectId: "dadosescala",
+  storageBucket: "dadosescala.firebasestorage.app",
+  messagingSenderId: "117221956502",
+  appId: "1:117221956502:web:e5a7f051daf3306b501bb7"
 };
 
 // Inicializa Firebase
@@ -758,3 +758,4 @@ function updateWeekendTable(specificName) {
 
 // Iniciar
 document.addEventListener('DOMContentLoaded', initGlobal);
+
