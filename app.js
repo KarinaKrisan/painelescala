@@ -45,7 +45,7 @@ const systemMonth = currentDateObj.getMonth();
 // Ajuste de meses disponíveis (Novembro/25 até Dezembro/26)
 const availableMonths = [
     { year: 2025, month: 10 }, // Novembro 2025
-    { year: 2025, month: 11 }//, // Dezembro 2025
+    { year: 2025, month: 11 }, // Dezembro 2025
     
     // 2026 COMPLETO
     { year: 2026, month: 0 },  // Janeiro
@@ -772,5 +772,3 @@ function updateWeekendTable(specificName) {
 
 // Iniciar
 document.addEventListener('DOMContentLoaded', initGlobal);
-
-
