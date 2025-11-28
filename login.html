@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-    <title>Login Administrativo | Sitelbra</title>
+    <title>Login Administrativo | Cronos</title>
     <script src="https://cdn.tailwindcss.com"></script>
     <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css" />
@@ -17,8 +17,8 @@
         
         <div class="w-full p-8 md:p-10">
             <div class="text-center mb-8">
-                <h1 class="text-2xl font-extrabold text-gray-900 mb-2">Acesso Restrito</h1>
-                <p class="text-sm text-gray-500">Gerenciamento de Escala Sitelbra</p>
+                <h1 class="text-3xl font-extrabold text-gray-900 mb-2">Cronos</h1>
+                <p class="text-sm text-gray-500 italic">Sua operação no tempo certo.</p>
             </div>
 
             <form id="loginPageForm" class="space-y-5">
@@ -84,7 +84,6 @@
             const errorDiv = document.getElementById('loginError');
             const btn = document.getElementById('btnLogin');
 
-            // Feedback visual de carregamento
             btn.innerHTML = '<i class="fas fa-spinner fa-spin"></i> Verificando...';
             btn.disabled = true;
             btn.classList.add('opacity-75');
@@ -92,7 +91,6 @@
 
             try {
                 await signInWithEmailAndPassword(auth, email, pass);
-                // Sucesso: Redireciona para o painel principal
                 window.location.href = "index.html";
             } catch (error) {
                 console.error("Erro login:", error);
@@ -108,7 +106,6 @@
                 
                 errorDiv.classList.remove('hidden');
                 
-                // Restaura botão
                 btn.innerHTML = '<span>Entrar no Painel</span><i class="fas fa-arrow-right"></i>';
                 btn.disabled = false;
                 btn.classList.remove('opacity-75');
