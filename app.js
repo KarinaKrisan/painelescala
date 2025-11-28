@@ -1,4 +1,4 @@
-// app.js - Versão Final Corrigida e Otimizada
+// app.js - Versão "Floating Capsule" (Barra Inferior)
 // ==========================================
 // 1. IMPORTAÇÕES FIREBASE (WEB SDK)
 // ==========================================
@@ -68,7 +68,6 @@ function pad(n){ return n < 10 ? '0' + n : '' + n; }
 const adminToolbar = document.getElementById('adminToolbar');
 const btnOpenLogin = document.getElementById('btnOpenLogin');
 const btnLogout = document.getElementById('btnLogout');
-const mainContainer = document.getElementById('mainContainer');
 
 // Logout
 if(btnLogout) btnLogout.addEventListener('click', () => {
@@ -85,8 +84,8 @@ onAuthStateChanged(auth, (user) => {
         if(btnOpenLogin) btnOpenLogin.classList.add('hidden');
         document.getElementById('adminEditHint').classList.remove('hidden');
         
-        // Empurra o conteúdo para baixo para não ficar atrás da barra
-        mainContainer.style.marginTop = "80px"; 
+        // CORREÇÃO: Adiciona padding no rodapé para a barra flutuante não cobrir o footer
+        document.body.style.paddingBottom = "100px"; 
     } else {
         // Visitante
         isAdmin = false;
@@ -94,8 +93,7 @@ onAuthStateChanged(auth, (user) => {
         if(btnOpenLogin) btnOpenLogin.classList.remove('hidden');
         document.getElementById('adminEditHint').classList.add('hidden');
         
-        // Retorna ao espaçamento original
-        mainContainer.style.marginTop = "3rem"; // equivale a mt-12
+        document.body.style.paddingBottom = "0";
     }
     updateDailyView();
     const sel = document.getElementById('employeeSelect');
@@ -135,7 +133,7 @@ async function saveToCloud() {
     const statusIcon = document.getElementById('saveStatusIcon');
     
     // Estado Carregando
-    btn.innerHTML = '<i class="fas fa-spinner fa-spin"></i> Salavando...';
+    btn.innerHTML = '<i class="fas fa-spinner fa-spin mr-2"></i> Salvando...';
     btn.classList.add('opacity-75', 'cursor-not-allowed');
     
     const docId = `escala-${selectedMonthObj.year}-${String(selectedMonthObj.month+1).padStart(2,'0')}`;
@@ -147,11 +145,11 @@ async function saveToCloud() {
         
         // Estado Sucesso
         status.textContent = "Sincronizado";
-        status.className = "text-sm font-medium text-emerald-400 transition-colors";
-        if(statusIcon) statusIcon.className = "w-2 h-2 rounded-full bg-emerald-500 shadow-[0_0_8px_rgba(16,185,129,0.6)] transition-all";
+        status.className = "text-xs text-gray-300 font-medium";
+        if(statusIcon) statusIcon.className = "w-1.5 h-1.5 rounded-full bg-emerald-500 shadow-[0_0_8px_rgba(16,185,129,0.6)]";
         
         setTimeout(() => {
-            btn.innerHTML = '<i class="fas fa-cloud-upload-alt group-hover:-translate-y-0.5 transition-transform"></i><span>Salvar</span>';
+            btn.innerHTML = '<i class="fas fa-cloud-upload-alt mr-2 group-hover:-translate-y-0.5 transition-transform"></i> Salvar';
             btn.classList.remove('opacity-75', 'cursor-not-allowed');
         }, 1000);
 
@@ -599,10 +597,10 @@ async function handleCellClick(name, dayIndex) {
     const statusIcon = document.getElementById('saveStatusIcon');
     if(statusEl) {
         statusEl.textContent = "Alterações pendentes...";
-        statusEl.className = "text-sm font-medium text-amber-400 transition-colors";
+        statusEl.className = "text-xs text-amber-400 font-medium transition-colors";
     }
     if(statusIcon) {
-        statusIcon.className = "w-2 h-2 rounded-full bg-amber-500 animate-pulse shadow-[0_0_8px_rgba(251,191,36,0.6)] transition-all";
+        statusIcon.className = "w-1.5 h-1.5 rounded-full bg-amber-500 animate-pulse shadow-[0_0_8px_rgba(251,191,36,0.6)] transition-all";
     }
     
     // 3. Atualizações Visuais
