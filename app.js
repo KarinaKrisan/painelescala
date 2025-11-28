@@ -1,12 +1,10 @@
-// app.js - Versão Final Corrigida
-// Integração Completa: Auth + Firestore + Edição Ciclo + Atualização em Tempo Real
-
+// app.js - Versão Final Corrigida e Otimizada
 // ==========================================
 // 1. IMPORTAÇÕES FIREBASE (WEB SDK)
 // ==========================================
 import { initializeApp } from "https://www.gstatic.com/firebasejs/11.0.2/firebase-app.js";
 import { getFirestore, doc, getDoc, setDoc } from "https://www.gstatic.com/firebasejs/11.0.2/firebase-firestore.js";
-import { getAuth, signInWithEmailAndPassword, onAuthStateChanged, signOut } from "https://www.gstatic.com/firebasejs/11.0.2/firebase-auth.js";
+import { getAuth, onAuthStateChanged, signOut } from "https://www.gstatic.com/firebasejs/11.0.2/firebase-auth.js";
 
 // ==========================================
 // 2. CONFIGURAÇÃO (SUAS CHAVES)
@@ -65,50 +63,39 @@ const daysOfWeek = ["Dom","Seg","Ter","Qua","Qui","Sex","Sáb"];
 function pad(n){ return n < 10 ? '0' + n : '' + n; }
 
 // ==========================================
-// 4. LÓGICA DE AUTENTICAÇÃO
+// 4. LÓGICA DE AUTENTICAÇÃO (Painel)
 // ==========================================
-const loginModal = document.getElementById('loginModal');
 const adminToolbar = document.getElementById('adminToolbar');
 const btnOpenLogin = document.getElementById('btnOpenLogin');
 const btnLogout = document.getElementById('btnLogout');
+const mainContainer = document.getElementById('mainContainer');
 
-if(btnOpenLogin) btnOpenLogin.addEventListener('click', () => loginModal.classList.remove('hidden'));
-document.getElementById('btnCloseLogin').addEventListener('click', () => loginModal.classList.add('hidden'));
-
-document.getElementById('loginForm').addEventListener('submit', async (e) => {
-    e.preventDefault();
-    const email = document.getElementById('emailInput').value;
-    const pass = document.getElementById('passwordInput').value;
-    const errorMsg = document.getElementById('loginError');
-
-    try {
-        await signInWithEmailAndPassword(auth, email, pass);
-        loginModal.classList.add('hidden');
-        errorMsg.classList.add('hidden');
-        document.getElementById('emailInput').value = '';
-        document.getElementById('passwordInput').value = '';
-    } catch (error) {
-        console.error("Erro login:", error);
-        errorMsg.textContent = "Erro: Verifique e-mail e senha.";
-        errorMsg.classList.remove('hidden');
-    }
+// Logout
+if(btnLogout) btnLogout.addEventListener('click', () => {
+    signOut(auth);
+    window.location.reload();
 });
 
-if(btnLogout) btnLogout.addEventListener('click', () => signOut(auth));
-
+// Monitorar Estado do Usuário
 onAuthStateChanged(auth, (user) => {
     if (user) {
+        // Logado como Admin
         isAdmin = true;
         adminToolbar.classList.remove('hidden');
         if(btnOpenLogin) btnOpenLogin.classList.add('hidden');
         document.getElementById('adminEditHint').classList.remove('hidden');
-        document.body.style.paddingTop = "50px"; 
+        
+        // Empurra o conteúdo para baixo para não ficar atrás da barra
+        mainContainer.style.marginTop = "80px"; 
     } else {
+        // Visitante
         isAdmin = false;
         adminToolbar.classList.add('hidden');
         if(btnOpenLogin) btnOpenLogin.classList.remove('hidden');
         document.getElementById('adminEditHint').classList.add('hidden');
-        document.body.style.paddingTop = "0";
+        
+        // Retorna ao espaçamento original
+        mainContainer.style.marginTop = "3rem"; // equivale a mt-12
     }
     updateDailyView();
     const sel = document.getElementById('employeeSelect');
@@ -116,7 +103,7 @@ onAuthStateChanged(auth, (user) => {
 });
 
 // ==========================================
-// 5. CARREGAMENTO DE DADOS
+// 5. CARREGAMENTO DE DADOS (FIRESTORE)
 // ==========================================
 async function loadDataFromCloud() {
     const docId = `escala-${selectedMonthObj.year}-${String(selectedMonthObj.month+1).padStart(2,'0')}`;
@@ -137,16 +124,19 @@ async function loadDataFromCloud() {
         }
     } catch (e) {
         console.error("Erro ao baixar dados:", e);
-        alert("Erro ao conectar no banco de dados.");
     }
 }
 
+// Salvar na Nuvem
 async function saveToCloud() {
     if(!isAdmin) return;
     const btn = document.getElementById('btnSaveCloud');
     const status = document.getElementById('saveStatus');
+    const statusIcon = document.getElementById('saveStatusIcon');
     
-    btn.innerHTML = '<i class="fas fa-spinner fa-spin mr-2"></i> Salvando...';
+    // Estado Carregando
+    btn.innerHTML = '<i class="fas fa-spinner fa-spin"></i> Salavando...';
+    btn.classList.add('opacity-75', 'cursor-not-allowed');
     
     const docId = `escala-${selectedMonthObj.year}-${String(selectedMonthObj.month+1).padStart(2,'0')}`;
     
@@ -154,19 +144,21 @@ async function saveToCloud() {
         await setDoc(doc(db, "escalas", docId), rawSchedule, { merge: true });
         
         hasUnsavedChanges = false;
-        status.textContent = "Salvo com sucesso!";
-        status.className = "text-xs text-green-300 font-bold";
+        
+        // Estado Sucesso
+        status.textContent = "Sincronizado";
+        status.className = "text-sm font-medium text-emerald-400 transition-colors";
+        if(statusIcon) statusIcon.className = "w-2 h-2 rounded-full bg-emerald-500 shadow-[0_0_8px_rgba(16,185,129,0.6)] transition-all";
         
         setTimeout(() => {
-            btn.innerHTML = '<i class="fas fa-cloud-upload-alt mr-2"></i> Salvar Agora';
-            status.textContent = "Todas alterações salvas.";
-            status.className = "text-xs text-gray-300";
-        }, 2000);
+            btn.innerHTML = '<i class="fas fa-cloud-upload-alt group-hover:-translate-y-0.5 transition-transform"></i><span>Salvar</span>';
+            btn.classList.remove('opacity-75', 'cursor-not-allowed');
+        }, 1000);
 
     } catch (e) {
         console.error("Erro ao salvar:", e);
         alert("Erro ao salvar!");
-        btn.innerHTML = '<i class="fas fa-exclamation-circle mr-2"></i> Erro';
+        btn.innerHTML = '<i class="fas fa-exclamation-circle"></i> Erro';
     }
 }
 
@@ -601,12 +593,16 @@ async function handleCellClick(name, dayIndex) {
     emp.schedule[dayIndex] = newStatus;
     rawSchedule[name].calculatedSchedule = emp.schedule;
     
-    // 2. Feedback
+    // 2. Feedback na Nova Barra
     hasUnsavedChanges = true;
     const statusEl = document.getElementById('saveStatus');
+    const statusIcon = document.getElementById('saveStatusIcon');
     if(statusEl) {
-        statusEl.textContent = "Alterações pendentes!";
-        statusEl.className = "text-xs text-yellow-300 font-bold animate-pulse";
+        statusEl.textContent = "Alterações pendentes...";
+        statusEl.className = "text-sm font-medium text-amber-400 transition-colors";
+    }
+    if(statusIcon) {
+        statusIcon.className = "w-2 h-2 rounded-full bg-amber-500 animate-pulse shadow-[0_0_8px_rgba(251,191,36,0.6)] transition-all";
     }
     
     // 3. Atualizações Visuais
