@@ -1,5 +1,6 @@
 // app.js - Versão Cloud (Firebase)
 // Integração Completa: Auth + Firestore + Edição Visual
+// CORREÇÃO APLICADA: Seleção correta de Ano/Mês ao recarregar.
 
 // ==========================================
 // 1. IMPORTAÇÕES FIREBASE (WEB SDK)
@@ -38,29 +39,31 @@ let currentDay = new Date().getDate();
 
 const currentDateObj = new Date();
 const monthNames = ["Janeiro","Fevereiro","Março","Abril","Maio","Junho","Julho","Agosto","Setembro","Outubro","Novembro","Dezembro"];
-// Sistema focado em Dezembro/2025 para teste, ou mês atual
+// Sistema focado no mês atual real
 const systemYear = currentDateObj.getFullYear();
 const systemMonth = currentDateObj.getMonth(); 
 
 // Ajuste de meses disponíveis (Novembro/25 até Dezembro/26)
 const availableMonths = [
     { year: 2025, month: 10 }, // Novembro 2025
-    { year: 2025, month: 11 } // , // Dezembro 2025
+    { year: 2025, month: 11 }, // Dezembro 2025
     
     // 2026 COMPLETO
-     // { year: 2026, month: 0 },  // Janeiro
-     // { year: 2026, month: 1 },  // Fevereiro
-     // { year: 2026, month: 2 },  // Março
-     // { year: 2026, month: 3 },  // Abril
-     // { year: 2026, month: 4 },  // Maio
-     // { year: 2026, month: 5 },  // Junho
-     // { year: 2026, month: 6 },  // Julho
-     // { year: 2026, month: 7 },  // Agosto
-     // { year: 2026, month: 8 },  // Setembro
-     // { year: 2026, month: 9 },  // Outubro
-     // { year: 2026, month: 10 }, // Novembro
-     // { year: 2026, month: 11 }  // Dezembro
+    { year: 2026, month: 0 },  // Janeiro
+    { year: 2026, month: 1 },  // Fevereiro
+    { year: 2026, month: 2 },  // Março
+    { year: 2026, month: 3 },  // Abril
+    { year: 2026, month: 4 },  // Maio
+    { year: 2026, month: 5 },  // Junho
+    { year: 2026, month: 6 },  // Julho
+    { year: 2026, month: 7 },  // Agosto
+    { year: 2026, month: 8 },  // Setembro
+    { year: 2026, month: 9 },  // Outubro
+    { year: 2026, month: 10 }, // Novembro
+    { year: 2026, month: 11 }  // Dezembro
 ];
+
+// Tenta encontrar o mês atual na lista. Se não achar, pega o último.
 let selectedMonthObj = availableMonths.find(m => m.year === systemYear && m.month === systemMonth) || availableMonths[availableMonths.length-1];
 
 const statusMap = { 'T':'Trabalhando','F':'Folga','FS':'Folga Sáb','FD':'Folga Dom','FE':'Férias','OFF-SHIFT':'Exp.Encerrado', 'F_EFFECTIVE': 'Exp.Encerrado' };
@@ -134,6 +137,7 @@ onAuthStateChanged(auth, (user) => {
 // ==========================================
 async function loadDataFromCloud() {
     // ID do documento: "escala-2025-11" (Ano-MesIndex)
+    // Atenção: month+1 para bater com o padrão salvo (11 para novembro)
     const docId = `escala-${selectedMonthObj.year}-${String(selectedMonthObj.month+1).padStart(2,'0')}`;
     
     try {
@@ -146,8 +150,8 @@ async function loadDataFromCloud() {
             updateDailyView();
             initSelect();
         } else {
-            console.log("Nenhum documento encontrado para este mês. Criando vazio se admin...");
-            rawSchedule = {}; // Ou carregar padrão
+            console.log("Nenhum documento encontrado para este mês.");
+            rawSchedule = {}; 
             processScheduleData();
             updateDailyView();
         }
@@ -164,11 +168,6 @@ async function saveToCloud() {
     const status = document.getElementById('saveStatus');
     
     btn.innerHTML = '<i class="fas fa-spinner fa-spin mr-2"></i> Salvando...';
-    
-    // Precisamos salvar 'rawSchedule'. 
-    // Como a edição altera 'scheduleData', precisamos reverter ou salvar 'scheduleData' transformado?
-    // SIMPLIFICAÇÃO: Vamos salvar o objeto rawSchedule. 
-    // Nota: O sistema de edição abaixo altera diretamente o rawSchedule para facilitar.
     
     const docId = `escala-${selectedMonthObj.year}-${String(selectedMonthObj.month+1).padStart(2,'0')}`;
     
@@ -195,15 +194,8 @@ async function saveToCloud() {
 document.getElementById('btnSaveCloud').addEventListener('click', saveToCloud);
 
 // ==========================================
-// 6. PROCESSAMENTO DE DADOS (Igual ao antigo, adaptado)
+// 6. PROCESSAMENTO DE DADOS
 // ==========================================
-
-// Funções auxiliares de parse (mantidas do original para compatibilidade com a estrutura de dados)
-function generate12x36Schedule(startWorkingDay, totalDays) {
-    const schedule = new Array(totalDays).fill('F');
-    for (let d = startWorkingDay; d <= totalDays; d += 2) schedule[d-1] = 'T';
-    return schedule;
-}
 
 function generate5x2ScheduleDefaultForMonth(monthObj) {
     const totalDays = new Date(monthObj.year, monthObj.month+1, 0).getDate();
@@ -217,7 +209,7 @@ function generate5x2ScheduleDefaultForMonth(monthObj) {
 
 function parseDayListForMonth(dayString, monthObj) {
     if (!dayString) return [];
-    if (Array.isArray(dayString)) return dayString; // Se já for array (formato novo salvo pelo editor)
+    if (Array.isArray(dayString)) return dayString; // Se já for array
 
     const totalDays = new Date(monthObj.year, monthObj.month+1, 0).getDate();
     const days = new Set();
@@ -225,7 +217,6 @@ function parseDayListForMonth(dayString, monthObj) {
     const parts = normalized.split(',').map(p=>p.trim()).filter(p=>p.length>0);
 
     parts.forEach(part=>{
-        // Lógica simplificada de regex (mantida do original)
         const simple = part.match(/^(\d{1,2})-(\d{1,2})$/);
         if (simple) { for(let x=parseInt(simple[1]); x<=parseInt(simple[2]); x++) if(x>=1 && x<=totalDays) days.add(x); return; }
         const number = part.match(/^(\d{1,2})$/);
@@ -246,7 +237,6 @@ function buildFinalScheduleForMonth(employeeData, monthObj) {
     const totalDays = new Date(monthObj.year, monthObj.month+1, 0).getDate();
     
     // Se já tivermos um array explícito salvo (modo edição), usamos ele.
-    // Senão, calculamos baseado nas regras de texto (legado).
     if (employeeData.calculatedSchedule && Array.isArray(employeeData.calculatedSchedule)) {
         return employeeData.calculatedSchedule;
     }
@@ -257,7 +247,6 @@ function buildFinalScheduleForMonth(employeeData, monthObj) {
     let tArr = [];
     if(typeof employeeData.T === 'string' && /segunda a sexta/i.test(employeeData.T)) tArr = generate5x2ScheduleDefaultForMonth(monthObj);
     else if(Array.isArray(employeeData.T)) {
-        // Lógica mista array/numeros
         const arr = new Array(totalDays).fill('F');
         employeeData.T.forEach(x => { if(typeof x === 'number') arr[x-1] = 'T'; });
         tArr = arr;
@@ -477,7 +466,8 @@ function updateDailyView() {
     const currentDateLabel = document.getElementById('currentDateLabel');
     const dayOfWeekIndex = new Date(selectedMonthObj.year, selectedMonthObj.month, currentDay).getDay();
     const now = new Date();
-    const isToday = (now.getDate() === currentDay && now.getMonth() === systemMonth && now.getFullYear() === systemYear);
+    // Verifica se é "hoje" real
+    const isToday = (now.getDate() === currentDay && now.getMonth() === selectedMonthObj.month && now.getFullYear() === selectedMonthObj.year);
     
     currentDateLabel.textContent = `${daysOfWeek[dayOfWeekIndex]}, ${pad(currentDay)}/${pad(selectedMonthObj.month+1)}/${selectedMonthObj.year}`;
 
@@ -567,7 +557,6 @@ function updatePersonalView(name) {
     if(statusToday==='FE') dotClass = "bg-red-500 shadow-[0_0_8px_rgba(239,68,68,0.8)]";
 
     card.classList.remove('hidden');
-    // COR CINZA SOLICITADA
     card.className = "mb-8 bg-gray-50 rounded-2xl shadow-xl overflow-hidden transform transition-all duration-300";
 
     card.innerHTML = `
@@ -685,11 +674,19 @@ function initGlobal() {
         sel.className = 'mt-3 md:mt-0 md:ml-4 px-4 py-2 rounded-lg border border-gray-300 shadow-sm text-gray-700 bg-white font-medium focus:outline-none focus:ring-2 focus:ring-indigo-500 cursor-pointer hover:bg-gray-50 transition-colors';
         
         availableMonths.forEach(m => {
-            const opt = document.createElement('option'); opt.value=`${m.year}-${m.month}`;
+            const opt = document.createElement('option'); 
+            opt.value = `${m.year}-${m.month}`;
             opt.textContent = `${monthNames[m.month]}/${m.year}`;
-            if(m.month===selectedMonthObj.month) opt.selected=true;
+            
+            // --- CORREÇÃO AQUI ---
+            // Agora verifica Mês E Ano para marcar o selected corretamente
+            if(m.month === selectedMonthObj.month && m.year === selectedMonthObj.year) {
+                opt.selected = true;
+            }
+            
             sel.appendChild(opt);
         });
+        
         sel.addEventListener('change', e=>{
             const [y,mo] = e.target.value.split('-').map(Number);
             selectedMonthObj={year:y, month:mo};
@@ -714,7 +711,7 @@ function initTabs() {
             document.getElementById(`${b.dataset.tab}View`).classList.remove('hidden');
             if(b.dataset.tab==='personal') {
                 const sel = document.getElementById('employeeSelect');
-                if(sel && sel.value) updateWeekendTable(sel.value); // Passa nome pra atualizar se tiver
+                if(sel && sel.value) updateWeekendTable(sel.value); 
                 else updateWeekendTable(null);
             }
         });
@@ -772,4 +769,3 @@ function updateWeekendTable(specificName) {
 
 // Iniciar
 document.addEventListener('DOMContentLoaded', initGlobal);
-
