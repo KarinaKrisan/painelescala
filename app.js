@@ -35,7 +35,6 @@ let rawSchedule = {};  // Dados brutos do DB
 let dailyChart = null;
 let isTrendMode = false;
 let currentDay = new Date().getDate();
-let currentEditTarget = null; // Armazena qual dia/colaborador está sendo editado
 
 const currentDateObj = new Date();
 const monthNames = ["Janeiro","Fevereiro","Março","Abril","Maio","Junho","Julho","Agosto","Setembro","Outubro","Novembro","Dezembro"];
@@ -46,7 +45,7 @@ const systemMonth = currentDateObj.getMonth();
 // Ajuste de meses disponíveis (Novembro/25 até Dezembro/26)
 const availableMonths = [
     { year: 2025, month: 10 }, // Novembro 2025
-    { year: 2025, month: 11 }//, // Dezembro 2025
+    { year: 2025, month: 11 }, // Dezembro 2025
     
     // 2026 COMPLETO
     { year: 2026, month: 0 },  // Janeiro
@@ -600,53 +599,33 @@ function updatePersonalView(name) {
     updateCalendar(name, emp.schedule);
 }
 
-// EDIÇÃO DE CÉLULAS - NOVA LÓGICA DE MODAL
-function handleCellClick(name, dayIndex) {
+// EDIÇÃO DE CÉLULAS
+function cycleStatus(current) {
+    const sequence = ['T', 'F', 'FS', 'FD', 'FE'];
+    let idx = sequence.indexOf(current);
+    if(idx === -1) return 'T';
+    return sequence[(idx + 1) % sequence.length];
+}
+
+async function handleCellClick(name, dayIndex) {
     if (!isAdmin) return;
     
-    // Armazena quem estamos editando
-    currentEditTarget = { name: name, index: dayIndex };
-    
-    // Atualiza label do modal
-    const day = dayIndex + 1;
-    const dateStr = `${pad(day)}/${pad(selectedMonthObj.month + 1)}`;
-    document.getElementById('modalDateLabel').textContent = dateStr;
-    
-    // Abre modal
-    document.getElementById('statusSelectionModal').classList.remove('hidden');
-}
-
-// Exporta para o escopo global (para o onclick funcionar no HTML)
-window.handleCellClick = handleCellClick;
-
-window.closeStatusModal = function() {
-    document.getElementById('statusSelectionModal').classList.add('hidden');
-    currentEditTarget = null;
-}
-
-window.confirmStatusChange = function(newStatus) {
-    if (!currentEditTarget || !isAdmin) return;
-    
-    const { name, index } = currentEditTarget;
+    // Atualiza localmente
     const emp = scheduleData[name];
+    const newStatus = cycleStatus(emp.schedule[dayIndex]);
+    emp.schedule[dayIndex] = newStatus;
     
-    // Atualiza local
-    emp.schedule[index] = newStatus;
-    
-    // Atualiza rawSchedule (persistência)
+    // Atualiza rawSchedule (para persistir)
     rawSchedule[name].calculatedSchedule = emp.schedule;
-    
+
     // Feedback Visual
     hasUnsavedChanges = true;
     document.getElementById('saveStatus').textContent = "Alterações pendentes!";
     document.getElementById('saveStatus').className = "text-xs text-yellow-300 font-bold animate-pulse";
     
-    // Atualiza UI
+    // Re-render
     updateCalendar(name, emp.schedule);
     updateDailyView();
-    
-    // Fecha modal
-    window.closeStatusModal();
 }
 
 function updateCalendar(name, schedule) {
@@ -793,3 +772,4 @@ function updateWeekendTable(specificName) {
 
 // Iniciar
 document.addEventListener('DOMContentLoaded', initGlobal);
+
