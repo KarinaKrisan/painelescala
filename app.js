@@ -1,5 +1,5 @@
-// app.js - Versão Cloud (Firebase)
-// Integração Completa: Modo de Edição Simplificado (Clique para Alternar/Ciclo)
+// app.js - Versão Final Corrigida
+// Integração Completa: Auth + Firestore + Edição Ciclo + Atualização em Tempo Real
 
 // ==========================================
 // 1. IMPORTAÇÕES FIREBASE (WEB SDK)
@@ -496,6 +496,7 @@ function initSelect() {
         const opt = document.createElement('option'); opt.value=name; opt.textContent=name; select.appendChild(opt);
     });
     
+    // Clonar para limpar listeners antigos
     const newSelect = select.cloneNode(true);
     select.parentNode.replaceChild(newSelect, select);
     
@@ -504,6 +505,7 @@ function initSelect() {
         if(name) {
             updatePersonalView(name);
         } else {
+            // SE NÃO TIVER SELEÇÃO (vazio), ESCONDE TUDO
             document.getElementById('personalInfoCard').classList.add('hidden');
             document.getElementById('calendarContainer').classList.add('hidden');
         }
@@ -523,6 +525,7 @@ function updatePersonalView(name) {
     let statusToday = emp.schedule[currentDay - 1] || 'F';
     let displayStatus = statusToday;
 
+    // Lógica para Expediente Encerrado (Roxo)
     const now = new Date();
     const isToday = (now.getDate() === currentDay && 
                      now.getMonth() === selectedMonthObj.month && 
@@ -534,6 +537,7 @@ function updatePersonalView(name) {
         }
     }
 
+    // Mapa de Cores da Bolinha
     const colorClasses = {
         'T': 'bg-green-500 shadow-[0_0_8px_rgba(34,197,94,0.8)]',
         'F': 'bg-yellow-400 shadow-[0_0_8px_rgba(250,204,21,0.8)]',
@@ -590,11 +594,14 @@ function cycleStatus(current) {
 
 async function handleCellClick(name, dayIndex) {
     if (!isAdmin) return;
+    
+    // 1. Atualiza Status
     const emp = scheduleData[name];
     const newStatus = cycleStatus(emp.schedule[dayIndex]);
     emp.schedule[dayIndex] = newStatus;
     rawSchedule[name].calculatedSchedule = emp.schedule;
     
+    // 2. Feedback
     hasUnsavedChanges = true;
     const statusEl = document.getElementById('saveStatus');
     if(statusEl) {
@@ -602,8 +609,14 @@ async function handleCellClick(name, dayIndex) {
         statusEl.className = "text-xs text-yellow-300 font-bold animate-pulse";
     }
     
+    // 3. Atualizações Visuais
     updateCalendar(name, emp.schedule);
     updateDailyView();
+    
+    // 4. ATUALIZAÇÃO FORÇADA DOS CARDS DE FIM DE SEMANA
+    const sel = document.getElementById('employeeSelect');
+    const currentSelection = sel ? sel.value : null;
+    updateWeekendTable(currentSelection);
 }
 
 function updateCalendar(name, schedule) {
@@ -646,7 +659,7 @@ function updateCalendar(name, schedule) {
             
             if(isAdmin) {
                 badge.classList.add('cursor-pointer', 'hover:opacity-80', 'ring-2', 'ring-transparent', 'hover:ring-indigo-300', 'transition-all');
-                badge.title = "Clique para alterar (Ciclo)";
+                badge.title = "Clique para alternar (Ciclo)";
                 badge.onclick = () => handleCellClick(name, i);
             }
 
