@@ -1,5 +1,5 @@
 // app.js - Versão Cloud (Firebase)
-// Integração Completa: Auth + Firestore + Edição Visual (Menu Desktop na Tag)
+// Integração Completa: Auth + Firestore + Edição Visual (Menu Desktop na Tag) + Bolinha Status Dinâmica
 
 // ==========================================
 // 1. IMPORTAÇÕES FIREBASE (WEB SDK)
@@ -515,11 +515,34 @@ function updatePersonalView(name) {
     const celula = emp.info.Célula || emp.info.Celula || emp.info.CELULA || 'Sitelbra/ B2B';
     let turno = emp.info.Turno || 'Comercial';
 
-    let statusToday = emp.schedule[currentDay - 1] || 'F';
-    let dotClass = "bg-gray-400 shadow-[0_0_8px_rgba(156,163,175,0.8)]";
-    if(statusToday==='T') dotClass = "bg-green-400 shadow-[0_0_8px_rgba(74,222,128,0.8)]";
-    if(statusToday==='F') dotClass = "bg-yellow-400 shadow-[0_0_8px_rgba(250,204,21,0.8)]";
-    if(statusToday==='FE') dotClass = "bg-red-500 shadow-[0_0_8px_rgba(239,68,68,0.8)]";
+    // 1. Obtém status básico do dia
+    let status = emp.schedule[currentDay - 1] || 'F';
+    let displayStatus = status;
+
+    // 2. Lógica para "Expediente Encerrado" (Bolinha Roxa)
+    // Se for hoje, e estiver escalado ('T'), verifica se o horário já acabou
+    const now = new Date();
+    const isToday = (now.getDate() === currentDay && 
+                     now.getMonth() === selectedMonthObj.month && 
+                     now.getFullYear() === selectedMonthObj.year);
+
+    if (isToday && status === 'T') {
+        if (!isWorkingTime(emp.info.Horário)) {
+            displayStatus = 'OFF-SHIFT';
+        }
+    }
+
+    // 3. Mapa de Cores da Bolinha
+    const colorClasses = {
+        'T': 'bg-green-500 shadow-[0_0_8px_rgba(34,197,94,0.8)]',      // Verde
+        'F': 'bg-yellow-400 shadow-[0_0_8px_rgba(250,204,21,0.8)]',     // Amarelo
+        'FS': 'bg-sky-400 shadow-[0_0_8px_rgba(56,189,248,0.8)]',       // Azul Claro
+        'FD': 'bg-blue-700 shadow-[0_0_8px_rgba(29,78,216,0.8)]',       // Azul Escuro
+        'FE': 'bg-red-500 shadow-[0_0_8px_rgba(239,68,68,0.8)]',        // Vermelho
+        'OFF-SHIFT': 'bg-fuchsia-500 shadow-[0_0_8px_rgba(217,70,239,0.8)]' // Roxo (Exp. Encerrado)
+    };
+
+    let dotClass = colorClasses[displayStatus] || 'bg-gray-400 shadow-none';
 
     card.classList.remove('hidden');
     card.className = "mb-8 bg-gray-50 rounded-2xl shadow-xl overflow-hidden transform transition-all duration-300";
