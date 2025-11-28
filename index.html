@@ -8,12 +8,10 @@
     <script src="https://cdn.tailwindcss.com"></script>
     <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
     <link rel="stylesheet" href="styless.css">
-    <!-- Ícones Font Awesome -->
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css" />
 </head>
 <body class="text-gray-800 bg-gray-100 relative">
 
-    <!-- BARRA DE ADMIN (Aparece só quando logado) -->
     <div id="adminToolbar" class="hidden fixed top-0 left-0 right-0 bg-indigo-900 text-white p-3 z-50 shadow-lg flex justify-between items-center px-4 md:px-8">
         <div class="flex items-center gap-4">
             <span class="font-bold text-yellow-400 flex items-center"><i class="fas fa-crown mr-2"></i> ADMIN</span>
@@ -29,7 +27,6 @@
         </div>
     </div>
 
-    <!-- MODAL DE LOGIN -->
     <div id="loginModal" class="hidden fixed inset-0 bg-gray-900 bg-opacity-75 z-[60] flex items-center justify-center p-4">
         <div class="bg-white rounded-2xl shadow-2xl p-8 max-w-sm w-full relative">
             <button id="btnCloseLogin" class="absolute top-4 right-4 text-gray-400 hover:text-gray-600">
@@ -54,6 +51,52 @@
         </div>
     </div>
 
+    <div id="statusSelectionModal" class="hidden fixed inset-0 bg-gray-900 bg-opacity-80 z-[70] flex items-center justify-center p-4 backdrop-blur-sm transition-all">
+        <div class="bg-white rounded-2xl shadow-2xl w-full max-w-md overflow-hidden transform transition-all scale-100">
+            <div class="bg-indigo-600 p-4 flex justify-between items-center">
+                <h3 class="text-white font-bold text-lg"><i class="fas fa-edit mr-2"></i> Alterar Status</h3>
+                <button onclick="window.closeStatusModal()" class="text-white hover:text-indigo-200 transition">
+                    <i class="fas fa-times text-xl"></i>
+                </button>
+            </div>
+            
+            <div class="p-6">
+                <p class="text-gray-600 mb-4 text-center">Selecione o novo status para o dia <span id="modalDateLabel" class="font-bold text-indigo-700">--</span>:</p>
+                
+                <div class="grid grid-cols-2 gap-3">
+                    <button onclick="window.confirmStatusChange('T')" class="flex flex-col items-center justify-center p-4 rounded-xl border-2 border-green-100 bg-green-50 hover:bg-green-100 hover:border-green-300 transition group">
+                        <div class="w-8 h-8 rounded-full bg-green-500 text-white flex items-center justify-center mb-2 shadow-sm group-hover:scale-110 transition"><i class="fas fa-briefcase"></i></div>
+                        <span class="font-bold text-green-800">Trabalhando</span>
+                    </button>
+
+                    <button onclick="window.confirmStatusChange('F')" class="flex flex-col items-center justify-center p-4 rounded-xl border-2 border-yellow-100 bg-yellow-50 hover:bg-yellow-100 hover:border-yellow-300 transition group">
+                        <div class="w-8 h-8 rounded-full bg-yellow-500 text-white flex items-center justify-center mb-2 shadow-sm group-hover:scale-110 transition"><i class="fas fa-home"></i></div>
+                        <span class="font-bold text-yellow-800">Folga</span>
+                    </button>
+
+                    <button onclick="window.confirmStatusChange('FS')" class="flex flex-col items-center justify-center p-4 rounded-xl border-2 border-sky-100 bg-sky-50 hover:bg-sky-100 hover:border-sky-300 transition group">
+                        <div class="w-8 h-8 rounded-full bg-sky-500 text-white flex items-center justify-center mb-2 shadow-sm group-hover:scale-110 transition"><i class="fas fa-calendar-day"></i></div>
+                        <span class="font-bold text-sky-800">Folga Sáb</span>
+                    </button>
+
+                    <button onclick="window.confirmStatusChange('FD')" class="flex flex-col items-center justify-center p-4 rounded-xl border-2 border-blue-100 bg-blue-50 hover:bg-blue-100 hover:border-blue-300 transition group">
+                        <div class="w-8 h-8 rounded-full bg-blue-600 text-white flex items-center justify-center mb-2 shadow-sm group-hover:scale-110 transition"><i class="fas fa-calendar-week"></i></div>
+                        <span class="font-bold text-blue-800">Folga Dom</span>
+                    </button>
+                    
+                     <button onclick="window.confirmStatusChange('FE')" class="flex flex-col items-center justify-center p-4 rounded-xl border-2 border-red-100 bg-red-50 hover:bg-red-100 hover:border-red-300 transition group col-span-2">
+                        <div class="w-8 h-8 rounded-full bg-red-500 text-white flex items-center justify-center mb-2 shadow-sm group-hover:scale-110 transition"><i class="fas fa-plane"></i></div>
+                        <span class="font-bold text-red-800">Férias</span>
+                    </button>
+                </div>
+            </div>
+            
+            <div class="bg-gray-50 p-3 text-center border-t border-gray-100">
+                <button onclick="window.closeStatusModal()" class="text-gray-500 text-sm hover:text-gray-700 font-medium">Cancelar</button>
+            </div>
+        </div>
+    </div>
+
     <div class="container mx-auto p-4 max-w-6xl mt-12 transition-all duration-300" id="mainContainer">
 
         <header class="mb-8 text-center md:text-left flex flex-col md:flex-row justify-between items-center">
@@ -63,15 +106,12 @@
             </div>
             
             <div class="mt-4 md:mt-0 flex gap-2">
-                <!-- Seletor de mês será injetado aqui via JS -->
-                
                 <button id="btnOpenLogin" class="bg-indigo-100 text-indigo-700 px-4 py-2 rounded-lg font-bold shadow hover:bg-indigo-200 transition ml-2">
                     <i class="fas fa-lock mr-2"></i> Área Admin
                 </button>
             </div>
         </header>
 
-        <!-- Navegação Abas -->
         <nav class="flex flex-wrap gap-3 p-3 mb-8 bg-white rounded-xl shadow-md border border-gray-200 justify-center md:justify-start">
             <button data-tab="daily" class="tab-button active text-sm md:text-base px-6 py-2.5 rounded-lg border border-transparent shadow-sm hover:bg-gray-50 font-medium transition duration-150 ease-in-out">
                 <i class="fas fa-calendar-day mr-2"></i> Visão Diária
@@ -82,7 +122,6 @@
         </nav>
 
         <main>
-            <!-- ABA 1: VISÃO DIÁRIA -->
             <div id="dailyView" class="tab-content active space-y-8">
                 <section class="bg-white p-8 rounded-2xl shadow-2xl border border-gray-100">
                     <div class="mb-8 pb-4 border-b border-gray-100">
@@ -92,8 +131,7 @@
                             <span id="currentDateLabel" class="text-3xl font-extrabold text-indigo-800 capitalize block"></span>
                        </div>
 
-                       <!-- Seletor de Data (Slider) -->
-                        <label for="dateSlider" class="block text-sm font-medium text-gray-500 mb-2">Navegar pelo mês:</label>
+                       <label for="dateSlider" class="block text-sm font-medium text-gray-500 mb-2">Navegar pelo mês:</label>
                         <input id="dateSlider" type="range" min="1" value="1" class="w-full h-2 bg-indigo-200 rounded-lg appearance-none cursor-pointer accent-indigo-600 shadow-inner">
                         <div class="flex justify-between text-xs text-gray-400 mt-1">
                             <span>Dia 1</span>
@@ -102,7 +140,6 @@
                     </div>
                     
                     <div class="grid grid-cols-1 lg:grid-cols-2 gap-8 items-stretch">
-                        <!-- Cards KPIs -->
                         <div class="grid grid-cols-2 gap-4 h-full">
                             <div class="bg-white p-5 rounded-xl shadow-md border-t-4 border-green-600">
                                <p class="text-sm font-semibold text-green-700">Trabalhando</p>
@@ -122,7 +159,6 @@
                             </div>
                         </div>
 
-                        <!-- Gráfico -->
                         <div class="flex flex-col bg-white rounded-xl p-6 border border-gray-200 shadow-lg relative h-full">
                             <div class="flex justify-between items-center mb-6 border-b border-gray-100 pb-2">
                                 <h3 id="chartTitle" class="text-lg font-bold text-gray-700">Capacidade Operacional</h3>
@@ -137,7 +173,6 @@
                     </div>
                 </section>
 
-                <!-- Listas Detalhadas -->
                 <section class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
                     <div class="bg-white rounded-2xl shadow-2xl flex flex-col overflow-hidden h-96 border border-gray-100">
                         <div class="bg-green-700 p-3"><h3 class="font-bold text-white text-center">Trabalhando</h3></div>
@@ -158,11 +193,9 @@
                 </section>
             </div>
 
-            <!-- ABA 2: VISÃO PESSOAL (ADMIN MODE) -->
             <div id="personalView" class="tab-content hidden space-y-8">
                 <section class="bg-white p-8 rounded-2xl shadow-xl border border-gray-100">
                     
-                    <!-- AVISO DE MODO EDIÇÃO (VERMELHO E ATUALIZADO) -->
                     <div id="adminEditHint" class="hidden mb-6 bg-red-100 text-red-800 px-4 py-3 rounded-lg text-sm border border-red-200 flex items-center shadow-sm">
                         <i class="fas fa-pen mr-2 text-red-600"></i> 
                         <span class="font-semibold">MODO DE EDIÇÃO:</span> 
@@ -174,7 +207,6 @@
                              <h2 class="text-2xl font-bold text-gray-800">Escala Individual</h2>
                              <p class="text-gray-500 text-sm">Selecione um nome para visualizar ou editar.</p>
                              
-                             <!-- Botão Criar Funcionário (Só Admin Vê) -->
                              <button id="btnAddEmployee" onclick="window.addNewEmployee()" class="hidden mt-3 text-sm bg-indigo-600 text-white px-3 py-1.5 rounded hover:bg-indigo-700 shadow-sm transition">
                                 <i class="fas fa-plus mr-1"></i> Criar Novo Colaborador
                              </button>
@@ -190,12 +222,9 @@
                         </div>
                     </div>
 
-                    <!-- CARD COLABORADOR (Fundo Cinza) -->
                     <div id="personalInfoCard" class="hidden mb-8 bg-gray-50 rounded-2xl shadow-xl overflow-hidden transform transition-all duration-300">
-                        <!-- Preenchido via JS -->
-                    </div>
+                        </div>
 
-                    <!-- CALENDÁRIO GRID -->
                     <div id="calendarContainer" class="hidden">
                         <div class="grid grid-cols-7 gap-1 mb-1 text-center font-semibold text-gray-700 hidden md:grid">
                             <div class="text-xs uppercase p-2">Dom</div><div class="text-xs uppercase p-2">Seg</div>
@@ -223,10 +252,8 @@
         </footer>
     </div>
 
-    <!-- ESCALA-DATA (Legado) -->
     <script src="escala-data.js"></script>
     
-    <!-- APP JS COMO MÓDULO -->
     <script type="module" src="app.js"></script>
 </body>
 </html>
