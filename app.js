@@ -1,4 +1,5 @@
 // app.js - Versão Final (Cores dos dias no Mobile Ajustadas: FS Azul Claro / FD Azul Escuro)
+// Ajuste UI: Seletor de Mês com bordas arredondadas (rounded-lg)
 // Depende de: JSONs mensais em ./data/escala-YYYY-MM.json
 
 // ==========================================
@@ -715,7 +716,9 @@ function initGlobal() {
         const header = document.querySelector('header');
         if(!document.getElementById('monthSel')) {
             const sel = document.createElement('select'); sel.id='monthSel';
-            sel.className = 'mt-2 p-2 rounded border';
+            // CLASSE ATUALIZADA AQUI: Adicionado rounded-lg, sombras e padding ajustado
+            sel.className = 'mt-3 md:mt-0 md:ml-4 px-4 py-2 rounded-lg border border-gray-300 shadow-sm text-gray-700 bg-white font-medium focus:outline-none focus:ring-2 focus:ring-indigo-500 cursor-pointer hover:bg-gray-50 transition-colors';
+            
             availableMonths.forEach(m => {
                 const opt = document.createElement('option'); opt.value=`${m.year}-${m.month}`;
                 opt.textContent = `${monthNames[m.month]}/${m.year}`;
