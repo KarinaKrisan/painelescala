@@ -3,117 +3,185 @@
 <head>
     <meta charset="UTF-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-    <title>Login Administrativo | Sitelbra</title>
+    <title>Painel Operacional | Escala Sitelbra (Cloud)</title>
+
     <script src="https://cdn.tailwindcss.com"></script>
-    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+    <link rel="stylesheet" href="styless.css">
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css" />
-    <style>
-        body { font-family: 'Inter', sans-serif; }
-    </style>
 </head>
-<body class="bg-gray-100 h-screen flex items-center justify-center p-4">
+<body class="text-gray-800 bg-gray-100 relative">
 
-    <div class="bg-white rounded-2xl shadow-xl w-full max-w-md overflow-hidden flex flex-col md:flex-row">
-        
-        <div class="w-full p-8 md:p-10">
-            <div class="text-center mb-8">
-                <h1 class="text-2xl font-extrabold text-gray-900 mb-2">Acesso Restrito</h1>
-                <p class="text-sm text-gray-500">Gerenciamento de Escala Sitelbra</p>
-            </div>
-
-            <form id="loginPageForm" class="space-y-5">
-                <div>
-                    <label class="block text-sm font-medium text-gray-700 mb-1.5">E-mail Corporativo</label>
-                    <div class="relative">
-                        <div class="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
-                            <i class="fas fa-envelope text-gray-400"></i>
-                        </div>
-                        <input type="email" id="emailInput" class="w-full pl-10 pr-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500 outline-none transition-colors" placeholder="nome@exemplo.com" required>
-                    </div>
-                </div>
-
-                <div>
-                    <label class="block text-sm font-medium text-gray-700 mb-1.5">Senha</label>
-                    <div class="relative">
-                        <div class="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
-                            <i class="fas fa-lock text-gray-400"></i>
-                        </div>
-                        <input type="password" id="passwordInput" class="w-full pl-10 pr-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500 outline-none transition-colors" placeholder="••••••••" required>
-                    </div>
-                </div>
-
-                <div id="loginError" class="hidden bg-red-50 text-red-600 text-sm p-3 rounded-lg flex items-center">
-                    <i class="fas fa-exclamation-circle mr-2"></i>
-                    <span id="errorText">Erro de autenticação.</span>
-                </div>
-
-                <button type="submit" id="btnLogin" class="w-full bg-indigo-600 hover:bg-indigo-700 text-white font-bold py-3 rounded-lg transition-all transform active:scale-95 shadow-lg flex justify-center items-center gap-2">
-                    <span>Entrar no Painel</span>
-                    <i class="fas fa-arrow-right"></i>
-                </button>
-            </form>
-
-            <div class="mt-8 text-center border-t border-gray-100 pt-6">
-                <a href="index.html" class="text-sm text-gray-500 hover:text-indigo-600 font-medium transition-colors">
-                    <i class="fas fa-arrow-left mr-1"></i> Voltar para Visão Diária
-                </a>
-            </div>
+    <div id="adminToolbar" class="hidden fixed top-0 left-0 right-0 bg-indigo-900 text-white p-3 z-50 shadow-lg flex justify-between items-center px-4 md:px-8">
+        <div class="flex items-center gap-4">
+            <span class="font-bold text-yellow-400 flex items-center"><i class="fas fa-crown mr-2"></i> ADMIN</span>
+            <span id="saveStatus" class="text-xs text-gray-300">Todas alterações salvas.</span>
+        </div>
+        <div class="flex gap-3">
+            <button id="btnSaveCloud" class="bg-green-600 hover:bg-green-700 text-white px-4 py-1 rounded font-bold transition flex items-center shadow-lg">
+                <i class="fas fa-cloud-upload-alt mr-2"></i> Salvar Agora
+            </button>
+            <button id="btnLogout" class="bg-red-600 hover:bg-red-700 text-white px-3 py-1 rounded text-sm transition">
+                Sair
+            </button>
         </div>
     </div>
 
-    <script type="module">
-        import { initializeApp } from "https://www.gstatic.com/firebasejs/11.0.2/firebase-app.js";
-        import { getAuth, signInWithEmailAndPassword } from "https://www.gstatic.com/firebasejs/11.0.2/firebase-auth.js";
+    <div class="container mx-auto p-4 max-w-6xl mt-12 transition-all duration-300" id="mainContainer">
 
-        const firebaseConfig = {
-            apiKey: "AIzaSyCBKSPH7lfUt0VsQPhJX3a0CQ2wYcziQvM",
-            authDomain: "dadosescala.firebaseapp.com",
-            projectId: "dadosescala",
-            storageBucket: "dadosescala.firebasestorage.app",
-            messagingSenderId: "117221956502",
-            appId: "1:117221956502:web:e5a7f051daf3306b501bb7"
-        };
+        <header class="mb-8 text-center md:text-left flex flex-col md:flex-row justify-between items-center">
+            <div>
+                <h1 class="text-3xl md:text-4xl font-extrabold text-gray-900 mb-2 tracking-tight">Painel Operacional Sitelbra</h1>
+                <p id="headerDate" class="text-lg text-gray-500 font-medium"></p>
+            </div>
+            
+            <div class="mt-4 md:mt-0 flex gap-2">
+                <a href="login.html" id="btnOpenLogin" class="bg-indigo-100 text-indigo-700 px-4 py-2 rounded-lg font-bold shadow hover:bg-indigo-200 transition ml-2 flex items-center">
+                    <i class="fas fa-lock mr-2"></i> Área Admin
+                </a>
+            </div>
+        </header>
 
-        const app = initializeApp(firebaseConfig);
-        const auth = getAuth(app);
+        <nav class="flex flex-wrap gap-3 p-3 mb-8 bg-white rounded-xl shadow-md border border-gray-200 justify-center md:justify-start">
+            <button data-tab="daily" class="tab-button active text-sm md:text-base px-6 py-2.5 rounded-lg border border-transparent shadow-sm hover:bg-gray-50 font-medium transition duration-150 ease-in-out">
+                <i class="fas fa-calendar-day mr-2"></i> Visão Diária
+            </button>
+            <button data-tab="personal" class="tab-button text-sm md:text-base px-6 py-2.5 rounded-lg border border-transparent shadow-sm hover:bg-gray-50 font-medium transition duration-150 ease-in-out">
+                <i class="fas fa-user-clock mr-2"></i> Escala & Plantões
+            </button>
+        </nav>
 
-        document.getElementById('loginPageForm').addEventListener('submit', async (e) => {
-            e.preventDefault();
-            const email = document.getElementById('emailInput').value;
-            const pass = document.getElementById('passwordInput').value;
-            const errorDiv = document.getElementById('loginError');
-            const btn = document.getElementById('btnLogin');
+        <main>
+            <div id="dailyView" class="tab-content active space-y-8">
+                <section class="bg-white p-8 rounded-2xl shadow-2xl border border-gray-100">
+                    <div class="mb-8 pb-4 border-b border-gray-100">
 
-            // Feedback visual de carregamento
-            btn.innerHTML = '<i class="fas fa-spinner fa-spin"></i> Verificando...';
-            btn.disabled = true;
-            btn.classList.add('opacity-75');
-            errorDiv.classList.add('hidden');
+                       <div class="flex justify-between items-center mb-4">
+                            <h2 class="text-xl font-bold text-gray-800">Status da Equipe em:</h2>
+                            <span id="currentDateLabel" class="text-3xl font-extrabold text-indigo-800 capitalize block"></span>
+                       </div>
 
-            try {
-                await signInWithEmailAndPassword(auth, email, pass);
-                // Sucesso: Redireciona para o painel principal
-                window.location.href = "index.html";
-            } catch (error) {
-                console.error("Erro login:", error);
-                const errorText = document.getElementById('errorText');
-                
-                if(error.code === 'auth/invalid-credential' || error.code === 'auth/wrong-password') {
-                    errorText.textContent = "E-mail ou senha incorretos.";
-                } else if (error.code === 'auth/too-many-requests') {
-                    errorText.textContent = "Muitas tentativas. Tente mais tarde.";
-                } else {
-                    errorText.textContent = "Erro ao conectar. Verifique sua internet.";
-                }
-                
-                errorDiv.classList.remove('hidden');
-                
-                // Restaura botão
-                btn.innerHTML = '<span>Entrar no Painel</span><i class="fas fa-arrow-right"></i>';
-                btn.disabled = false;
-                btn.classList.remove('opacity-75');
-            }
-        });
-    </script>
+                       <label for="dateSlider" class="block text-sm font-medium text-gray-500 mb-2">Navegar pelo mês:</label>
+                        <input id="dateSlider" type="range" min="1" value="1" class="w-full h-2 bg-indigo-200 rounded-lg appearance-none cursor-pointer accent-indigo-600 shadow-inner">
+                        <div class="flex justify-between text-xs text-gray-400 mt-1">
+                            <span>Dia 1</span>
+                            <span id="sliderMaxLabel">Fim</span>
+                        </div>
+                    </div>
+                    
+                    <div class="grid grid-cols-1 lg:grid-cols-2 gap-8 items-stretch">
+                        <div class="grid grid-cols-2 gap-4 h-full">
+                            <div class="bg-white p-5 rounded-xl shadow-md border-t-4 border-green-600">
+                               <p class="text-sm font-semibold text-green-700">Trabalhando</p>
+                                <p id="kpiWorking" class="text-4xl font-extrabold text-green-600 mt-1">0</p>
+                            </div>
+                            <div class="bg-white p-5 rounded-xl shadow-md border-t-4 border-pink-600">
+                                <p class="text-sm font-semibold text-pink-700">Exp. Encerrado</p>
+                                <p id="kpiOffShift" class="text-4xl font-extrabold text-pink-600 mt-1">0</p>
+                            </div>
+                            <div class="bg-white p-5 rounded-xl shadow-md border-t-4 border-yellow-500">
+                                <p class="text-sm font-semibold text-yellow-700">Folga</p>
+                                <p id="kpiOff" class="text-4xl font-extrabold text-yellow-600 mt-1">0</p>
+                            </div>
+                             <div class="bg-white p-5 rounded-xl shadow-md border-t-4 border-red-600">
+                                 <p class="text-sm font-semibold text-red-700">Férias</p>
+                                <p id="kpiVacation" class="text-4xl font-extrabold text-red-600 mt-1">0</p>
+                            </div>
+                        </div>
+
+                        <div class="flex flex-col bg-white rounded-xl p-6 border border-gray-200 shadow-lg relative h-full">
+                            <div class="flex justify-between items-center mb-6 border-b border-gray-100 pb-2">
+                                <h3 id="chartTitle" class="text-lg font-bold text-gray-700">Capacidade Operacional</h3>
+                                <button id="btnToggleChart" onclick="window.toggleChartMode()" class="text-xs bg-indigo-50 text-indigo-600 border border-indigo-200 px-4 py-1.5 rounded-full font-bold hover:bg-indigo-100 transition-colors shadow-sm">
+                                    Ver Tendência Mensal
+                                </button>
+                            </div>
+                            <div class="chart-container flex-1 w-full min-h-[300px] relative">
+                                 <canvas id="dailyChart"></canvas>
+                            </div>
+                        </div>
+                    </div>
+                </section>
+
+                <section class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
+                    <div class="bg-white rounded-2xl shadow-2xl flex flex-col overflow-hidden h-96 border border-gray-100">
+                        <div class="bg-green-700 p-3"><h3 class="font-bold text-white text-center">Trabalhando</h3></div>
+                        <div class="p-4 overflow-y-auto flex-1"><ul id="listWorking" class="space-y-1"></ul></div>
+                    </div>
+                    <div class="bg-white rounded-2xl shadow-2xl flex flex-col overflow-hidden h-96 border border-gray-100">
+                        <div class="bg-fuchsia-700 p-3"><h3 class="font-bold text-white text-center">Exp. Encerrado</h3></div>
+                        <div class="p-4 overflow-y-auto flex-1"><ul id="listOffShift" class="space-y-1"></ul></div>
+                    </div>
+                    <div class="bg-white rounded-2xl shadow-2xl flex flex-col overflow-hidden h-96 border border-gray-100">
+                        <div class="bg-amber-700 p-3"><h3 class="font-bold text-white text-center">Folga</h3></div>
+                        <div class="p-4 overflow-y-auto flex-1"><ul id="listOff" class="space-y-1"></ul></div>
+                    </div>
+                    <div class="bg-white rounded-2xl shadow-2xl flex flex-col overflow-hidden h-96 border border-gray-100">
+                        <div class="bg-red-700 p-3"><h3 class="font-bold text-white text-center">Férias</h3></div>
+                         <div class="p-4 overflow-y-auto flex-1"><ul id="listVacation" class="space-y-1"></ul></div>
+                    </div>
+                </section>
+            </div>
+
+            <div id="personalView" class="tab-content hidden space-y-8">
+                <section class="bg-white p-8 rounded-2xl shadow-xl border border-gray-100">
+                    
+                    <div id="adminEditHint" class="hidden mb-6 bg-blue-50 text-blue-800 px-4 py-3 rounded-lg text-sm border border-blue-200 flex items-center shadow-sm">
+                        <i class="fas fa-mouse-pointer mr-2 text-blue-600"></i> 
+                        <span class="font-semibold">MODO DE EDIÇÃO:</span> 
+                        <span class="ml-1">Clique na TAG do dia para alterar o status.</span>
+                    </div>
+
+                    <div class="flex flex-col md:flex-row justify-between items-start md:items-center mb-6 border-b pb-4 border-gray-100">
+                        <div>
+                             <h2 class="text-2xl font-bold text-gray-800">Escala Individual</h2>
+                             <p class="text-gray-500 text-sm">Selecione um nome para visualizar ou editar.</p>
+                             
+                             <button id="btnAddEmployee" onclick="window.addNewEmployee()" class="hidden mt-3 text-sm bg-indigo-600 text-white px-3 py-1.5 rounded hover:bg-indigo-700 shadow-sm transition">
+                                <i class="fas fa-plus mr-1"></i> Criar Novo Colaborador
+                             </button>
+                        </div>
+
+                         <div class="mt-4 md:mt-0 w-full md:w-80 relative">
+                            <select id="employeeSelect" class="appearance-none w-full p-4 bg-indigo-50 border border-indigo-200 rounded-xl focus:ring-4 focus:ring-indigo-100 focus:border-indigo-500 text-gray-900 text-base font-semibold transition-all shadow-lg cursor-pointer">
+                                <option value="">Selecione um colaborador</option>
+                            </select>
+                            <div class="pointer-events-none absolute inset-y-0 right-0 flex items-center px-3 text-indigo-600">
+                                <i class="fas fa-chevron-down"></i>
+                            </div>
+                        </div>
+                    </div>
+
+                    <div id="personalInfoCard" class="hidden mb-8 bg-gray-50 rounded-2xl shadow-xl overflow-hidden transform transition-all duration-300">
+                        </div>
+
+                    <div id="calendarContainer" class="hidden">
+                        <div class="grid grid-cols-7 gap-1 mb-1 text-center font-semibold text-gray-700 hidden md:grid">
+                            <div class="text-xs uppercase p-2">Dom</div><div class="text-xs uppercase p-2">Seg</div>
+                            <div class="text-xs uppercase p-2">Ter</div><div class="text-xs uppercase p-2">Qua</div>
+                            <div class="text-xs uppercase p-2">Qui</div><div class="text-xs uppercase p-2">Sex</div>
+                            <div class="text-xs uppercase p-2">Sáb</div>
+                          </div>
+                        <div id="calendarGrid"></div>
+                    </div>
+                </section>
+
+                <section class="bg-white p-8 rounded-2xl shadow-xl border border-gray-100">
+                    <div class="mb-6">
+                        <h2 class="text-xl font-bold text-gray-800 flex items-center">
+                            <i class="fas fa-calendar-week mr-2 text-indigo-700"></i> Plantão Fins de Semana
+                        </h2>
+                    </div>
+                    <div id="weekendPlantaoContainer" class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6"></div>
+                </section>
+            </div>
+        </main>
+
+        <footer class="mt-12 py-6 border-t border-gray-200 text-center text-gray-500 text-sm">
+            <p class="font-medium">Painel Sitelbra &copy; 2025</p>
+        </footer>
+    </div>
+    
+    <script type="module" src="app.js"></script>
 </body>
 </html>
