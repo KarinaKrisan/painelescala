@@ -1,5 +1,5 @@
 // app.js - Versão Final (Cores dos dias no Mobile Ajustadas: FS Azul Claro / FD Azul Escuro)
-// Ajuste UI: Seletor de Mês com bordas arredondadas (rounded-lg)
+// Ajuste UI: Card Colaborador (Escala Individual) agora é Cinza (bg-gray-50 / bg-gray-100)
 // Depende de: JSONs mensais em ./data/escala-YYYY-MM.json
 
 // ==========================================
@@ -463,7 +463,7 @@ function initSelect() {
 }
 
 // ==========================================
-// ATUALIZAÇÃO DO CARD PESSOAL (VERSÃO CLARA/CLEAN + STATUS COMPLETO)
+// ATUALIZAÇÃO DO CARD PESSOAL (MODIFICADO PARA CINZA)
 // ==========================================
 function updatePersonalView(name) {
     const emp = scheduleData[name];
@@ -524,12 +524,14 @@ function updatePersonalView(name) {
             dotClass = "bg-gray-400 shadow-[0_0_8px_rgba(156,163,175,0.8)]";
     }
 
-    // Estilo e Exibição do Card (MODO CLARO)
+    // Estilo e Exibição do Card (MODIFICADO PARA CINZA)
     card.classList.remove('hidden');
-    card.className = "mb-8 bg-white rounded-2xl shadow-xl border border-gray-100 overflow-hidden transform transition-all duration-300";
+    // ALTERADO: bg-white para bg-gray-50, removido border border-gray-100
+    card.className = "mb-8 bg-gray-50 rounded-2xl shadow-xl overflow-hidden transform transition-all duration-300";
 
     card.innerHTML = `
-        <div class="px-6 py-4"> <h2 class="text-xl md:text-2xl font-extrabold tracking-tight mb-1 text-gray-800">${name}</h2>
+        <div class="px-6 py-4">
+            <h2 class="text-xl md:text-2xl font-extrabold tracking-tight mb-1 text-gray-900">${name}</h2>
             
             <div class="flex items-center gap-2">
                 <span class="w-2 h-2 rounded-full ${dotClass}"></span>
@@ -537,23 +539,23 @@ function updatePersonalView(name) {
             </div>
         </div>
 
-        <div class="h-px w-full bg-gray-100"></div>
+        <div class="h-px w-full bg-gray-200"></div>
 
-        <div class="flex flex-row items-center justify-between bg-gray-50/50">
+        <div class="flex flex-row items-center justify-between bg-gray-100">
             
-            <div class="flex-1 py-4 px-2 text-center border-r border-gray-200 hover:bg-gray-100 transition-colors">
-                <span class="block text-[10px] md:text-xs text-gray-400 font-bold uppercase mb-1 tracking-wider">Célula</span>
-                <span class="block text-xs md:text-sm font-bold text-gray-700 whitespace-nowrap">${celula}</span>
+            <div class="flex-1 py-4 px-2 text-center border-r border-gray-300 hover:bg-gray-200 transition-colors">
+                <span class="block text-[10px] md:text-xs text-gray-500 font-bold uppercase mb-1 tracking-wider">Célula</span>
+                <span class="block text-xs md:text-sm font-bold text-gray-800 whitespace-nowrap">${celula}</span>
             </div>
 
-            <div class="flex-1 py-4 px-2 text-center border-r border-gray-200 hover:bg-gray-100 transition-colors">
-                <span class="block text-[10px] md:text-xs text-gray-400 font-bold uppercase mb-1 tracking-wider">Turno</span>
-                <span class="block text-xs md:text-sm font-bold text-gray-700 whitespace-nowrap">${turno}</span>
+            <div class="flex-1 py-4 px-2 text-center border-r border-gray-300 hover:bg-gray-200 transition-colors">
+                <span class="block text-[10px] md:text-xs text-gray-500 font-bold uppercase mb-1 tracking-wider">Turno</span>
+                <span class="block text-xs md:text-sm font-bold text-gray-800 whitespace-nowrap">${turno}</span>
             </div>
 
-            <div class="flex-1 py-4 px-2 text-center hover:bg-gray-100 transition-colors">
-                <span class="block text-[10px] md:text-xs text-gray-400 font-bold uppercase mb-1 tracking-wider">Horário</span>
-                <span class="block text-xs md:text-sm font-bold text-gray-700 whitespace-nowrap">${horario}</span>
+            <div class="flex-1 py-4 px-2 text-center hover:bg-gray-200 transition-colors">
+                <span class="block text-[10px] md:text-xs text-gray-500 font-bold uppercase mb-1 tracking-wider">Horário</span>
+                <span class="block text-xs md:text-sm font-bold text-gray-800 whitespace-nowrap">${horario}</span>
             </div>
         </div>
     `;
@@ -716,7 +718,6 @@ function initGlobal() {
         const header = document.querySelector('header');
         if(!document.getElementById('monthSel')) {
             const sel = document.createElement('select'); sel.id='monthSel';
-            // CLASSE ATUALIZADA AQUI: Adicionado rounded-lg, sombras e padding ajustado
             sel.className = 'mt-3 md:mt-0 md:ml-4 px-4 py-2 rounded-lg border border-gray-300 shadow-sm text-gray-700 bg-white font-medium focus:outline-none focus:ring-2 focus:ring-indigo-500 cursor-pointer hover:bg-gray-50 transition-colors';
             
             availableMonths.forEach(m => {
