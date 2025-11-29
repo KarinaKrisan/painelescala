@@ -1,4 +1,4 @@
-// app.js - Versão Floating Capsule (Barra Inferior)
+// app.js - Cosmic Dark Edition
 // ==========================================
 // 1. IMPORTAÇÕES FIREBASE (WEB SDK)
 // ==========================================
@@ -7,7 +7,7 @@ import { getFirestore, doc, getDoc, setDoc } from "https://www.gstatic.com/fireb
 import { getAuth, onAuthStateChanged, signOut } from "https://www.gstatic.com/firebasejs/11.0.2/firebase-auth.js";
 
 // ==========================================
-// 2. CONFIGURAÇÃO (SUAS CHAVES)
+// 2. CONFIGURAÇÃO
 // ==========================================
 const firebaseConfig = {
   apiKey: "AIzaSyCBKSPH7lfUt0VsQPhJX3a0CQ2wYcziQvM",
@@ -23,7 +23,7 @@ const db = getFirestore(app);
 const auth = getAuth(app);
 
 // ==========================================
-// 3. VARIÁVEIS DE ESTADO
+// 3. ESTADO
 // ==========================================
 let isAdmin = false;
 let hasUnsavedChanges = false;
@@ -39,60 +39,44 @@ const systemYear = currentDateObj.getFullYear();
 const systemMonth = currentDateObj.getMonth(); 
 
 const availableMonths = [
-    { year: 2025, month: 10 }, 
-    { year: 2025, month: 11 }, 
-    { year: 2026, month: 0 }, 
-    { year: 2026, month: 1 }, 
-    { year: 2026, month: 2 }, 
-    { year: 2026, month: 3 }, 
-    { year: 2026, month: 4 }, 
-    { year: 2026, month: 5 }, 
-    { year: 2026, month: 6 }, 
-    { year: 2026, month: 7 }, 
-    { year: 2026, month: 8 }, 
-    { year: 2026, month: 9 }, 
-    { year: 2026, month: 10 }, 
-    { year: 2026, month: 11 }  
+    { year: 2025, month: 10 }, { year: 2025, month: 11 }, 
+    { year: 2026, month: 0 }, { year: 2026, month: 1 }, { year: 2026, month: 2 }, 
+    { year: 2026, month: 3 }, { year: 2026, month: 4 }, { year: 2026, month: 5 }, 
+    { year: 2026, month: 6 }, { year: 2026, month: 7 }, { year: 2026, month: 8 }, 
+    { year: 2026, month: 9 }, { year: 2026, month: 10 }, { year: 2026, month: 11 }  
 ];
 
 let selectedMonthObj = availableMonths.find(m => m.year === systemYear && m.month === systemMonth) || availableMonths[availableMonths.length-1];
 
 const statusMap = { 'T':'Trabalhando','F':'Folga','FS':'Folga Sáb','FD':'Folga Dom','FE':'Férias','OFF-SHIFT':'Exp.Encerrado', 'F_EFFECTIVE': 'Exp.Encerrado' };
-const daysOfWeek = ["Dom","Seg","Ter","Qua","Qui","Sex","Sáb"];
+const daysOfWeek = ["Domingo","Segunda","Terça","Quarta","Quinta","Sexta","Sábado"];
 
 function pad(n){ return n < 10 ? '0' + n : '' + n; }
 
 // ==========================================
-// 4. LÓGICA DE AUTENTICAÇÃO (Painel)
+// 4. AUTH & UI LOGIC
 // ==========================================
 const adminToolbar = document.getElementById('adminToolbar');
 const btnOpenLogin = document.getElementById('btnOpenLogin');
 const btnLogout = document.getElementById('btnLogout');
 
-// Logout
 if(btnLogout) btnLogout.addEventListener('click', () => {
     signOut(auth);
     window.location.reload();
 });
 
-// Monitorar Estado do Usuário
 onAuthStateChanged(auth, (user) => {
     if (user) {
-        // Logado como Admin
         isAdmin = true;
         adminToolbar.classList.remove('hidden');
         if(btnOpenLogin) btnOpenLogin.classList.add('hidden');
         document.getElementById('adminEditHint').classList.remove('hidden');
-        
-        // CORREÇÃO: Padding no rodapé para a barra flutuante não tapar
         document.body.style.paddingBottom = "100px"; 
     } else {
-        // Visitante
         isAdmin = false;
         adminToolbar.classList.add('hidden');
         if(btnOpenLogin) btnOpenLogin.classList.remove('hidden');
         document.getElementById('adminEditHint').classList.add('hidden');
-        
         document.body.style.paddingBottom = "0";
     }
     updateDailyView();
@@ -101,7 +85,7 @@ onAuthStateChanged(auth, (user) => {
 });
 
 // ==========================================
-// 5. CARREGAMENTO DE DADOS (FIRESTORE)
+// 5. FIRESTORE DATA
 // ==========================================
 async function loadDataFromCloud() {
     const docId = `escala-${selectedMonthObj.year}-${String(selectedMonthObj.month+1).padStart(2,'0')}`;
@@ -125,34 +109,27 @@ async function loadDataFromCloud() {
     }
 }
 
-// Salvar na Nuvem
 async function saveToCloud() {
     if(!isAdmin) return;
     const btn = document.getElementById('btnSaveCloud');
     const status = document.getElementById('saveStatus');
     const statusIcon = document.getElementById('saveStatusIcon');
     
-    // Estado Carregando
-    btn.innerHTML = '<i class="fas fa-spinner fa-spin mr-2"></i> Salvando...';
+    btn.innerHTML = '<i class="fas fa-spinner fa-spin mr-2"></i> ...';
     btn.classList.add('opacity-75', 'cursor-not-allowed');
     
     const docId = `escala-${selectedMonthObj.year}-${String(selectedMonthObj.month+1).padStart(2,'0')}`;
     
     try {
         await setDoc(doc(db, "escalas", docId), rawSchedule, { merge: true });
-        
         hasUnsavedChanges = false;
-        
-        // Estado Sucesso (Feedback na barra flutuante)
         status.textContent = "Sincronizado";
         status.className = "text-xs text-gray-300 font-medium transition-colors";
         if(statusIcon) statusIcon.className = "w-1.5 h-1.5 rounded-full bg-emerald-500 shadow-[0_0_8px_rgba(16,185,129,0.6)]";
-        
         setTimeout(() => {
             btn.innerHTML = '<i class="fas fa-cloud-upload-alt mr-2 group-hover:-translate-y-0.5 transition-transform"></i> Salvar';
             btn.classList.remove('opacity-75', 'cursor-not-allowed');
         }, 1000);
-
     } catch (e) {
         console.error("Erro ao salvar:", e);
         alert("Erro ao salvar!");
@@ -163,7 +140,7 @@ async function saveToCloud() {
 document.getElementById('btnSaveCloud').addEventListener('click', saveToCloud);
 
 // ==========================================
-// 6. PROCESSAMENTO DE DADOS
+// 6. DATA PROCESSING
 // ==========================================
 function generate5x2ScheduleDefaultForMonth(monthObj) {
     const totalDays = new Date(monthObj.year, monthObj.month+1, 0).getDate();
@@ -178,7 +155,6 @@ function generate5x2ScheduleDefaultForMonth(monthObj) {
 function parseDayListForMonth(dayString, monthObj) {
     if (!dayString) return [];
     if (Array.isArray(dayString)) return dayString; 
-
     const totalDays = new Date(monthObj.year, monthObj.month+1, 0).getDate();
     const days = new Set();
     const normalized = String(dayString).replace(/\b(at[eé]|até|a)\b/gi,' a ').replace(/–|—/g,'-').replace(/\s+/g,' ').trim();
@@ -203,10 +179,7 @@ function parseDayListForMonth(dayString, monthObj) {
 
 function buildFinalScheduleForMonth(employeeData, monthObj) {
     const totalDays = new Date(monthObj.year, monthObj.month+1, 0).getDate();
-    
-    if (employeeData.calculatedSchedule && Array.isArray(employeeData.calculatedSchedule)) {
-        return employeeData.calculatedSchedule;
-    }
+    if (employeeData.calculatedSchedule && Array.isArray(employeeData.calculatedSchedule)) return employeeData.calculatedSchedule;
 
     const schedule = new Array(totalDays).fill(null);
     let tArr = [];
@@ -219,10 +192,8 @@ function buildFinalScheduleForMonth(employeeData, monthObj) {
 
     const vacDays = parseDayListForMonth(employeeData.FE, monthObj);
     vacDays.forEach(d => { if (d>=1 && d<=totalDays) schedule[d-1] = 'FE'; });
-
     const fsDays = parseDayListForMonth(employeeData.FS, monthObj);
     fsDays.forEach(d => { if(schedule[d-1] !== 'FE') schedule[d-1] = 'FS'; });
-
     const fdDays = parseDayListForMonth(employeeData.FD, monthObj);
     fdDays.forEach(d => { if(schedule[d-1] !== 'FE') schedule[d-1] = 'FD'; });
 
@@ -238,16 +209,11 @@ function buildFinalScheduleForMonth(employeeData, monthObj) {
 function processScheduleData() {
     scheduleData = {};
     if (!rawSchedule) return;
-
     Object.keys(rawSchedule).forEach(name => {
         const finalArr = buildFinalScheduleForMonth(rawSchedule[name], selectedMonthObj);
-        scheduleData[name] = {
-            info: rawSchedule[name],
-            schedule: finalArr
-        };
+        scheduleData[name] = { info: rawSchedule[name], schedule: finalArr };
         rawSchedule[name].calculatedSchedule = finalArr;
     });
-
     const totalDays = new Date(selectedMonthObj.year, selectedMonthObj.month+1, 0).getDate();
     const slider = document.getElementById('dateSlider');
     if (slider) {
@@ -259,7 +225,7 @@ function processScheduleData() {
 }
 
 // ==========================================
-// 7. INTERFACE E GRÁFICOS
+// 7. CHART & UI
 // ==========================================
 function parseSingleTimeRange(rangeStr) {
     if (!rangeStr || typeof rangeStr !== 'string') return null;
@@ -287,12 +253,12 @@ window.toggleChartMode = function() {
     const btn = document.getElementById("btnToggleChart");
     const title = document.getElementById("chartTitle");
     if (isTrendMode) {
-        if(btn) btn.textContent = "Ver Visão Diária";
-        if(title) title.textContent = "Tendência de Capacidade (Mês)";
+        if(btn) btn.textContent = "Voltar";
+        if(title) title.textContent = "Tendência Mensal";
         renderMonthlyTrendChart();
     } else {
-        if(btn) btn.textContent = "Ver Tendência Mensal";
-        if(title) title.textContent = "Capacidade Operacional Atual";
+        if(btn) btn.textContent = "Ver Tendência";
+        if(title) title.textContent = "Capacidade Atual";
         updateDailyView();
     }
 }
@@ -308,12 +274,12 @@ const centerTextPlugin = {
         const pct = total > 0 ? ((wCount / total) * 100).toFixed(0) : 0;
         ctx.save();
         ctx.font = 'bolder 3rem sans-serif';
-        ctx.fillStyle = pct >= 75 ? '#10b981' : '#ef4444';
+        ctx.fillStyle = '#FFFFFF';
         ctx.textAlign = 'center';
         ctx.textBaseline = 'middle';
-        ctx.fillText(`${pct}%`, width/2, height/2 - 15);
-        ctx.font = '500 0.8rem sans-serif';
-        ctx.fillStyle = '#6b7280';
+        ctx.fillText(`${pct}%`, width/2, height/2 - 10);
+        ctx.font = '600 0.7rem sans-serif';
+        ctx.fillStyle = '#94A3B8';
         ctx.fillText('CAPACIDADE', width/2, height/2 + 25);
         ctx.restore();
     }
@@ -338,7 +304,7 @@ function renderMonthlyTrendChart() {
         const percentage = totalStaff > 0 ? ((working / totalStaff) * 100).toFixed(0) : 0;
         labels.push(d);
         dataPoints.push(percentage);
-        pointColors.push(percentage < 75 ? '#ef4444' : '#10b981');
+        pointColors.push(percentage < 75 ? '#F87171' : '#34D399');
     }
 
     const ctx = document.getElementById('dailyChart').getContext('2d');
@@ -351,9 +317,10 @@ function renderMonthlyTrendChart() {
             datasets: [{
                 label: 'Capacidade (%)',
                 data: dataPoints,
-                borderColor: '#4f46e5',
-                backgroundColor: 'rgba(79, 70, 229, 0.1)',
+                borderColor: '#7C3AED',
+                backgroundColor: 'rgba(124, 58, 237, 0.15)',
                 pointBackgroundColor: pointColors,
+                pointBorderColor: '#0F1020',
                 pointRadius: 4,
                 pointHoverRadius: 7,
                 fill: true,
@@ -366,8 +333,8 @@ function renderMonthlyTrendChart() {
             interaction: { mode: 'index', intersect: false },
             plugins: { legend: { display: false }, centerTextPlugin: false },
             scales: {
-                y: { min: 0, max: 100, ticks: { callback: v => v+'%' }, grid: { color: '#f3f4f6' } },
-                x: { grid: { display: false } }
+                y: { min: 0, max: 100, ticks: { callback: v => v+'%', color: '#64748B' }, grid: { color: '#2E3250' } },
+                x: { ticks: { color: '#64748B' }, grid: { display: false } }
             }
         },
         plugins: [{
@@ -378,7 +345,7 @@ function renderMonthlyTrendChart() {
                 if(yValue) {
                     ctx.save();
                     ctx.beginPath();
-                    ctx.strokeStyle = '#9ca3af';
+                    ctx.strokeStyle = '#4B5563';
                     ctx.lineWidth = 1;
                     ctx.setLineDash([5, 5]);
                     ctx.moveTo(left, yValue);
@@ -393,7 +360,8 @@ function renderMonthlyTrendChart() {
 
 function updateDailyChartDonut(working, off, offShift, vacation) {
     const labels = [`Trabalhando (${working})`, `Folga (${off})`, `Encerrado (${offShift})`, `Férias (${vacation})`];
-    const rawColors = ['#10b981','#fcd34d','#f9a8d4','#ef4444'];
+    // Cores Neon ajustadas para fundo escuro
+    const rawColors = ['#34D399','#FBBF24','#E879F9','#F87171'];
     const fData=[], fLabels=[], fColors=[];
     [working, off, offShift, vacation].forEach((d,i)=>{ 
         if(d>0 || (working+off+offShift+vacation)===0){ fData.push(d); fLabels.push(labels[i]); fColors.push(rawColors[i]); }
@@ -406,8 +374,15 @@ function updateDailyChartDonut(working, off, offShift, vacation) {
     if (!dailyChart) {
         dailyChart = new Chart(ctx, {
             type: 'doughnut',
-            data: { labels: fLabels, datasets:[{ data: fData, backgroundColor: fColors, hoverOffset:4 }] },
-            options: { responsive: true, maintainAspectRatio: false, cutout: '70%', plugins: { legend: { position:'bottom', labels:{ padding:15, boxWidth: 10 } } } },
+            data: { labels: fLabels, datasets:[{ data: fData, backgroundColor: fColors, borderWidth: 0, hoverOffset:5 }] },
+            options: { 
+                responsive: true, 
+                maintainAspectRatio: false, 
+                cutout: '75%', 
+                plugins: { 
+                    legend: { position:'bottom', labels:{ padding:15, boxWidth: 8, color: '#94A3B8', font: {size: 10} } } 
+                } 
+            },
             plugins: [centerTextPlugin]
         });
     } else {
@@ -426,7 +401,7 @@ function updateDailyView() {
     const now = new Date();
     const isToday = (now.getDate() === currentDay && now.getMonth() === selectedMonthObj.month && now.getFullYear() === selectedMonthObj.year);
     
-    currentDateLabel.textContent = `${daysOfWeek[dayOfWeekIndex]}, ${pad(currentDay)}/${pad(selectedMonthObj.month+1)}/${selectedMonthObj.year}`;
+    currentDateLabel.textContent = `${daysOfWeek[dayOfWeekIndex]}, ${pad(currentDay)}/${pad(selectedMonthObj.month+1)}`;
 
     let w=0, o=0, v=0, os=0;
     let wH='', oH='', vH='', osH='';
@@ -450,8 +425,8 @@ function updateDailyView() {
         else o++; 
 
         const row = `
-            <li class="flex justify-between items-center text-sm p-3 rounded hover:bg-indigo-50 border-b border-gray-100 last:border-0 transition-colors">
-                <div class="flex flex-col"><span class="font-semibold text-gray-700">${name}</span><span class="text-xs text-gray-400">${emp.info.Horário||''}</span></div>
+            <li class="flex justify-between items-center text-sm p-3 rounded mb-1 bg-[#1A1C2E] hover:bg-[#2E3250] border-l-2 border-transparent hover:border-purple-500 transition-all cursor-default">
+                <div class="flex flex-col"><span class="font-bold text-gray-200">${name}</span><span class="text-[10px] text-gray-500 font-mono">${emp.info.Horário||'--'}</span></div>
                 <span class="day-status status-${display}">${statusMap[display]||display}</span>
             </li>`;
 
@@ -466,18 +441,17 @@ function updateDailyView() {
     document.getElementById('kpiOff').textContent = o;
     document.getElementById('kpiVacation').textContent = v;
 
-    document.getElementById('listWorking').innerHTML = wH || '<li class="text-gray-400 text-sm text-center py-4">Ninguém.</li>';
-    document.getElementById('listOffShift').innerHTML = osH || '<li class="text-gray-400 text-sm text-center py-4">Ninguém.</li>';
-    document.getElementById('listOff').innerHTML = oH || '<li class="text-gray-400 text-sm text-center py-4">Ninguém.</li>';
-    document.getElementById('listVacation').innerHTML = vH || '<li class="text-gray-400 text-sm text-center py-4">Ninguém.</li>';
+    document.getElementById('listWorking').innerHTML = wH || '<li class="text-gray-600 text-xs text-center py-4 italic">Ninguém neste status.</li>';
+    document.getElementById('listOffShift').innerHTML = osH || '<li class="text-gray-600 text-xs text-center py-4 italic">Ninguém neste status.</li>';
+    document.getElementById('listOff').innerHTML = oH || '<li class="text-gray-600 text-xs text-center py-4 italic">Ninguém neste status.</li>';
+    document.getElementById('listVacation').innerHTML = vH || '<li class="text-gray-600 text-xs text-center py-4 italic">Ninguém neste status.</li>';
 
     updateDailyChartDonut(w, o, os, v);
 }
 
 // ==========================================
-// 8. VISÃO PESSOAL E EDIÇÃO (ADMIN)
+// 8. PERSONAL & ADMIN
 // ==========================================
-
 function initSelect() {
     const select = document.getElementById('employeeSelect');
     if (!select) return;
@@ -486,7 +460,6 @@ function initSelect() {
         const opt = document.createElement('option'); opt.value=name; opt.textContent=name; select.appendChild(opt);
     });
     
-    // Clonar para limpar listeners antigos
     const newSelect = select.cloneNode(true);
     select.parentNode.replaceChild(newSelect, select);
     
@@ -495,7 +468,6 @@ function initSelect() {
         if(name) {
             updatePersonalView(name);
         } else {
-            // SE NÃO TIVER SELEÇÃO (vazio), ESCONDE TUDO
             document.getElementById('personalInfoCard').classList.add('hidden');
             document.getElementById('calendarContainer').classList.add('hidden');
         }
@@ -509,61 +481,47 @@ function updatePersonalView(name) {
     
     const cargo = emp.info.Cargo || emp.info.Grupo || 'Colaborador';
     const horario = emp.info.Horário || '--:--';
-    const celula = emp.info.Célula || emp.info.Celula || emp.info.CELULA || 'Sitelbra/ B2B';
+    const celula = emp.info.Célula || emp.info.Celula || 'Sitelbra';
     let turno = emp.info.Turno || 'Comercial';
 
     let statusToday = emp.schedule[currentDay - 1] || 'F';
     let displayStatus = statusToday;
-
-    // Lógica para Expediente Encerrado (Roxo)
     const now = new Date();
-    const isToday = (now.getDate() === currentDay && 
-                     now.getMonth() === selectedMonthObj.month && 
-                     now.getFullYear() === selectedMonthObj.year);
+    const isToday = (now.getDate() === currentDay && now.getMonth() === selectedMonthObj.month && now.getFullYear() === selectedMonthObj.year);
+    if (isToday && statusToday === 'T' && !isWorkingTime(emp.info.Horário)) displayStatus = 'OFF-SHIFT';
 
-    if (isToday && statusToday === 'T') {
-        if (!isWorkingTime(emp.info.Horário)) {
-            displayStatus = 'OFF-SHIFT';
-        }
-    }
-
-    // Mapa de Cores da Bolinha
     const colorClasses = {
-        'T': 'bg-green-500 shadow-[0_0_8px_rgba(34,197,94,0.8)]',
-        'F': 'bg-yellow-400 shadow-[0_0_8px_rgba(250,204,21,0.8)]',
-        'FS': 'bg-sky-400 shadow-[0_0_8px_rgba(56,189,248,0.8)]',
-        'FD': 'bg-blue-700 shadow-[0_0_8px_rgba(29,78,216,0.8)]',
-        'FE': 'bg-red-500 shadow-[0_0_8px_rgba(239,68,68,0.8)]',
-        'OFF-SHIFT': 'bg-fuchsia-500 shadow-[0_0_8px_rgba(217,70,239,0.8)]'
+        'T': 'bg-green-500 shadow-[0_0_10px_#22c55e]',
+        'F': 'bg-yellow-500 shadow-[0_0_10px_#eab308]',
+        'FS': 'bg-sky-500 shadow-[0_0_10px_#0ea5e9]',
+        'FD': 'bg-indigo-500 shadow-[0_0_10px_#6366f1]',
+        'FE': 'bg-red-500 shadow-[0_0_10px_#ef4444]',
+        'OFF-SHIFT': 'bg-fuchsia-500 shadow-[0_0_10px_#d946ef]'
     };
-
-    let dotClass = colorClasses[displayStatus] || 'bg-gray-400 shadow-none';
+    let dotClass = colorClasses[displayStatus] || 'bg-gray-500';
 
     card.classList.remove('hidden');
-    // CARD CINZA
-    card.className = "mb-8 bg-gray-200 rounded-2xl shadow-xl overflow-hidden transform transition-all duration-300 border border-gray-300";
-
+    card.className = "mb-8 bg-[#1A1C2E] rounded-xl border border-[#2E3250] overflow-hidden";
     card.innerHTML = `
-        <div class="px-6 py-4">
-            <h2 class="text-xl md:text-2xl font-extrabold tracking-tight mb-1 text-gray-800">${name}</h2>
-            <div class="flex items-center gap-2">
-                <span class="w-2 h-2 rounded-full ${dotClass}"></span>
-                <p class="text-indigo-600 text-xs font-semibold uppercase tracking-widest">${cargo}</p>
+        <div class="px-6 py-5 flex justify-between items-center bg-gradient-to-r from-[#1A1C2E] to-[#2E3250]/30">
+            <div>
+                <h2 class="text-xl md:text-2xl font-bold text-white tracking-tight">${name}</h2>
+                <p class="text-purple-400 text-xs font-bold uppercase tracking-widest mt-1">${cargo}</p>
             </div>
+            <div class="w-3 h-3 rounded-full ${dotClass}"></div>
         </div>
-        <div class="h-px w-full bg-gray-300"></div>
-        <div class="flex flex-row items-center justify-between bg-gray-300/50">
-            <div class="flex-1 py-4 px-2 text-center border-r border-gray-300">
-                <span class="block text-[10px] md:text-xs text-gray-600 font-bold uppercase mb-1 tracking-wider">Célula</span>
-                <span class="block text-xs md:text-sm font-bold text-gray-800 whitespace-nowrap">${celula}</span>
+        <div class="grid grid-cols-3 divide-x divide-[#2E3250] bg-[#0F1020]/50 border-t border-[#2E3250]">
+            <div class="py-4 text-center">
+                <span class="block text-[10px] text-gray-500 font-bold uppercase tracking-wider">Célula</span>
+                <span class="block text-sm font-bold text-gray-300 mt-1">${celula}</span>
             </div>
-            <div class="flex-1 py-4 px-2 text-center border-r border-gray-300">
-                <span class="block text-[10px] md:text-xs text-gray-600 font-bold uppercase mb-1 tracking-wider">Turno</span>
-                <span class="block text-xs md:text-sm font-bold text-gray-800 whitespace-nowrap">${turno}</span>
+            <div class="py-4 text-center">
+                <span class="block text-[10px] text-gray-500 font-bold uppercase tracking-wider">Turno</span>
+                <span class="block text-sm font-bold text-gray-300 mt-1">${turno}</span>
             </div>
-            <div class="flex-1 py-4 px-2 text-center">
-                <span class="block text-[10px] md:text-xs text-gray-600 font-bold uppercase mb-1 tracking-wider">Horário</span>
-                <span class="block text-xs md:text-sm font-bold text-gray-800 whitespace-nowrap">${horario}</span>
+            <div class="py-4 text-center">
+                <span class="block text-[10px] text-gray-500 font-bold uppercase tracking-wider">Horário</span>
+                <span class="block text-sm font-bold text-gray-300 mt-1">${horario}</span>
             </div>
         </div>
     `;
@@ -571,10 +529,6 @@ function updatePersonalView(name) {
     document.getElementById('calendarContainer').classList.remove('hidden');
     updateCalendar(name, emp.schedule);
 }
-
-// ----------------------------------------------------
-// Lógica de Edição: CICLO (Modo Simples)
-// ----------------------------------------------------
 
 function cycleStatus(current) {
     const sequence = ['T', 'F', 'FS', 'FD', 'FE'];
@@ -585,33 +539,24 @@ function cycleStatus(current) {
 
 async function handleCellClick(name, dayIndex) {
     if (!isAdmin) return;
-    
-    // 1. Atualiza Status
     const emp = scheduleData[name];
     const newStatus = cycleStatus(emp.schedule[dayIndex]);
     emp.schedule[dayIndex] = newStatus;
     rawSchedule[name].calculatedSchedule = emp.schedule;
     
-    // 2. Feedback na Nova Barra
     hasUnsavedChanges = true;
     const statusEl = document.getElementById('saveStatus');
     const statusIcon = document.getElementById('saveStatusIcon');
     if(statusEl) {
-        statusEl.textContent = "Alterações pendentes...";
-        statusEl.className = "text-xs text-amber-400 font-medium transition-colors";
+        statusEl.textContent = "Alterado (Não salvo)";
+        statusEl.className = "text-xs text-orange-400 font-bold";
     }
-    if(statusIcon) {
-        statusIcon.className = "w-1.5 h-1.5 rounded-full bg-amber-500 animate-pulse shadow-[0_0_8px_rgba(251,191,36,0.6)] transition-all";
-    }
+    if(statusIcon) statusIcon.className = "w-1.5 h-1.5 rounded-full bg-orange-500 animate-pulse";
     
-    // 3. Atualizações Visuais
     updateCalendar(name, emp.schedule);
     updateDailyView();
-    
-    // 4. ATUALIZAÇÃO FORÇADA DOS CARDS DE FIM DE SEMANA
     const sel = document.getElementById('employeeSelect');
-    const currentSelection = sel ? sel.value : null;
-    updateWeekendTable(currentSelection);
+    updateWeekendTable(sel ? sel.value : null);
 }
 
 function updateCalendar(name, schedule) {
@@ -620,21 +565,20 @@ function updateCalendar(name, schedule) {
     grid.innerHTML = '';
     
     if(isMobile) {
-        grid.className = 'space-y-3 mt-4';
+        grid.className = 'space-y-2 mt-4';
         schedule.forEach((st, i) => {
-            let pillClasses = "flex justify-between items-center p-3 px-5 rounded-full border shadow-sm transition-all";
-            if(isAdmin) pillClasses += " cursor-pointer hover:scale-105 active:scale-95";
-
-            if(st === 'T') pillClasses += " bg-green-100 text-green-800 border-green-200";
-            else if (st === 'FS') pillClasses += " bg-sky-100 text-sky-800 border-sky-200";
-            else if (st === 'FD') pillClasses += " bg-blue-100 text-blue-800 border-blue-200";
-            else if (st === 'F') pillClasses += " bg-yellow-100 text-yellow-800 border-yellow-200";
-            else if (st === 'FE') pillClasses += " bg-red-100 text-red-800 border-red-200";
-            else pillClasses += " bg-gray-100 text-gray-800 border-gray-200";
+            let pillClasses = "flex justify-between items-center p-3 px-4 rounded-lg border transition-all text-sm";
+            if(isAdmin) pillClasses += " cursor-pointer active:scale-95";
+            
+            // Dark Mode Mobile Pills
+            pillClasses += " bg-[#1A1C2E] border-[#2E3250] text-gray-300";
 
             const el = document.createElement('div');
             el.className = pillClasses;
-            el.innerHTML = `<span class="font-medium">Dia ${i+1}</span><span class="font-bold">${statusMap[st]||st}</span>`;
+            el.innerHTML = `
+                <span class="font-mono text-gray-500">Dia ${pad(i+1)}</span>
+                <span class="day-status status-${st}">${statusMap[st]||st}</span>
+            `;
             if(isAdmin) el.onclick = () => handleCellClick(name, i);
             grid.appendChild(el);
         });
@@ -642,48 +586,45 @@ function updateCalendar(name, schedule) {
         grid.className = 'calendar-grid-container';
         const m = { y: selectedMonthObj.year, mo: selectedMonthObj.month };
         const empty = new Date(m.y, m.mo, 1).getDay();
-        for(let i=0;i<empty;i++) grid.insertAdjacentHTML('beforeend','<div class="calendar-cell bg-gray-50"></div>');
+        for(let i=0;i<empty;i++) grid.insertAdjacentHTML('beforeend','<div class="calendar-cell bg-[#1A1C2E] opacity-50"></div>');
         
         schedule.forEach((st, i) => {
             const cell = document.createElement('div');
-            cell.className = "calendar-cell bg-white border relative transition-colors duration-150";
+            cell.className = "calendar-cell relative group";
             
             const badge = document.createElement('div');
             badge.className = `day-status-badge status-${st}`;
             badge.textContent = statusMap[st]||st;
             
             if(isAdmin) {
-                badge.classList.add('cursor-pointer', 'hover:opacity-80', 'ring-2', 'ring-transparent', 'hover:ring-indigo-300', 'transition-all');
-                badge.title = "Clique para alternar (Ciclo)";
-                badge.onclick = () => handleCellClick(name, i);
+                cell.classList.add('cursor-pointer');
+                cell.title = "Clique para alterar";
+                cell.onclick = () => handleCellClick(name, i);
             }
 
-            cell.innerHTML = `<div class="day-number">${i+1}</div>`;
+            cell.innerHTML = `<div class="day-number group-hover:text-white transition-colors">${pad(i+1)}</div>`;
             cell.appendChild(badge);
-            
             grid.appendChild(cell);
         });
     }
 }
 
 // ==========================================
-// 9. INICIALIZAÇÃO
+// 9. INIT
 // ==========================================
 function initGlobal() {
     initTabs();
     
-    const header = document.querySelector('header');
+    const header = document.getElementById('monthSelectorContainer');
     if(!document.getElementById('monthSel')) {
         const sel = document.createElement('select'); sel.id='monthSel';
-        sel.className = 'mt-3 md:mt-0 md:ml-4 px-4 py-2 rounded-lg border border-gray-300 shadow-sm text-gray-700 bg-white font-medium focus:outline-none focus:ring-2 focus:ring-indigo-500 cursor-pointer hover:bg-gray-50 transition-colors';
+        sel.className = 'bg-[#1A1C2E] text-white text-sm font-medium px-4 py-2 rounded-lg border border-[#2E3250] focus:ring-2 focus:ring-purple-500 outline-none cursor-pointer w-full md:w-auto shadow-lg';
         
         availableMonths.forEach(m => {
             const opt = document.createElement('option'); 
             opt.value = `${m.year}-${m.month}`;
             opt.textContent = `${monthNames[m.month]}/${m.year}`;
-            if(m.month === selectedMonthObj.month && m.year === selectedMonthObj.year) {
-                opt.selected = true;
-            }
+            if(m.month === selectedMonthObj.month && m.year === selectedMonthObj.year) opt.selected = true;
             sel.appendChild(opt);
         });
         
@@ -692,8 +633,7 @@ function initGlobal() {
             selectedMonthObj={year:y, month:mo};
             loadDataFromCloud(); 
         });
-        const container = header.querySelector('.mt-4') || header;
-        container.appendChild(sel);
+        header.appendChild(sel);
     }
 
     const ds = document.getElementById('dateSlider');
@@ -738,26 +678,29 @@ function updateWeekendTable(specificName) {
             });
 
             if(satW.length || sunW.length) {
-                const makeTags = (list, bg, brd, txt) => {
-                    if(!list.length) return '<span class="text-gray-400 text-sm italic pl-1">Sem escala</span>';
-                    return list.map(name => `<span class="inline-block ${bg} border ${brd} ${txt} px-3 py-1 rounded-full text-sm font-medium shadow-sm mb-2 mr-2">${name}</span>`).join('');
+                const makeTags = (list, colorClass) => {
+                    if(!list.length) return '<span class="text-gray-600 text-xs italic">Sem escala</span>';
+                    return list.map(name => `<span class="inline-block bg-[#0F1020] border border-${colorClass}-900 text-${colorClass}-400 px-2 py-1 rounded text-xs font-bold mr-1 mb-1 shadow-sm">${name}</span>`).join('');
                 };
-                const satTags = makeTags(satW, 'bg-blue-100', 'border-blue-300', 'text-blue-800');
-                const sunTags = makeTags(sunW, 'bg-purple-100', 'border-purple-300', 'text-purple-800');
-                const labelSat = `sábado (${fmtDate(satDate)})`;
-                const labelSun = sunDate ? `domingo (${fmtDate(sunDate)})` : 'domingo';
+                const satTags = makeTags(satW, 'sky');
+                const sunTags = makeTags(sunW, 'indigo');
+                const labelSat = `Sábado ${fmtDate(satDate)}`;
+                const labelSun = sunDate ? `Domingo ${fmtDate(sunDate)}` : 'Domingo';
 
                 const cardHTML = `
-                <div class="bg-white rounded-xl shadow-lg overflow-hidden border border-gray-100 mb-8 max-w-md mx-auto md:mx-0">
-                    <div class="bg-gradient-to-r from-blue-600 to-blue-500 p-4 flex items-center justify-center text-white shadow-md">
-                        <i class="fas fa-calendar-check mr-2"></i> <h3 class="font-bold text-lg tracking-wide">Fim de Semana ${fmtDate(satDate)}</h3>
+                <div class="bg-[#1A1C2E] rounded-xl shadow-lg border border-[#2E3250] overflow-hidden">
+                    <div class="bg-[#2E3250]/50 p-3 flex justify-between items-center border-b border-[#2E3250]">
+                        <span class="text-xs font-bold text-gray-400 uppercase tracking-wider">Fim de Semana</span>
+                        <span class="text-xs font-mono text-purple-400 bg-purple-900/20 px-2 py-0.5 rounded border border-purple-500/30">${fmtDate(satDate)}</span>
                     </div>
-                    <div class="p-6">
-                        <div class="flex items-start mb-6">
-                            <div class="w-1 self-stretch bg-blue-400 rounded-full mr-4 opacity-70 flex-shrink-0"></div> 
-                            <div class="flex-1"><h4 class="text-blue-600 font-bold text-xs uppercase tracking-wider mb-3">${labelSat}</h4><div class="flex flex-wrap">${satTags}</div></div>
+                    <div class="p-4 space-y-4">
+                        <div>
+                            <h4 class="text-sky-500 font-bold text-xs uppercase mb-2 flex items-center gap-2"><i class="fas fa-calendar-day"></i> ${labelSat}</h4>
+                            <div class="flex flex-wrap">${satTags}</div>
                         </div>
-                        ${sunDate ? `<div class="flex items-start"><div class="w-1 self-stretch bg-purple-400 rounded-full mr-4 opacity-70 flex-shrink-0"></div><div class="flex-1"><h4 class="text-purple-600 font-bold text-xs uppercase tracking-wider mb-3">${labelSun}</h4><div class="flex flex-wrap">${sunTags}</div></div></div>` : ''}
+                        ${sunDate ? `<div class="pt-3 border-t border-[#2E3250]">
+                            <h4 class="text-indigo-500 font-bold text-xs uppercase mb-2 flex items-center gap-2"><i class="fas fa-calendar-day"></i> ${labelSun}</h4>
+                            <div class="flex flex-wrap">${sunTags}</div></div>` : ''}
                     </div>
                 </div>`;
                 container.insertAdjacentHTML('beforeend', cardHTML);
