@@ -5,7 +5,7 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
     <title>Login Administrativo | Cronos</title>
     <script src="https://cdn.tailwindcss.com"></script>
-    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&family=Montserrat:wght@300;400;900&display=swap" rel="stylesheet">
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css" />
     <script>
         tailwind.config = {
@@ -20,7 +20,10 @@
                             primary: '#7C3AED',
                         }
                     },
-                    fontFamily: { sans: ['Inter', 'sans-serif'] }
+                    fontFamily: { 
+                        sans: ['Inter', 'sans-serif'],
+                        brand: ['Montserrat', 'sans-serif'] // Fonte da Logo
+                    }
                 }
             }
         }
@@ -45,11 +48,6 @@
             box-shadow: 0 0 20px rgba(124, 58, 237, 0.5);
             transform: translateY(-1px);
         }
-        .text-gradient {
-            background: linear-gradient(to right, #A78BFA, #F472B6, #FB923C);
-            -webkit-background-clip: text;
-            -webkit-text-fill-color: transparent;
-        }
     </style>
 </head>
 <body class="h-screen flex items-center justify-center p-4 relative overflow-hidden">
@@ -63,8 +61,8 @@
         
         <div class="w-full p-8 md:p-10">
             <div class="text-center mb-10">
-                <h1 class="text-4xl font-extrabold mb-2 text-gradient">CRONOS</h1>
-                <p class="text-sm text-gray-400 font-medium tracking-wide">Sua operação no tempo certo.</p>
+                <h1 class="text-5xl font-brand font-black mb-2 text-white tracking-wide drop-shadow-lg">CRONOS</h1>
+                <p class="text-sm text-gray-400 font-brand font-light tracking-wide">Sua operação no tempo certo</p>
             </div>
 
             <form id="loginPageForm" class="space-y-6">
@@ -117,43 +115,4 @@
             projectId: "dadosescala",
             storageBucket: "dadosescala.firebasestorage.app",
             messagingSenderId: "117221956502",
-            appId: "1:117221956502:web:e5a7f051daf3306b501bb7"
-        };
-
-        const app = initializeApp(firebaseConfig);
-        const auth = getAuth(app);
-
-        document.getElementById('loginPageForm').addEventListener('submit', async (e) => {
-            e.preventDefault();
-            const email = document.getElementById('emailInput').value;
-            const pass = document.getElementById('passwordInput').value;
-            const errorDiv = document.getElementById('loginError');
-            const btn = document.getElementById('btnLogin');
-
-            btn.innerHTML = '<i class="fas fa-spinner fa-spin"></i> Verificando...';
-            btn.disabled = true;
-            btn.classList.add('opacity-75');
-            errorDiv.classList.add('hidden');
-
-            try {
-                await signInWithEmailAndPassword(auth, email, pass);
-                window.location.href = "index.html";
-            } catch (error) {
-                console.error("Erro login:", error);
-                const errorText = document.getElementById('errorText');
-                if(error.code === 'auth/invalid-credential' || error.code === 'auth/wrong-password') {
-                    errorText.textContent = "E-mail ou senha incorretos.";
-                } else if (error.code === 'auth/too-many-requests') {
-                    errorText.textContent = "Muitas tentativas. Tente mais tarde.";
-                } else {
-                    errorText.textContent = "Erro ao conectar.";
-                }
-                errorDiv.classList.remove('hidden');
-                btn.innerHTML = '<span>Entrar no Painel</span><i class="fas fa-arrow-right"></i>';
-                btn.disabled = false;
-                btn.classList.remove('opacity-75');
-            }
-        });
-    </script>
-</body>
-</html>
+            appId: "1:117221956502:web:e5a7f051daf3306b501bb7
