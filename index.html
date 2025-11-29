@@ -20,11 +20,7 @@
                             accent: '#F97316',   // Laranja
                         }
                     },
-                    fontFamily: { 
-                        sans: ['Inter', 'sans-serif'],
-                        brand: ['Montserrat', 'sans-serif'], // Fonte da Logo
-                        mono: ['JetBrains Mono', 'monospace']
-                    },
+                    fontFamily: { sans: ['Inter', 'sans-serif'] },
                     animation: { 'pulse-slow': 'pulse 3s cubic-bezier(0.4, 0, 0.6, 1) infinite' }
                 }
             }
@@ -32,11 +28,7 @@
     </script>
     <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
     <link rel="stylesheet" href="styless.css"> 
-    
-    <link rel="preconnect" href="https://fonts.googleapis.com">
-    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&family=JetBrains+Mono:wght@500;700&family=Montserrat:wght@300;400;900&display=swap" rel="stylesheet">
-    
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&family=JetBrains+Mono:wght@500;700&display=swap" rel="stylesheet">
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css" />
 </head>
 <body class="text-gray-300 relative font-sans transition-all duration-300 antialiased selection:bg-purple-500 selection:text-white">
@@ -67,13 +59,13 @@
 
         <header class="mb-10 flex flex-col md:flex-row justify-between items-center gap-6">
             <div class="text-center md:text-left">
-                <h1 class="text-5xl md:text-6xl font-brand font-black mb-1 tracking-wide text-white drop-shadow-lg">
+                <h1 class="text-5xl md:text-6xl font-extrabold mb-1 tracking-tight text-gradient">
                     CRONOS
                 </h1>
                 <div class="flex items-center justify-center md:justify-start gap-3">
                     <div class="h-0.5 w-8 bg-gradient-to-r from-purple-500 to-orange-500"></div>
-                    <p class="text-sm font-brand font-light text-gray-300 tracking-wide">
-                        Sua operação no tempo certo
+                    <p class="text-sm font-medium text-gray-400 uppercase tracking-widest">
+                        Sua operação no tempo certo.
                     </p>
                 </div>
                 <p id="headerDate" class="text-sm text-gray-500 font-medium mt-2 font-mono"></p>
@@ -187,4 +179,76 @@
                             <span class="w-2 h-2 rounded-full bg-yellow-500"></span>
                             <h3 class="font-bold text-yellow-500 text-sm uppercase tracking-wider">Folga</h3>
                         </div>
-                        <div class="p-3 overflow-y-auto flex-1 custom-scrollbar"><ul id="listOff" class
+                        <div class="p-3 overflow-y-auto flex-1 custom-scrollbar"><ul id="listOff" class="space-y-2"></ul></div>
+                    </div>
+
+                    <div class="cronos-card flex flex-col overflow-hidden h-96 rounded-3xl">
+                        <div class="bg-red-900/20 p-4 border-b border-red-900/30 flex items-center justify-center gap-2">
+                            <span class="w-2 h-2 rounded-full bg-red-500"></span>
+                            <h3 class="font-bold text-red-400 text-sm uppercase tracking-wider">Férias</h3>
+                        </div>
+                        <div class="p-3 overflow-y-auto flex-1 custom-scrollbar"><ul id="listVacation" class="space-y-2"></ul></div>
+                    </div>
+                </section>
+            </div>
+
+            <div id="personalView" class="tab-content hidden space-y-8">
+                <section class="cronos-card p-6 md:p-8 rounded-3xl">
+                    
+                    <div id="adminEditHint" class="hidden mb-6 bg-blue-900/20 text-blue-200 px-4 py-3 rounded-xl text-sm border border-blue-500/30 flex items-center shadow-sm">
+                        <i class="fas fa-mouse-pointer mr-2 text-blue-400"></i> 
+                        <span class="font-semibold text-blue-400 mr-1">MODO EDIÇÃO:</span> 
+                        <span>Clique na TAG do dia para alternar o status.</span>
+                    </div>
+
+                    <div class="flex flex-col md:flex-row justify-between items-start md:items-center mb-8 border-b border-cronos-border pb-6">
+                        <div>
+                             <h2 class="text-2xl font-bold text-white mb-1">Escala Individual</h2>
+                             <p class="text-gray-400 text-sm">Visualize ou edite a escala detalhada.</p>
+                        </div>
+
+                         <div class="mt-4 md:mt-0 w-full md:w-80 relative">
+                            <select id="employeeSelect" class="appearance-none w-full p-4 bg-[#0F1020] border border-cronos-border rounded-xl focus:ring-2 focus:ring-purple-500 focus:border-purple-500 text-white text-base font-semibold transition-all shadow-lg cursor-pointer">
+                                <option value="">Selecione um colaborador</option>
+                            </select>
+                            <div class="pointer-events-none absolute inset-y-0 right-0 flex items-center px-4 text-purple-500">
+                                <i class="fas fa-chevron-down"></i>
+                            </div>
+                        </div>
+                    </div>
+
+                    <div id="personalInfoCard" class="hidden mb-8">
+                        </div>
+
+                    <div id="calendarContainer" class="hidden">
+                        <div class="grid grid-cols-7 gap-1 mb-2 text-center font-bold text-gray-500 text-xs uppercase tracking-wider hidden md:grid">
+                            <div class="p-2">Dom</div><div class="p-2">Seg</div>
+                            <div class="p-2">Ter</div><div class="p-2">Qua</div>
+                            <div class="p-2">Qui</div><div class="p-2">Sex</div>
+                            <div class="p-2">Sáb</div>
+                          </div>
+                        <div id="calendarGrid" class="calendar-grid-container rounded-xl overflow-hidden border border-cronos-border"></div>
+                    </div>
+                </section>
+
+                <section class="cronos-card p-6 md:p-8 rounded-3xl">
+                    <div class="mb-6 flex items-center gap-3">
+                        <div class="w-10 h-10 rounded-lg bg-orange-500/20 flex items-center justify-center text-orange-500">
+                            <i class="fas fa-calendar-week"></i>
+                        </div>
+                        <h2 class="text-xl font-bold text-white">Plantão Fins de Semana</h2>
+                    </div>
+                    <div id="weekendPlantaoContainer" class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6"></div>
+                </section>
+            </div>
+        </main>
+
+        <footer class="mt-16 py-8 border-t border-cronos-border text-center">
+            <h2 class="text-2xl font-extrabold text-gray-700 mb-2 opacity-50">CRONOS</h2>
+            <p class="text-xs text-gray-500 font-medium">Sua operação no tempo certo. &copy; 2025</p>
+        </footer>
+    </div>
+
+    <script type="module" src="app.js"></script>
+</body>
+</html>
