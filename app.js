@@ -1,4 +1,4 @@
-// app.js - Cosmic Dark Edition
+// app.js - Cosmic Dark Edition (Rounded)
 // ==========================================
 // 1. IMPORTAÇÕES FIREBASE (WEB SDK)
 // ==========================================
@@ -360,7 +360,6 @@ function renderMonthlyTrendChart() {
 
 function updateDailyChartDonut(working, off, offShift, vacation) {
     const labels = [`Trabalhando (${working})`, `Folga (${off})`, `Encerrado (${offShift})`, `Férias (${vacation})`];
-    // Cores Neon ajustadas para fundo escuro
     const rawColors = ['#34D399','#FBBF24','#E879F9','#F87171'];
     const fData=[], fLabels=[], fColors=[];
     [working, off, offShift, vacation].forEach((d,i)=>{ 
@@ -424,10 +423,14 @@ function updateDailyView() {
         else if (status === 'T') w++;
         else o++; 
 
+        // CRIAÇÃO DO ITEM DA LISTA COM BORDAS ARREDONDADAS (rounded-xl)
         const row = `
-            <li class="flex justify-between items-center text-sm p-3 rounded mb-1 bg-[#1A1C2E] hover:bg-[#2E3250] border-l-2 border-transparent hover:border-purple-500 transition-all cursor-default">
-                <div class="flex flex-col"><span class="font-bold text-gray-200">${name}</span><span class="text-[10px] text-gray-500 font-mono">${emp.info.Horário||'--'}</span></div>
-                <span class="day-status status-${display}">${statusMap[display]||display}</span>
+            <li class="flex justify-between items-center text-sm p-4 rounded-xl mb-2 bg-[#1A1C2E] hover:bg-[#2E3250] border border-[#2E3250] hover:border-purple-500 transition-all cursor-default shadow-sm group">
+                <div class="flex flex-col">
+                    <span class="font-bold text-gray-200 group-hover:text-white transition-colors">${name}</span>
+                    <span class="text-[10px] text-gray-500 font-mono mt-0.5">${emp.info.Horário||'--'}</span>
+                </div>
+                <span class="day-status status-${display} rounded-lg px-2.5 py-1 text-[10px] font-bold tracking-wide shadow-none border-0 bg-opacity-10">${statusMap[display]||display}</span>
             </li>`;
 
         if (status==='T') wH+=row;
@@ -567,7 +570,7 @@ function updateCalendar(name, schedule) {
     if(isMobile) {
         grid.className = 'space-y-2 mt-4';
         schedule.forEach((st, i) => {
-            let pillClasses = "flex justify-between items-center p-3 px-4 rounded-lg border transition-all text-sm";
+            let pillClasses = "flex justify-between items-center p-3 px-4 rounded-xl border transition-all text-sm";
             if(isAdmin) pillClasses += " cursor-pointer active:scale-95";
             
             // Dark Mode Mobile Pills
