@@ -24,7 +24,7 @@
                     animation: { 
                         'pulse-slow': 'pulse 3s cubic-bezier(0.4, 0, 0.6, 1) infinite',
                         'fade-in-up': 'fadeInUp 0.5s ease-out forwards', 
-                        'fade-in-list': 'fadeInList 0.4s ease-out forwards',
+                        'fade-in-list': 'fadeInList 0.4s ease-out forwards', // CORREÇÃO DE ALINHAMENTO
                         'modal-pop': 'modalPop 0.3s cubic-bezier(0.16, 1, 0.3, 1) forwards'
                     },
                     keyframes: {
@@ -32,7 +32,7 @@
                             '0%': { opacity: '0', transform: 'translate(-50%, 20px)' }, 
                             '100%': { opacity: '1', transform: 'translate(-50%, 0)' },
                         },
-                        fadeInList: {
+                        fadeInList: { // ANIMAÇÃO CORRIGIDA (SEM DESLOCAMENTO LATERAL)
                             '0%': { opacity: '0', transform: 'translateY(10px)' },
                             '100%': { opacity: '1', transform: 'translateY(0)' },
                         },
@@ -268,195 +268,189 @@
             </div>
         </main>
 
-        <footer class="mt-16 py-8 border-t border-cronos-border text-center">
-            <h2 class="text-2xl font-extrabold text-gray-700 mb-2 opacity-50">CRONOS</h2>
-            <p class="text-xs text-gray-500 font-medium">Sua operação no tempo certo. &copy; 2025</p>
-        </footer>
-    </div>
-
-    <div id="profileModal" class="hidden fixed inset-0 z-[60] flex items-center justify-center bg-black/80 backdrop-blur-sm p-4 transition-all duration-300">
-        <div class="bg-[#1A1C2E] border border-[#2E3250] rounded-2xl shadow-2xl w-full max-w-lg relative animate-modal-pop overflow-hidden flex flex-col max-h-[90vh]" onclick="event.stopPropagation()">
-            
-            <div class="p-6 border-b border-[#2E3250] flex justify-between items-center bg-[#151725] shrink-0">
-                <div class="flex items-center gap-3">
-                    <div class="w-10 h-10 bg-gradient-to-br from-purple-600/20 to-blue-600/20 rounded-xl border border-purple-500/20 flex items-center justify-center text-purple-400">
-                        <i class="fas fa-id-card-alt text-lg"></i>
-                    </div>
-                    <div>
-                        <div class="flex items-center gap-2">
-                            <h3 class="text-lg font-bold text-white tracking-tight">Meu Perfil</h3>
-                            <span id="profRoleBadge" class="bg-gray-700 text-gray-300 text-[10px] font-bold px-2 py-0.5 rounded border border-gray-600 uppercase">
-                                Carregando...
-                            </span>
-                        </div>
-                        <p class="text-xs text-gray-500 font-medium">Dados do responsável pela sessão.</p>
-                    </div>
-                </div>
-                <button id="btnCloseProfile" class="w-8 h-8 rounded-lg flex items-center justify-center text-gray-500 hover:text-white hover:bg-white/5 transition-all">
-                    <i class="fas fa-times"></i>
-                </button>
-            </div>
-
-            <div class="p-6 space-y-6 overflow-y-auto custom-scrollbar grow">
+        <div id="profileModal" class="hidden fixed inset-0 z-[60] flex items-center justify-center bg-black/80 backdrop-blur-sm p-4 transition-all duration-300">
+            <div class="bg-[#1A1C2E] border border-[#2E3250] rounded-2xl shadow-2xl w-full max-w-lg relative animate-modal-pop overflow-hidden flex flex-col max-h-[90vh]" onclick="event.stopPropagation()">
                 
-                <div class="grid grid-cols-1 md:grid-cols-2 gap-5">
-                    <div class="col-span-1 md:col-span-2">
-                        <label class="block text-[10px] font-bold text-gray-400 uppercase tracking-widest mb-2 ml-1">Nome Completo</label>
-                        <div class="relative group">
-                            <div class="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
-                                <i class="fas fa-user text-gray-500 group-focus-within:text-purple-400 transition-colors"></i>
+                <div class="p-6 border-b border-[#2E3250] flex justify-between items-center bg-[#151725] shrink-0">
+                    <div class="flex items-center gap-3">
+                        <div class="w-10 h-10 bg-gradient-to-br from-purple-600/20 to-blue-600/20 rounded-xl border border-purple-500/20 flex items-center justify-center text-purple-400">
+                            <i class="fas fa-id-card-alt text-lg"></i>
+                        </div>
+                        <div>
+                            <div class="flex items-center gap-2">
+                                <h3 class="text-lg font-bold text-white tracking-tight">Meu Perfil</h3>
+                                <span id="profRoleBadge" class="bg-gray-700 text-gray-300 text-[10px] font-bold px-2 py-0.5 rounded border border-gray-600 uppercase">
+                                    Carregando...
+                                </span>
                             </div>
-                            <input type="text" id="profName" class="w-full pl-10 pr-4 py-3 rounded-xl bg-[#0F1020] border border-[#2E3250] text-white focus:border-purple-500 focus:ring-1 focus:ring-purple-500 outline-none transition-all placeholder-gray-700 text-sm font-medium" placeholder="Seu nome">
+                            <p class="text-xs text-gray-500 font-medium">Dados do responsável pela sessão.</p>
                         </div>
                     </div>
-
-                    <div class="col-span-1 md:col-span-2">
-                        <label class="block text-[10px] font-bold text-gray-400 uppercase tracking-widest mb-2 ml-1">E-mail Corporativo</label>
-                        <div class="relative">
-                            <div class="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
-                                <i class="fas fa-envelope text-gray-600"></i>
-                            </div>
-                            <input type="email" id="profEmail" class="w-full pl-10 pr-4 py-3 rounded-xl bg-[#0F1020]/50 border border-[#2E3250] text-gray-500 cursor-not-allowed outline-none text-sm font-mono" placeholder="email@empresa.com" readonly>
-                        </div>
-                    </div>
-
-                    <div>
-                        <label class="block text-[10px] font-bold text-gray-400 uppercase tracking-widest mb-2 ml-1">Cargo / Função</label>
-                        <div class="relative group">
-                            <div class="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
-                                <i class="fas fa-briefcase text-gray-500 group-focus-within:text-purple-400 transition-colors"></i>
-                            </div>
-                            <input type="text" id="profJob" class="w-full pl-10 pr-4 py-3 rounded-xl bg-[#0F1020] border border-[#2E3250] text-white focus:border-purple-500 focus:ring-1 focus:ring-purple-500 outline-none transition-all placeholder-gray-700 text-sm" placeholder="Ex: Gerente">
-                        </div>
-                    </div>
-
-                    <div>
-                        <label class="block text-[10px] font-bold text-gray-400 uppercase tracking-widest mb-2 ml-1 flex items-center gap-1">
-                            Nível de Acesso <i class="fas fa-lock text-[10px] text-gray-600" title="Definido pelo Master"></i>
-                        </label>
-                        <div class="relative">
-                            <div class="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
-                                <i class="fas fa-shield-alt text-gray-600"></i>
-                            </div>
-                            <input type="text" id="profRoleDisplay" class="w-full pl-10 pr-4 py-3 rounded-xl bg-[#0F1020]/50 border border-[#2E3250] text-gray-400 cursor-not-allowed outline-none text-sm font-bold uppercase" readonly>
-                        </div>
-                    </div>
-
-                    <div class="col-span-1 md:col-span-2">
-                        <label class="block text-[10px] font-bold text-gray-400 uppercase tracking-widest mb-2 ml-1">Telefone Corporativo <span class="text-gray-600 normal-case ml-1 font-normal">(Opcional)</span></label>
-                        <div class="relative group">
-                            <div class="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
-                                <i class="fas fa-phone text-gray-500 group-focus-within:text-purple-400 transition-colors"></i>
-                            </div>
-                            <input type="tel" id="profPhone" class="w-full pl-10 pr-4 py-3 rounded-xl bg-[#0F1020] border border-[#2E3250] text-white focus:border-purple-500 focus:ring-1 focus:ring-purple-500 outline-none transition-all placeholder-gray-700 text-sm" placeholder="(11) 90000-0000">
-                        </div>
-                    </div>
+                    <button id="btnCloseProfile" class="w-8 h-8 rounded-lg flex items-center justify-center text-gray-500 hover:text-white hover:bg-white/5 transition-all">
+                        <i class="fas fa-times"></i>
+                    </button>
                 </div>
 
-                <div class="pt-2">
-                    <h4 class="text-[10px] font-bold text-gray-400 uppercase tracking-widest mb-3 ml-1 flex items-center gap-2">
-                        <i class="fas fa-users-cog text-blue-500"></i> Gestão de Equipe
-                    </h4>
+                <div class="p-6 space-y-6 overflow-y-auto custom-scrollbar grow">
                     
-                    <div class="grid grid-cols-2 gap-3 mb-4">
-                        <div class="bg-[#0F1020] p-4 rounded-xl border border-[#2E3250] flex flex-col items-center justify-center text-center relative overflow-hidden">
-                            <div class="absolute top-0 right-0 p-1 opacity-20 text-purple-500"><i class="fas fa-layer-group fa-2x"></i></div>
-                            <span class="text-xs text-gray-500 font-bold uppercase tracking-wider mb-1">Equipes</span>
-                            <span id="statTeams" class="text-2xl font-bold text-white">0</span>
+                    <div class="grid grid-cols-1 md:grid-cols-2 gap-5">
+                        <div class="col-span-1 md:col-span-2">
+                            <label class="block text-[10px] font-bold text-gray-400 uppercase tracking-widest mb-2 ml-1">Nome Completo</label>
+                            <div class="relative group">
+                                <div class="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
+                                    <i class="fas fa-user text-gray-500 group-focus-within:text-purple-400 transition-colors"></i>
+                                </div>
+                                <input type="text" id="profName" class="w-full pl-10 pr-4 py-3 rounded-xl bg-[#0F1020] border border-[#2E3250] text-white focus:border-purple-500 focus:ring-1 focus:ring-purple-500 outline-none transition-all placeholder-gray-700 text-sm font-medium" placeholder="Seu nome">
+                            </div>
                         </div>
-                        <div class="bg-[#0F1020] p-4 rounded-xl border border-[#2E3250] flex flex-col items-center justify-center text-center relative overflow-hidden">
-                            <div class="absolute top-0 right-0 p-1 opacity-20 text-blue-500"><i class="fas fa-user-friends fa-2x"></i></div>
-                            <span class="text-xs text-gray-500 font-bold uppercase tracking-wider mb-1">Colaboradores</span>
-                            <span id="statCollabs" class="text-2xl font-bold text-white">0</span>
+
+                        <div class="col-span-1 md:col-span-2">
+                            <label class="block text-[10px] font-bold text-gray-400 uppercase tracking-widest mb-2 ml-1">E-mail Corporativo</label>
+                            <div class="relative">
+                                <div class="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
+                                    <i class="fas fa-envelope text-gray-600"></i>
+                                </div>
+                                <input type="email" id="profEmail" class="w-full pl-10 pr-4 py-3 rounded-xl bg-[#0F1020]/50 border border-[#2E3250] text-gray-500 cursor-not-allowed outline-none text-sm font-mono" placeholder="email@empresa.com" readonly>
+                            </div>
+                        </div>
+
+                        <div>
+                            <label class="block text-[10px] font-bold text-gray-400 uppercase tracking-widest mb-2 ml-1">Cargo / Função</label>
+                            <div class="relative group">
+                                <div class="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
+                                    <i class="fas fa-briefcase text-gray-500 group-focus-within:text-purple-400 transition-colors"></i>
+                                </div>
+                                <input type="text" id="profJob" class="w-full pl-10 pr-4 py-3 rounded-xl bg-[#0F1020] border border-[#2E3250] text-white focus:border-purple-500 focus:ring-1 focus:ring-purple-500 outline-none transition-all placeholder-gray-700 text-sm" placeholder="Ex: Gerente">
+                            </div>
+                        </div>
+
+                        <div>
+                            <label class="block text-[10px] font-bold text-gray-400 uppercase tracking-widest mb-2 ml-1 flex items-center gap-1">
+                                Nível de Acesso <i class="fas fa-lock text-[10px] text-gray-600" title="Definido pelo Master"></i>
+                            </label>
+                            <div class="relative">
+                                <div class="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
+                                    <i class="fas fa-shield-alt text-gray-600"></i>
+                                </div>
+                                <input type="text" id="profRoleDisplay" class="w-full pl-10 pr-4 py-3 rounded-xl bg-[#0F1020]/50 border border-[#2E3250] text-gray-400 cursor-not-allowed outline-none text-sm font-bold uppercase" readonly>
+                            </div>
+                        </div>
+
+                        <div class="col-span-1 md:col-span-2">
+                            <label class="block text-[10px] font-bold text-gray-400 uppercase tracking-widest mb-2 ml-1">Telefone Corporativo <span class="text-gray-600 normal-case ml-1 font-normal">(Opcional)</span></label>
+                            <div class="relative group">
+                                <div class="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
+                                    <i class="fas fa-phone text-gray-500 group-focus-within:text-purple-400 transition-colors"></i>
+                                </div>
+                                <input type="tel" id="profPhone" class="w-full pl-10 pr-4 py-3 rounded-xl bg-[#0F1020] border border-[#2E3250] text-white focus:border-purple-500 focus:ring-1 focus:ring-purple-500 outline-none transition-all placeholder-gray-700 text-sm" placeholder="(11) 90000-0000">
+                            </div>
                         </div>
                     </div>
 
-                    <div class="bg-[#0F1020]/30 rounded-xl border border-[#2E3250] p-4 mt-4 relative">
-                        <div class="absolute -top-3 left-4 bg-[#1A1C2E] px-2 text-[10px] font-bold text-orange-400 uppercase tracking-widest border border-[#2E3250] rounded">
-                            <i class="fas fa-sliders-h mr-1"></i> Controle de Escalas
+                    <div class="pt-2">
+                        <h4 class="text-[10px] font-bold text-gray-400 uppercase tracking-widest mb-3 ml-1 flex items-center gap-2">
+                            <i class="fas fa-users-cog text-blue-500"></i> Gestão de Equipe
+                        </h4>
+                        
+                        <div class="grid grid-cols-2 gap-3 mb-4">
+                            <div class="bg-[#0F1020] p-4 rounded-xl border border-[#2E3250] flex flex-col items-center justify-center text-center relative overflow-hidden">
+                                <div class="absolute top-0 right-0 p-1 opacity-20 text-purple-500"><i class="fas fa-layer-group fa-2x"></i></div>
+                                <span class="text-xs text-gray-500 font-bold uppercase tracking-wider mb-1">Equipes</span>
+                                <span id="statTeams" class="text-2xl font-bold text-white">0</span>
+                            </div>
+                            <div class="bg-[#0F1020] p-4 rounded-xl border border-[#2E3250] flex flex-col items-center justify-center text-center relative overflow-hidden">
+                                <div class="absolute top-0 right-0 p-1 opacity-20 text-blue-500"><i class="fas fa-user-friends fa-2x"></i></div>
+                                <span class="text-xs text-gray-500 font-bold uppercase tracking-wider mb-1">Colaboradores</span>
+                                <span id="statCollabs" class="text-2xl font-bold text-white">0</span>
+                            </div>
                         </div>
 
-                        <div class="grid grid-cols-2 gap-3 mt-2">
-                            <button class="col-span-2 md:col-span-1 bg-gradient-to-r from-purple-900/40 to-indigo-900/40 hover:from-purple-800/50 hover:to-indigo-800/50 border border-purple-500/30 p-3 rounded-xl flex items-center justify-center gap-3 transition-all group active:scale-95 shadow-lg shadow-purple-900/10">
-                                <div class="w-8 h-8 rounded-lg bg-purple-500/20 flex items-center justify-center text-purple-400 group-hover:text-white group-hover:bg-purple-500 transition-colors">
-                                    <i class="fas fa-plus"></i>
-                                </div>
-                                <div class="text-left">
-                                    <span class="block text-xs font-bold text-gray-200 group-hover:text-white">Nova Escala</span>
-                                    <span class="block text-[10px] text-gray-500">Criar do zero</span>
-                                </div>
-                            </button>
+                        <div class="bg-[#0F1020]/30 rounded-xl border border-[#2E3250] p-4 mt-4 relative">
+                            <div class="absolute -top-3 left-4 bg-[#1A1C2E] px-2 text-[10px] font-bold text-orange-400 uppercase tracking-widest border border-[#2E3250] rounded">
+                                <i class="fas fa-sliders-h mr-1"></i> Controle de Escalas
+                            </div>
 
-                            <button class="col-span-2 md:col-span-1 bg-[#0F1020] hover:bg-[#23253a] border border-[#2E3250] p-3 rounded-xl flex items-center justify-center gap-3 transition-all group active:scale-95">
-                                <div class="w-8 h-8 rounded-lg bg-gray-700/20 flex items-center justify-center text-gray-400 group-hover:text-white group-hover:bg-gray-600 transition-colors">
-                                    <i class="fas fa-history"></i>
-                                </div>
-                                <div class="text-left">
-                                    <span class="block text-xs font-bold text-gray-300 group-hover:text-white">Histórico</span>
-                                    <span class="block text-[10px] text-gray-500">Logs e edições</span>
-                                </div>
-                            </button>
-                        </div>
+                            <div class="grid grid-cols-2 gap-3 mt-2">
+                                <button class="col-span-2 md:col-span-1 bg-gradient-to-r from-purple-900/40 to-indigo-900/40 hover:from-purple-800/50 hover:to-indigo-800/50 border border-purple-500/30 p-3 rounded-xl flex items-center justify-center gap-3 transition-all group active:scale-95 shadow-lg shadow-purple-900/10">
+                                    <div class="w-8 h-8 rounded-lg bg-purple-500/20 flex items-center justify-center text-purple-400 group-hover:text-white group-hover:bg-purple-500 transition-colors">
+                                        <i class="fas fa-plus"></i>
+                                    </div>
+                                    <div class="text-left">
+                                        <span class="block text-xs font-bold text-gray-200 group-hover:text-white">Nova Escala</span>
+                                        <span class="block text-[10px] text-gray-500">Criar do zero</span>
+                                    </div>
+                                </button>
 
-                        <div class="grid grid-cols-3 gap-2 mt-3">
-                            <button id="shortcutDaily" class="bg-[#0F1020] hover:bg-[#2E3250] border border-[#2E3250] p-2 rounded-lg text-center transition-all group active:scale-95">
-                                <i class="fas fa-calendar-day text-gray-500 group-hover:text-sky-400 mb-1 block"></i>
-                                <span class="text-[10px] font-bold text-gray-400 group-hover:text-white">Dia</span>
-                            </button>
-                            <button class="bg-[#0F1020] hover:bg-[#2E3250] border border-[#2E3250] p-2 rounded-lg text-center transition-all group active:scale-95">
-                                <i class="fas fa-calendar-week text-gray-500 group-hover:text-sky-400 mb-1 block"></i>
-                                <span class="text-[10px] font-bold text-gray-400 group-hover:text-white">Semana</span>
-                            </button>
-                            <button class="bg-[#0F1020] hover:bg-[#2E3250] border border-[#2E3250] p-2 rounded-lg text-center transition-all group active:scale-95">
-                                <i class="fas fa-calendar-alt text-gray-500 group-hover:text-sky-400 mb-1 block"></i>
-                                <span class="text-[10px] font-bold text-gray-400 group-hover:text-white">Mês</span>
-                            </button>
+                                <button class="col-span-2 md:col-span-1 bg-[#0F1020] hover:bg-[#23253a] border border-[#2E3250] p-3 rounded-xl flex items-center justify-center gap-3 transition-all group active:scale-95">
+                                    <div class="w-8 h-8 rounded-lg bg-gray-700/20 flex items-center justify-center text-gray-400 group-hover:text-white group-hover:bg-gray-600 transition-colors">
+                                        <i class="fas fa-history"></i>
+                                    </div>
+                                    <div class="text-left">
+                                        <span class="block text-xs font-bold text-gray-300 group-hover:text-white">Histórico</span>
+                                        <span class="block text-[10px] text-gray-500">Logs e edições</span>
+                                    </div>
+                                </button>
+                            </div>
+
+                            <div class="grid grid-cols-3 gap-2 mt-3">
+                                <button id="shortcutDaily" class="bg-[#0F1020] hover:bg-[#2E3250] border border-[#2E3250] p-2 rounded-lg text-center transition-all group active:scale-95">
+                                    <i class="fas fa-calendar-day text-gray-500 group-hover:text-sky-400 mb-1 block"></i>
+                                    <span class="text-[10px] font-bold text-gray-400 group-hover:text-white">Dia</span>
+                                </button>
+                                <button class="bg-[#0F1020] hover:bg-[#2E3250] border border-[#2E3250] p-2 rounded-lg text-center transition-all group active:scale-95">
+                                    <i class="fas fa-calendar-week text-gray-500 group-hover:text-sky-400 mb-1 block"></i>
+                                    <span class="text-[10px] font-bold text-gray-400 group-hover:text-white">Semana</span>
+                                </button>
+                                <button class="bg-[#0F1020] hover:bg-[#2E3250] border border-[#2E3250] p-2 rounded-lg text-center transition-all group active:scale-95">
+                                    <i class="fas fa-calendar-alt text-gray-500 group-hover:text-sky-400 mb-1 block"></i>
+                                    <span class="text-[10px] font-bold text-gray-400 group-hover:text-white">Mês</span>
+                                </button>
+                            </div>
+                            
+                            <div class="grid grid-cols-2 gap-2 mt-2">
+                                <button id="shortcutIndividual" class="bg-[#0F1020] hover:bg-[#2E3250] border border-[#2E3250] px-3 py-2 rounded-lg flex items-center justify-center gap-2 transition-all group active:scale-95">
+                                    <i class="fas fa-user text-gray-500 group-hover:text-emerald-400 text-xs"></i>
+                                    <span class="text-[10px] font-bold text-gray-400 group-hover:text-white">Individual</span>
+                                </button>
+                                <button class="bg-[#0F1020] hover:bg-[#2E3250] border border-[#2E3250] px-3 py-2 rounded-lg flex items-center justify-center gap-2 transition-all group active:scale-95">
+                                    <i class="fas fa-users text-gray-500 group-hover:text-emerald-400 text-xs"></i>
+                                    <span class="text-[10px] font-bold text-gray-400 group-hover:text-white">Setor / Equipe</span>
+                                </button>
+                            </div>
                         </div>
                         
-                        <div class="grid grid-cols-2 gap-2 mt-2">
-                             <button id="shortcutIndividual" class="bg-[#0F1020] hover:bg-[#2E3250] border border-[#2E3250] px-3 py-2 rounded-lg flex items-center justify-center gap-2 transition-all group active:scale-95">
-                                <i class="fas fa-user text-gray-500 group-hover:text-emerald-400 text-xs"></i>
-                                <span class="text-[10px] font-bold text-gray-400 group-hover:text-white">Individual</span>
-                            </button>
-                             <button class="bg-[#0F1020] hover:bg-[#2E3250] border border-[#2E3250] px-3 py-2 rounded-lg flex items-center justify-center gap-2 transition-all group active:scale-95">
-                                <i class="fas fa-users text-gray-500 group-hover:text-emerald-400 text-xs"></i>
-                                <span class="text-[10px] font-bold text-gray-400 group-hover:text-white">Setor / Equipe</span>
-                            </button>
+                        <div class="bg-[#0F1020]/50 rounded-xl border border-[#2E3250] p-4 mt-4">
+                            <h5 class="text-[10px] font-bold text-gray-500 uppercase tracking-widest mb-3">Atividade Recente (Sessão)</h5>
+                            <ul id="activityLogList" class="space-y-3">
+                                <li class="text-xs text-center text-gray-600 italic py-2">Nenhuma atividade registrada ainda.</li>
+                            </ul>
+                        </div>
+
+                    </div>
+
+                    <div class="pt-2 border-t border-[#2E3250]">
+                        <h4 class="text-[10px] font-bold text-gray-400 uppercase tracking-widest mb-3 ml-1 flex items-center gap-2">
+                            <i class="fas fa-key text-purple-500"></i> Permissões de Acesso
+                        </h4>
+                        
+                        <div class="bg-[#0F1020]/50 rounded-xl border border-[#2E3250] p-4">
+                            <ul id="permissionsList" class="grid grid-cols-1 gap-2.5">
+                                </ul>
                         </div>
                     </div>
-                    
-                    <div class="bg-[#0F1020]/50 rounded-xl border border-[#2E3250] p-4 mt-4">
-                        <h5 class="text-[10px] font-bold text-gray-500 uppercase tracking-widest mb-3">Atividade Recente (Sessão)</h5>
-                        <ul id="activityLogList" class="space-y-3">
-                            <li class="text-xs text-center text-gray-600 italic py-2">Nenhuma atividade registrada ainda.</li>
-                        </ul>
-                    </div>
 
                 </div>
 
-                <div class="pt-2 border-t border-[#2E3250]">
-                    <h4 class="text-[10px] font-bold text-gray-400 uppercase tracking-widest mb-3 ml-1 flex items-center gap-2">
-                        <i class="fas fa-key text-purple-500"></i> Permissões de Acesso
-                    </h4>
-                    
-                    <div class="bg-[#0F1020]/50 rounded-xl border border-[#2E3250] p-4">
-                        <ul id="permissionsList" class="grid grid-cols-1 gap-2.5">
-                            </ul>
-                    </div>
+                <div class="p-6 border-t border-[#2E3250] flex justify-end gap-3 bg-[#151725] shrink-0">
+                    <button id="btnCancelProfile" class="px-5 py-2.5 rounded-xl text-sm font-bold text-gray-400 hover:text-white hover:bg-white/5 transition-all border border-transparent">
+                        Cancelar
+                    </button>
+                    <button id="btnSaveProfile" class="px-6 py-2.5 rounded-xl text-sm font-bold text-white bg-cronos-primary hover:bg-purple-600 transition-all shadow-lg shadow-purple-900/20 flex items-center active:scale-95">
+                        <i class="fas fa-save mr-2"></i> Salvar Alterações
+                    </button>
                 </div>
-
-            </div>
-
-            <div class="p-6 border-t border-[#2E3250] flex justify-end gap-3 bg-[#151725] shrink-0">
-                <button id="btnCancelProfile" class="px-5 py-2.5 rounded-xl text-sm font-bold text-gray-400 hover:text-white hover:bg-white/5 transition-all border border-transparent">
-                    Cancelar
-                </button>
-                <button id="btnSaveProfile" class="px-6 py-2.5 rounded-xl text-sm font-bold text-white bg-cronos-primary hover:bg-purple-600 transition-all shadow-lg shadow-purple-900/20 flex items-center active:scale-95">
-                    <i class="fas fa-save mr-2"></i> Salvar Alterações
-                </button>
             </div>
         </div>
-    </div>
 
     <script type="module" src="app.js"></script>
 </body>
