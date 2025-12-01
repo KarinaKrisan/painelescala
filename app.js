@@ -140,6 +140,102 @@ async function saveToCloud() {
 document.getElementById('btnSaveCloud').addEventListener('click', saveToCloud);
 
 // ==========================================
+// 5.1 ADMIN PROFILE LOGIC (NOVO)
+// ==========================================
+const profileModal = document.getElementById('profileModal');
+const btnOpenProfile = document.getElementById('btnOpenProfile');
+const btnCloseProfile = document.getElementById('btnCloseProfile');
+const btnCancelProfile = document.getElementById('btnCancelProfile');
+const btnSaveProfile = document.getElementById('btnSaveProfile');
+
+// Inputs do Modal
+const inpName = document.getElementById('profName');
+const inpEmail = document.getElementById('profEmail');
+const inpRole = document.getElementById('profRole');
+const inpUnit = document.getElementById('profUnit');
+const inpPhone = document.getElementById('profPhone');
+
+function toggleProfileModal(show) {
+    if(show) {
+        profileModal.classList.remove('hidden');
+        loadAdminProfile();
+    } else {
+        profileModal.classList.add('hidden');
+    }
+}
+
+if(btnOpenProfile) btnOpenProfile.addEventListener('click', () => toggleProfileModal(true));
+if(btnCloseProfile) btnCloseProfile.addEventListener('click', () => toggleProfileModal(false));
+if(btnCancelProfile) btnCancelProfile.addEventListener('click', () => toggleProfileModal(false));
+if(profileModal) profileModal.addEventListener('click', (e) => {
+    if(e.target === profileModal) toggleProfileModal(false);
+});
+
+async function loadAdminProfile() {
+    const user = auth.currentUser;
+    if(!user) return;
+
+    inpEmail.value = user.email; // Preenche email do Auth automaticamente
+    
+    btnSaveProfile.innerHTML = '<i class="fas fa-spinner fa-spin mr-2"></i> Carregando...';
+    btnSaveProfile.disabled = true;
+
+    try {
+        const docRef = doc(db, "admins", user.uid);
+        const docSnap = await getDoc(docRef);
+
+        if (docSnap.exists()) {
+            const data = docSnap.data();
+            inpName.value = data.name || '';
+            inpRole.value = data.role || '';
+            inpUnit.value = data.unit || '';
+            inpPhone.value = data.phone || '';
+        } else {
+            // Se não existe perfil ainda, limpa os campos
+            inpName.value = '';
+            inpRole.value = '';
+            inpUnit.value = '';
+            inpPhone.value = '';
+        }
+    } catch (e) {
+        console.error("Erro ao carregar perfil:", e);
+    } finally {
+        btnSaveProfile.innerHTML = '<i class="fas fa-save mr-2"></i> Salvar Alterações';
+        btnSaveProfile.disabled = false;
+    }
+}
+
+if(btnSaveProfile) btnSaveProfile.addEventListener('click', async () => {
+    const user = auth.currentUser;
+    if(!user) return;
+
+    const profileData = {
+        name: inpName.value,
+        email: user.email,
+        role: inpRole.value,
+        unit: inpUnit.value,
+        phone: inpPhone.value,
+        updatedAt: new Date().toISOString()
+    };
+
+    btnSaveProfile.innerHTML = '<i class="fas fa-spinner fa-spin mr-2"></i> Salvando...';
+    btnSaveProfile.disabled = true;
+
+    try {
+        await setDoc(doc(db, "admins", user.uid), profileData, { merge: true });
+        toggleProfileModal(false);
+        // Opcional: Mostrar toast de sucesso
+    } catch (e) {
+        console.error("Erro ao salvar perfil:", e);
+        alert("Erro ao salvar perfil.");
+    } finally {
+        btnSaveProfile.innerHTML = '<i class="fas fa-save mr-2"></i> Salvar Alterações';
+        btnSaveProfile.disabled = false;
+    }
+});
+
+
+// ==========================================
 // 6. DATA PROCESSING
 // ==========================================
 function generate5x2ScheduleDefaultForMonth(monthObj) {
