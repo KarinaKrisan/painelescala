@@ -59,7 +59,6 @@ onAuthStateChanged(auth, (user) => {
         if(btnOpenLogin) btnOpenLogin.classList.add('hidden');
         document.getElementById('adminEditHint').classList.remove('hidden');
         document.body.style.paddingBottom = "100px"; 
-        
         logSessionActivity('login', 'Login no sistema');
         loadAdminProfile(true); 
     } else {
@@ -112,7 +111,6 @@ async function saveToCloud() {
         status.className = "text-xs text-gray-300 font-medium transition-colors";
         if(statusIcon) statusIcon.className = "w-1.5 h-1.5 rounded-full bg-emerald-500 shadow-[0_0_8px_rgba(16,185,129,0.6)]";
         
-        // Logs de Salvar
         const profNameInput = document.getElementById('profName');
         const adminName = (profNameInput && profNameInput.value) ? profNameInput.value.split(' ')[0] : "Admin";
         
@@ -120,7 +118,7 @@ async function saveToCloud() {
             unsavedChangesSet.forEach(empName => logSessionActivity('save', `${adminName} salvou escala de ${empName}`));
             unsavedChangesSet.clear();
         } else {
-            logSessionActivity('save', 'Sincronização manual');
+            logSessionActivity('save', 'Sincronização realizada');
         }
 
         setTimeout(() => { btn.innerHTML = '<i class="fas fa-cloud-upload-alt mr-2"></i> Salvar'; }, 1000);
@@ -163,27 +161,22 @@ if(profPhotoInput) {
     });
 }
 
-// TABS LOGIC - CORREÇÃO CRÍTICA
+// Tabs Logic
 const modalTabs = document.querySelectorAll('.modal-tab');
 const tabContents = document.querySelectorAll('.modal-content-tab');
 
 modalTabs.forEach(tab => {
     tab.addEventListener('click', () => {
-        // 1. Esconde tudo e reseta estilos
         modalTabs.forEach(t => {
             t.classList.remove('active', 'border-b-2', 'border-purple-500', 'text-purple-400');
             t.classList.add('text-gray-400');
         });
         tabContents.forEach(c => c.classList.add('hidden'));
 
-        // 2. Ativa a atual
         tab.classList.add('active', 'border-b-2', 'border-purple-500', 'text-purple-400');
         tab.classList.remove('text-gray-400');
-        
-        // 3. Mostra o conteúdo correspondente
         const targetId = tab.getAttribute('data-target');
-        const targetContent = document.getElementById(targetId);
-        if(targetContent) targetContent.classList.remove('hidden');
+        document.getElementById(targetId).classList.remove('hidden');
     });
 });
 
@@ -210,9 +203,6 @@ if(btnCloseProfile) btnCloseProfile.addEventListener('click', () => toggleProfil
 if(btnCancelProfile) btnCancelProfile.addEventListener('click', () => toggleProfileModal(false));
 if(profileModal) profileModal.addEventListener('click', (e) => { if(e.target === profileModal) toggleProfileModal(false); });
 
-document.getElementById('shortcutDaily').addEventListener('click', () => { toggleProfileModal(false); document.querySelector('button[data-tab="daily"]').click(); });
-document.getElementById('shortcutIndividual').addEventListener('click', () => { toggleProfileModal(false); document.querySelector('button[data-tab="personal"]').click(); });
-
 if(btnChangePassword) {
     btnChangePassword.addEventListener('click', async () => {
         const user = auth.currentUser;
@@ -221,6 +211,57 @@ if(btnChangePassword) {
         }
     });
 }
+
+// --- CONTROLE DE ESCALAS - ATALHOS ---
+// Botões de visualização
+const shortcutDaily = document.getElementById('shortcutDaily');
+const shortcutWeekly = document.getElementById('shortcutWeekly');
+const shortcutMonthly = document.getElementById('shortcutMonthly');
+const shortcutIndividual = document.getElementById('shortcutIndividual');
+const shortcutTeam = document.getElementById('shortcutTeam');
+
+// Botões de Ação
+const btnNewSchedule = document.getElementById('btnNewSchedule');
+const btnViewHistory = document.getElementById('btnViewHistory');
+
+if(shortcutDaily) shortcutDaily.addEventListener('click', () => {
+    toggleProfileModal(false);
+    document.querySelector('button[data-tab="daily"]').click();
+    // Lógica futura: mudar para visualização diária se houver sub-abas
+});
+
+if(shortcutWeekly) shortcutWeekly.addEventListener('click', () => {
+    toggleProfileModal(false);
+    alert("Visualização Semanal em desenvolvimento.");
+});
+
+if(shortcutMonthly) shortcutMonthly.addEventListener('click', () => {
+    toggleProfileModal(false);
+    alert("Visualização Mensal em desenvolvimento.");
+});
+
+if(shortcutIndividual) shortcutIndividual.addEventListener('click', () => {
+    toggleProfileModal(false);
+    document.querySelector('button[data-tab="personal"]').click();
+});
+
+if(shortcutTeam) shortcutTeam.addEventListener('click', () => {
+    toggleProfileModal(false);
+    alert("Filtro por Equipe em desenvolvimento.");
+});
+
+if(btnNewSchedule) btnNewSchedule.addEventListener('click', () => {
+    // Aqui você pode chamar uma função futura para abrir um wizard de criação
+    alert("Funcionalidade 'Nova Escala' será implementada em breve.");
+});
+
+if(btnViewHistory) btnViewHistory.addEventListener('click', () => {
+    // Aqui poderia trocar para a aba "Configurações" onde está a auditoria
+    const configTab = document.querySelector('button[data-target="tab-config"]');
+    if(configTab) configTab.click();
+});
+
+// --- FIM CONTROLE DE ESCALAS ---
 
 function updatePermissionsUI(roleKey) {
     const list = document.getElementById('permissionsList');
