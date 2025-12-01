@@ -227,7 +227,6 @@ function updatePermissionsUI() {
     list.innerHTML = '';
 
     // Definição das permissões para o cargo atual (Admin)
-    // Se quiser criar lógica de cargos, pode trocar este array baseado no user
     const permissions = [
         "Criar, editar e excluir escalas",
         "Criar e editar colaboradores e equipes",
@@ -307,7 +306,8 @@ function updateActivityLogUI() {
         }
 
         const li = document.createElement('li');
-        li.className = "flex items-center gap-3 text-xs animate-fade-in-up"; 
+        // CORREÇÃO AQUI: Usando 'animate-fade-in-list' ao invés de 'animate-fade-in-up'
+        li.className = "flex items-center gap-3 text-xs animate-fade-in-list"; 
         li.innerHTML = `
             <div class="w-6 h-6 rounded-full flex items-center justify-center border ${bgClass} ${colorClass}">
                 <i class="${iconClass}"></i>
@@ -804,12 +804,8 @@ async function handleCellClick(name, dayIndex) {
     }
     if(statusIcon) statusIcon.className = "w-1.5 h-1.5 rounded-full bg-orange-500 animate-pulse";
     
-    // LOG DE EDIÇÃO
-    logSessionActivity('edit', `Alterou escala de ${name}`);
-
     updateCalendar(name, emp.schedule);
     updateDailyView();
-    updateProfileStats(); // Atualiza também as stats se houver alteração
     const sel = document.getElementById('employeeSelect');
     updateWeekendTable(sel ? sel.value : null);
 }
