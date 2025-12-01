@@ -35,38 +35,39 @@ let currentDay = new Date().getDate();
 let sessionLogs = []; 
 let unsavedChangesSet = new Set(); // NOVO: Rastreia quem foi alterado
 
-// Definição de Permissões por Nível (RBAC)
+// Definição de Permissões por Nível (RBAC) - ATUALIZADO
 const ROLE_DEFINITIONS = {
     'master': {
         label: 'ADM Master',
         color: 'text-purple-400 bg-purple-900/30 border-purple-500/50',
         perms: [
-            "Acesso total ao sistema e configurações",
-            "Criar e gerenciar outros administradores",
-            "Auditoria completa de logs e acessos",
-            "Excluir dados críticos e backups",
-            "Todas as permissões de ADM Geral"
+            "Gerenciar todos os usuários e níveis de permissão",
+            "Criar, editar e excluir equipes, setores e unidades",
+            "Acesso global a todas as escalas e relatórios estratégicos",
+            "Configurar regras de jornada, feriados e integrações",
+            "Auditoria completa e configurações globais do app"
         ]
     },
     'geral': {
         label: 'ADM Geral',
         color: 'text-blue-400 bg-blue-900/30 border-blue-500/50',
         perms: [
-            "Criar, editar e excluir escalas globais",
-            "Gerenciar cadastro de colaboradores",
-            "Aprovar solicitações de todas as unidades",
-            "Visualizar relatórios gerenciais",
-            "Gerenciar notificações do sistema"
+            "Gestão completa de escalas e equipes da unidade",
+            "Cadastrar e editar colaboradores do setor",
+            "Aprovar trocas, folgas e férias",
+            "Acesso a relatórios operacionais e logs da área",
+            "Gerenciar avisos internos"
         ]
     },
     'local': {
         label: 'ADM Local',
         color: 'text-emerald-400 bg-emerald-900/30 border-emerald-500/50',
         perms: [
-            "Visualizar escala da própria unidade",
-            "Sugerir alterações de turno (requer aprovação)",
-            "Gerenciar folgas da equipe local",
-            "Visualizar dashboard simplificado"
+            "Gestão do dia a dia: editar escala da equipe específica",
+            "Registrar atestados e pequenas alterações",
+            "Aprovar ajustes simples de rotina",
+            "Acesso a relatórios básicos (frequência/cobertura)",
+            "Visualizar pendências da equipe"
         ]
     }
 };
