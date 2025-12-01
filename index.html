@@ -357,82 +357,89 @@
                             <span class="text-xs text-gray-500 font-bold uppercase tracking-wider mb-1">Colaboradores</span>
                             <span id="statCollabs" class="text-2xl font-bold text-white">0</span>
                         </div>
-                        <div class="bg-[#0F1020] p-4 rounded-xl border border-[#2E3250] flex flex-col items-center justify-center text-center relative overflow-hidden">
-                            <div class="absolute top-0 right-0 p-1 opacity-20 text-emerald-500"><i class="fas fa-calendar-check fa-2x"></i></div>
-                            <span class="text-xs text-gray-500 font-bold uppercase tracking-wider mb-1">Escalas Ativas</span>
-                            <span id="statActive" class="text-2xl font-bold text-white">1</span>
-                        </div>
-                        <div class="bg-[#0F1020] p-4 rounded-xl border border-[#2E3250] flex flex-col items-center justify-center text-center relative overflow-hidden">
-                            <div class="absolute top-0 right-0 p-1 opacity-20 text-orange-500"><i class="fas fa-clock fa-2x"></i></div>
-                            <span class="text-xs text-gray-500 font-bold uppercase tracking-wider mb-1">Pendências</span>
-                            <span id="statPending" class="text-2xl font-bold text-white">0</span>
-                        </div>
                     </div>
 
-                    <div class="bg-[#0F1020]/50 rounded-xl border border-[#2E3250] p-4">
+                    <div class="bg-[#0F1020]/30 rounded-xl border border-[#2E3250] p-4 mt-4 relative">
+                        <div class="absolute -top-3 left-4 bg-[#1A1C2E] px-2 text-[10px] font-bold text-orange-400 uppercase tracking-widest border border-[#2E3250] rounded">
+                            <i class="fas fa-sliders-h mr-1"></i> Controle de Escalas
+                        </div>
+
+                        <div class="grid grid-cols-2 gap-3 mt-2">
+                            <button class="col-span-2 md:col-span-1 bg-gradient-to-r from-purple-900/40 to-indigo-900/40 hover:from-purple-800/50 hover:to-indigo-800/50 border border-purple-500/30 p-3 rounded-xl flex items-center justify-center gap-3 transition-all group active:scale-95 shadow-lg shadow-purple-900/10">
+                                <div class="w-8 h-8 rounded-lg bg-purple-500/20 flex items-center justify-center text-purple-400 group-hover:text-white group-hover:bg-purple-500 transition-colors">
+                                    <i class="fas fa-plus"></i>
+                                </div>
+                                <div class="text-left">
+                                    <span class="block text-xs font-bold text-gray-200 group-hover:text-white">Nova Escala</span>
+                                    <span class="block text-[10px] text-gray-500">Criar do zero</span>
+                                </div>
+                            </button>
+
+                            <button class="col-span-2 md:col-span-1 bg-[#0F1020] hover:bg-[#23253a] border border-[#2E3250] p-3 rounded-xl flex items-center justify-center gap-3 transition-all group active:scale-95">
+                                <div class="w-8 h-8 rounded-lg bg-gray-700/20 flex items-center justify-center text-gray-400 group-hover:text-white group-hover:bg-gray-600 transition-colors">
+                                    <i class="fas fa-history"></i>
+                                </div>
+                                <div class="text-left">
+                                    <span class="block text-xs font-bold text-gray-300 group-hover:text-white">Histórico</span>
+                                    <span class="block text-[10px] text-gray-500">Logs e edições</span>
+                                </div>
+                            </button>
+                        </div>
+
+                        <div class="grid grid-cols-3 gap-2 mt-3">
+                            <button id="shortcutDaily" class="bg-[#0F1020] hover:bg-[#2E3250] border border-[#2E3250] p-2 rounded-lg text-center transition-all group active:scale-95">
+                                <i class="fas fa-calendar-day text-gray-500 group-hover:text-sky-400 mb-1 block"></i>
+                                <span class="text-[10px] font-bold text-gray-400 group-hover:text-white">Dia</span>
+                            </button>
+                            <button class="bg-[#0F1020] hover:bg-[#2E3250] border border-[#2E3250] p-2 rounded-lg text-center transition-all group active:scale-95">
+                                <i class="fas fa-calendar-week text-gray-500 group-hover:text-sky-400 mb-1 block"></i>
+                                <span class="text-[10px] font-bold text-gray-400 group-hover:text-white">Semana</span>
+                            </button>
+                            <button class="bg-[#0F1020] hover:bg-[#2E3250] border border-[#2E3250] p-2 rounded-lg text-center transition-all group active:scale-95">
+                                <i class="fas fa-calendar-alt text-gray-500 group-hover:text-sky-400 mb-1 block"></i>
+                                <span class="text-[10px] font-bold text-gray-400 group-hover:text-white">Mês</span>
+                            </button>
+                        </div>
+                        
+                        <div class="grid grid-cols-2 gap-2 mt-2">
+                             <button id="shortcutIndividual" class="bg-[#0F1020] hover:bg-[#2E3250] border border-[#2E3250] px-3 py-2 rounded-lg flex items-center justify-center gap-2 transition-all group active:scale-95">
+                                <i class="fas fa-user text-gray-500 group-hover:text-emerald-400 text-xs"></i>
+                                <span class="text-[10px] font-bold text-gray-400 group-hover:text-white">Individual</span>
+                            </button>
+                             <button class="bg-[#0F1020] hover:bg-[#2E3250] border border-[#2E3250] px-3 py-2 rounded-lg flex items-center justify-center gap-2 transition-all group active:scale-95">
+                                <i class="fas fa-users text-gray-500 group-hover:text-emerald-400 text-xs"></i>
+                                <span class="text-[10px] font-bold text-gray-400 group-hover:text-white">Setor / Equipe</span>
+                            </button>
+                        </div>
+                    </div>
+                    
+                    <div class="bg-[#0F1020]/50 rounded-xl border border-[#2E3250] p-4 mt-4">
                         <h5 class="text-[10px] font-bold text-gray-500 uppercase tracking-widest mb-3">Atividade Recente (Sessão)</h5>
-                        <ul class="space-y-3">
-                            <li class="flex items-center gap-3 text-xs">
-                                <div class="w-6 h-6 rounded-full bg-blue-500/10 flex items-center justify-center text-blue-400 border border-blue-500/20">
-                                    <i class="fas fa-pen"></i>
-                                </div>
-                                <div class="flex-1">
-                                    <p class="text-gray-300">Alterou escala de <span class="font-bold text-white">Ana Silva</span></p>
-                                </div>
-                                <span class="text-gray-600 font-mono text-[10px]">10:42</span>
-                            </li>
-                            <li class="flex items-center gap-3 text-xs">
-                                <div class="w-6 h-6 rounded-full bg-purple-500/10 flex items-center justify-center text-purple-400 border border-purple-500/20">
-                                    <i class="fas fa-save"></i>
-                                </div>
-                                <div class="flex-1">
-                                    <p class="text-gray-300">Sincronização realizada</p>
-                                </div>
-                                <span class="text-gray-600 font-mono text-[10px]">09:15</span>
-                            </li>
-                            <li class="flex items-center gap-3 text-xs">
-                                <div class="w-6 h-6 rounded-full bg-green-500/10 flex items-center justify-center text-green-400 border border-green-500/20">
-                                    <i class="fas fa-sign-in-alt"></i>
-                                </div>
-                                <div class="flex-1">
-                                    <p class="text-gray-300">Login no sistema</p>
-                                </div>
-                                <span class="text-gray-600 font-mono text-[10px]">09:00</span>
-                            </li>
+                        <ul id="activityLogList" class="space-y-3">
+                            <li class="text-xs text-center text-gray-600 italic py-2">Nenhuma atividade registrada ainda.</li>
                         </ul>
                     </div>
+
                 </div>
 
                 <div class="pt-2 border-t border-[#2E3250]">
                     <h4 class="text-[10px] font-bold text-gray-400 uppercase tracking-widest mb-3 ml-1 flex items-center gap-2">
-                        <i class="fas fa-key text-purple-500"></i> Permissões de Acesso
+                        <i class="fas fa-key text-purple-500"></i> Permissões
                     </h4>
                     
                     <div class="bg-[#0F1020]/50 rounded-xl border border-[#2E3250] p-4">
                         <ul class="grid grid-cols-1 gap-2.5">
                             <li class="flex items-start gap-3">
                                 <i class="fas fa-check-circle text-emerald-500 mt-0.5 text-xs"></i>
-                                <span class="text-xs text-gray-300 leading-tight">Criar, editar e excluir escalas</span>
+                                <span class="text-xs text-gray-300 leading-tight">Gestão total de escalas e turnos</span>
                             </li>
                             <li class="flex items-start gap-3">
                                 <i class="fas fa-check-circle text-emerald-500 mt-0.5 text-xs"></i>
-                                <span class="text-xs text-gray-300 leading-tight">Criar e editar colaboradores e equipes</span>
+                                <span class="text-xs text-gray-300 leading-tight">Administração de colaboradores</span>
                             </li>
                             <li class="flex items-start gap-3">
                                 <i class="fas fa-check-circle text-emerald-500 mt-0.5 text-xs"></i>
-                                <span class="text-xs text-gray-300 leading-tight">Aprovar/recusar trocas de horários ou folgas</span>
-                            </li>
-                            <li class="flex items-start gap-3">
-                                <i class="fas fa-check-circle text-emerald-500 mt-0.5 text-xs"></i>
-                                <span class="text-xs text-gray-300 leading-tight">Visualizar dashboards e relatórios completos</span>
-                            </li>
-                            <li class="flex items-start gap-3">
-                                <i class="fas fa-check-circle text-emerald-500 mt-0.5 text-xs"></i>
-                                <span class="text-xs text-gray-300 leading-tight">Gerenciar notificações do sistema</span>
-                            </li>
-                            <li class="flex items-start gap-3">
-                                <i class="fas fa-check-circle text-emerald-500 mt-0.5 text-xs"></i>
-                                <span class="text-xs text-gray-300 leading-tight">Controlar horários especiais (férias, afastamentos, banco)</span>
+                                <span class="text-xs text-gray-300 leading-tight">Aprovação de justificativas</span>
                             </li>
                         </ul>
                     </div>
