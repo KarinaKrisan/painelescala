@@ -213,9 +213,8 @@
 
         // Abrir Modal
         btnOpen.addEventListener('click', () => {
-            // Pega o email digitado no login principal (se houver) para facilitar
-            const mainEmail = document.getElementById('emailInput').value;
-            if(mainEmail) document.getElementById('resetEmailInput').value = mainEmail;
+            // Força o campo a ficar vazio sempre que abrir
+            document.getElementById('resetEmailInput').value = ""; 
             
             resetFeedback.classList.add('hidden');
             modal.classList.remove('hidden');
@@ -255,7 +254,7 @@
                     closeModal();
                     resetBtnSend.innerHTML = 'Enviar';
                     resetBtnSend.disabled = false;
-                }, 3000);
+                }, 5000);
 
             } catch (error) {
                 console.error("Erro reset:", error);
