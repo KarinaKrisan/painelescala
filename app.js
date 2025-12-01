@@ -4,7 +4,7 @@ import { initializeApp } from "https://www.gstatic.com/firebasejs/11.0.2/firebas
 import { getFirestore, doc, getDoc, setDoc } from "https://www.gstatic.com/firebasejs/11.0.2/firebase-firestore.js";
 import { getAuth, onAuthStateChanged, signOut, sendPasswordResetEmail } from "https://www.gstatic.com/firebasejs/11.0.2/firebase-auth.js";
 
-// 2. CONFIGURAÇÃO
+// 2. CONFIGURAÇÃO - USANDO SUA CHAVE EXATA
 const firebaseConfig = {
   apiKey: "AIzaSyCBKSPH7lfUt0VsQPhJX3a0CQ2wYcziQvM",
   authDomain: "dadosescala.firebaseapp.com",
@@ -59,6 +59,7 @@ onAuthStateChanged(auth, (user) => {
         if(btnOpenLogin) btnOpenLogin.classList.add('hidden');
         document.getElementById('adminEditHint').classList.remove('hidden');
         document.body.style.paddingBottom = "100px"; 
+        
         logSessionActivity('login', 'Login no sistema');
         loadAdminProfile(true); 
     } else {
@@ -73,9 +74,11 @@ onAuthStateChanged(auth, (user) => {
     if(sel && sel.value) updatePersonalView(sel.value);
 });
 
-// 5. FIRESTORE
+// 5. FIRESTORE - CARREGAMENTO SEGURO
 async function loadDataFromCloud() {
     const docId = `escala-${selectedMonthObj.year}-${String(selectedMonthObj.month+1).padStart(2,'0')}`;
+    console.log("Buscando documento:", docId); // LOG PARA DEBUG
+
     try {
         const docRef = doc(db, "escalas", docId);
         const docSnap = await getDoc(docRef);
@@ -85,17 +88,27 @@ async function loadDataFromCloud() {
             updateDailyView();
             initSelect();
         } else {
+            console.warn("Documento não encontrado para:", docId);
             rawSchedule = {}; 
             processScheduleData();
             updateDailyView();
         }
     } catch (e) {
-        console.error("Erro dados:", e);
+        console.error("Erro crítico ao baixar dados:", e);
+        alert("Erro ao conectar com o banco de dados. Verifique sua conexão.");
     }
 }
 
+// SALVAMENTO SEGURO
 async function saveToCloud() {
     if(!isAdmin) return;
+    
+    // TRAVA DE SEGURANÇA: Não salva se estiver vazio
+    if (!rawSchedule || Object.keys(rawSchedule).length === 0) {
+        alert("Atenção: Nenhum dado carregado para salvar. A operação foi bloqueada para evitar perda de dados.");
+        return;
+    }
+
     const btn = document.getElementById('btnSaveCloud');
     const status = document.getElementById('saveStatus');
     const statusIcon = document.getElementById('saveStatusIcon');
@@ -124,12 +137,13 @@ async function saveToCloud() {
         setTimeout(() => { btn.innerHTML = '<i class="fas fa-cloud-upload-alt mr-2"></i> Salvar'; }, 1000);
     } catch (e) {
         console.error("Erro salvar:", e);
+        alert("Erro ao salvar no banco de dados!");
         btn.innerHTML = '<i class="fas fa-exclamation-circle"></i> Erro';
     }
 }
 document.getElementById('btnSaveCloud').addEventListener('click', saveToCloud);
 
-// 5.1 PROFILE LOGIC
+// 5.1 PROFILE LOGIC & CONTROLS ACTIVATION
 const profileModal = document.getElementById('profileModal');
 const btnOpenProfile = document.getElementById('btnOpenProfile');
 const btnCloseProfile = document.getElementById('btnCloseProfile');
@@ -203,6 +217,30 @@ if(btnCloseProfile) btnCloseProfile.addEventListener('click', () => toggleProfil
 if(btnCancelProfile) btnCancelProfile.addEventListener('click', () => toggleProfileModal(false));
 if(profileModal) profileModal.addEventListener('click', (e) => { if(e.target === profileModal) toggleProfileModal(false); });
 
+// --- ATIVAÇÃO DO CONTROLE DE ESCALAS ---
+const shortcutDaily = document.getElementById('shortcutDaily');
+const shortcutWeekly = document.getElementById('shortcutWeekly');
+const shortcutMonthly = document.getElementById('shortcutMonthly');
+const shortcutIndividual = document.getElementById('shortcutIndividual');
+const shortcutTeam = document.getElementById('shortcutTeam');
+const btnNewSchedule = document.getElementById('btnNewSchedule');
+const btnViewHistory = document.getElementById('btnViewHistory');
+
+if(shortcutDaily) shortcutDaily.addEventListener('click', () => { toggleProfileModal(false); document.querySelector('button[data-tab="daily"]').click(); });
+if(shortcutIndividual) shortcutIndividual.addEventListener('click', () => { toggleProfileModal(false); document.querySelector('button[data-tab="personal"]').click(); });
+
+if(shortcutWeekly) shortcutWeekly.addEventListener('click', () => alert("Visualização Semanal em desenvolvimento."));
+if(shortcutMonthly) shortcutMonthly.addEventListener('click', () => alert("Visualização Mensal em desenvolvimento."));
+if(shortcutTeam) shortcutTeam.addEventListener('click', () => alert("Filtro por Equipe em desenvolvimento."));
+
+if(btnNewSchedule) btnNewSchedule.addEventListener('click', () => alert("Assistente de Nova Escala em desenvolvimento."));
+if(btnViewHistory) btnViewHistory.addEventListener('click', () => {
+    // Muda para a aba de Configurações onde está o log
+    const configTab = document.querySelector('button[data-target="tab-config"]');
+    if(configTab) configTab.click();
+});
+// ---------------------------------------
+
 if(btnChangePassword) {
     btnChangePassword.addEventListener('click', async () => {
         const user = auth.currentUser;
@@ -211,57 +249,6 @@ if(btnChangePassword) {
         }
     });
 }
-
-// --- CONTROLE DE ESCALAS - ATALHOS ---
-// Botões de visualização
-const shortcutDaily = document.getElementById('shortcutDaily');
-const shortcutWeekly = document.getElementById('shortcutWeekly');
-const shortcutMonthly = document.getElementById('shortcutMonthly');
-const shortcutIndividual = document.getElementById('shortcutIndividual');
-const shortcutTeam = document.getElementById('shortcutTeam');
-
-// Botões de Ação
-const btnNewSchedule = document.getElementById('btnNewSchedule');
-const btnViewHistory = document.getElementById('btnViewHistory');
-
-if(shortcutDaily) shortcutDaily.addEventListener('click', () => {
-    toggleProfileModal(false);
-    document.querySelector('button[data-tab="daily"]').click();
-    // Lógica futura: mudar para visualização diária se houver sub-abas
-});
-
-if(shortcutWeekly) shortcutWeekly.addEventListener('click', () => {
-    toggleProfileModal(false);
-    alert("Visualização Semanal em desenvolvimento.");
-});
-
-if(shortcutMonthly) shortcutMonthly.addEventListener('click', () => {
-    toggleProfileModal(false);
-    alert("Visualização Mensal em desenvolvimento.");
-});
-
-if(shortcutIndividual) shortcutIndividual.addEventListener('click', () => {
-    toggleProfileModal(false);
-    document.querySelector('button[data-tab="personal"]').click();
-});
-
-if(shortcutTeam) shortcutTeam.addEventListener('click', () => {
-    toggleProfileModal(false);
-    alert("Filtro por Equipe em desenvolvimento.");
-});
-
-if(btnNewSchedule) btnNewSchedule.addEventListener('click', () => {
-    // Aqui você pode chamar uma função futura para abrir um wizard de criação
-    alert("Funcionalidade 'Nova Escala' será implementada em breve.");
-});
-
-if(btnViewHistory) btnViewHistory.addEventListener('click', () => {
-    // Aqui poderia trocar para a aba "Configurações" onde está a auditoria
-    const configTab = document.querySelector('button[data-target="tab-config"]');
-    if(configTab) configTab.click();
-});
-
-// --- FIM CONTROLE DE ESCALAS ---
 
 function updatePermissionsUI(roleKey) {
     const list = document.getElementById('permissionsList');
@@ -331,7 +318,9 @@ async function loadAdminProfile(silent = false) {
     if(!user) return;
     if(!silent) {
         inpEmail.value = user.email; 
-        if(btnSaveProfile) btnSaveProfile.disabled = true;
+        const badge = document.getElementById('profRoleBadge');
+        if(badge) badge.textContent = "Verificando...";
+        btnSaveProfile.disabled = true;
     }
     try {
         const docRef = doc(db, "admins", user.uid);
