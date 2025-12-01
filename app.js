@@ -327,7 +327,13 @@ function updateActivityLogUI() {
             iconClass = 'fas fa-pen';
             colorClass = 'text-blue-400';
             bgClass = 'bg-blue-500/10 border-blue-500/20';
-            descHTML = log.desc.replace(/(Alterou escala de )(.+)/, '$1<span class="font-bold text-white">$2</span>');
+            // Regex para destacar: (Quem) alterou a escala de (Quem)
+            // Ex: Karina alterou a escala de João
+            // Grupo 1: Karina
+            // Grupo 2: alterou a escala de
+            // Grupo 3: João
+            descHTML = log.desc.replace(/(.*?)( alterou a escala de )(.+)/, 
+                '<span class="font-bold text-white">$1</span>$2<span class="font-bold text-white">$3</span>');
         } else if (log.type === 'save') {
             iconClass = 'fas fa-save';
             colorClass = 'text-purple-400';
@@ -380,7 +386,6 @@ async function loadAdminProfile() {
             inpPhone.value = data.phone || '';
             
             // LÓGICA DE ROLE (NÍVEL DE ACESSO)
-            // Se o campo 'systemRole' não existir, assume 'local' por segurança
             const systemRole = data.systemRole || 'local';
             updatePermissionsUI(systemRole);
 
@@ -849,8 +854,13 @@ async function handleCellClick(name, dayIndex) {
     }
     if(statusIcon) statusIcon.className = "w-1.5 h-1.5 rounded-full bg-orange-500 animate-pulse";
     
+    // PEGA NOME DO ADMIN LOGADO PARA O LOG
+    const currentAdminName = document.getElementById('profName').value || "Admin";
+    logSessionActivity('edit', `${currentAdminName} alterou a escala de ${name}`);
+
     updateCalendar(name, emp.schedule);
     updateDailyView();
+    updateProfileStats();
     const sel = document.getElementById('employeeSelect');
     updateWeekendTable(sel ? sel.value : null);
 }
