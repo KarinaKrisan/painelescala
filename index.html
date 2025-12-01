@@ -21,7 +21,16 @@
                         }
                     },
                     fontFamily: { sans: ['Inter', 'sans-serif'] },
-                    animation: { 'pulse-slow': 'pulse 3s cubic-bezier(0.4, 0, 0.6, 1) infinite' }
+                    animation: { 
+                        'pulse-slow': 'pulse 3s cubic-bezier(0.4, 0, 0.6, 1) infinite',
+                        'fade-in-up': 'fadeInUp 0.5s ease-out forwards'
+                    },
+                    keyframes: {
+                        fadeInUp: {
+                            '0%': { opacity: '0', transform: 'translate(-50%, 20px)' },
+                            '100%': { opacity: '1', transform: 'translate(-50%, 0)' },
+                        }
+                    }
                 }
             }
         }
@@ -33,21 +42,28 @@
 </head>
 <body class="text-gray-300 relative font-sans transition-all duration-300 antialiased selection:bg-purple-500 selection:text-white">
 
-    <div id="adminToolbar" class="hidden fixed bottom-6 left-1/2 transform -translate-x-1/2 z-50 w-[90%] max-w-2xl transition-all duration-500 animate-fade-in-up">
-        <div class="bg-[#1A1C2E]/90 backdrop-blur-md text-white rounded-2xl shadow-2xl border border-cronos-border p-2 pl-5 flex justify-between items-center ring-1 ring-white/5">
-            <div class="flex flex-col justify-center">
-                <span class="text-[10px] font-bold text-orange-400 uppercase tracking-widest mb-0.5 flex items-center gap-1.5">
+    <div id="adminToolbar" class="hidden fixed bottom-6 left-1/2 transform -translate-x-1/2 z-40 w-[95%] max-w-3xl transition-all duration-500 animate-fade-in-up">
+        <div class="bg-[#1A1C2E]/90 backdrop-blur-md text-white rounded-2xl shadow-2xl border border-cronos-border p-2 pl-5 flex flex-col md:flex-row justify-between items-center ring-1 ring-white/5 gap-3 md:gap-0">
+            
+            <div class="flex flex-col justify-center w-full md:w-auto text-center md:text-left">
+                <span class="text-[10px] font-bold text-orange-400 uppercase tracking-widest mb-0.5 flex items-center justify-center md:justify-start gap-1.5">
                     <i class="fas fa-shield-alt"></i> Admin Mode
                 </span>
-                <div class="flex items-center gap-2">
+                <div class="flex items-center justify-center md:justify-start gap-2">
                     <span id="saveStatusIcon" class="w-1.5 h-1.5 rounded-full bg-emerald-500 shadow-[0_0_8px_rgba(16,185,129,0.6)]"></span>
                     <span id="saveStatus" class="text-xs text-gray-300 font-medium">Sincronizado</span>
                 </div>
             </div>
-            <div class="flex gap-2">
+
+            <div class="flex gap-2 w-full md:w-auto justify-center">
+                <button id="btnOpenProfile" class="bg-gray-800 hover:bg-gray-700 text-gray-300 px-4 py-2.5 rounded-xl font-bold text-sm transition-all flex items-center border border-gray-700 hover:text-white">
+                    <i class="fas fa-user-circle mr-2 text-purple-400"></i> Meu Perfil
+                </button>
+
                 <button id="btnSaveCloud" class="group bg-indigo-600 hover:bg-indigo-500 text-white px-5 py-2.5 rounded-xl font-bold text-sm transition-all flex items-center shadow-lg hover:shadow-indigo-500/25 active:scale-95 border border-indigo-500/50">
                     <i class="fas fa-cloud-upload-alt mr-2 group-hover:-translate-y-0.5 transition-transform"></i> Salvar
                 </button>
+                
                 <button id="btnLogout" class="bg-gray-800 hover:bg-red-900/20 hover:text-red-400 text-gray-400 px-3.5 py-2.5 rounded-xl transition-all active:scale-95 border border-transparent hover:border-red-500/20" title="Sair">
                     <i class="fas fa-power-off"></i>
                 </button>
@@ -217,8 +233,7 @@
                         </div>
                     </div>
 
-                    <div id="personalInfoCard" class="hidden mb-8">
-                        </div>
+                    <div id="personalInfoCard" class="hidden mb-8"></div>
 
                     <div id="calendarContainer" class="hidden">
                         <div class="grid grid-cols-7 gap-1 mb-2 text-center font-bold text-gray-500 text-xs uppercase tracking-wider hidden md:grid">
@@ -247,6 +262,89 @@
             <h2 class="text-2xl font-extrabold text-gray-700 mb-2 opacity-50">CRONOS</h2>
             <p class="text-xs text-gray-500 font-medium">Sua operação no tempo certo. &copy; 2025</p>
         </footer>
+    </div>
+
+    <div id="profileModal" class="hidden fixed inset-0 z-[60] flex items-center justify-center bg-black/70 backdrop-blur-sm p-4 transition-opacity duration-300">
+        <div class="bg-[#1A1C2E] border border-[#2E3250] rounded-2xl shadow-2xl w-full max-w-lg p-0 relative animate-fade-in-up" onclick="event.stopPropagation()">
+            
+            <div class="p-6 border-b border-[#2E3250] flex justify-between items-center bg-[#151725]">
+                <div class="flex items-center gap-3">
+                    <div class="w-10 h-10 bg-purple-900/30 rounded-full flex items-center justify-center text-purple-400">
+                        <i class="fas fa-id-card-alt text-lg"></i>
+                    </div>
+                    <div>
+                        <h3 class="text-lg font-bold text-white">Meu Perfil Admin</h3>
+                        <p class="text-xs text-gray-500">Dados do responsável pela sessão.</p>
+                    </div>
+                </div>
+                <button id="btnCloseProfile" class="text-gray-500 hover:text-white transition-colors">
+                    <i class="fas fa-times text-lg"></i>
+                </button>
+            </div>
+
+            <div class="p-6 space-y-4">
+                <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+                    <div class="col-span-1 md:col-span-2">
+                        <label class="block text-xs font-bold text-gray-400 uppercase tracking-wider mb-2">Nome Completo</label>
+                        <div class="relative">
+                            <div class="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
+                                <i class="fas fa-user text-gray-600"></i>
+                            </div>
+                            <input type="text" id="profName" class="w-full pl-10 pr-4 py-2.5 rounded-lg bg-[#0F1020] border border-[#2E3250] text-white focus:border-purple-500 focus:ring-1 focus:ring-purple-500 outline-none transition-all placeholder-gray-600" placeholder="Seu nome">
+                        </div>
+                    </div>
+
+                    <div class="col-span-1 md:col-span-2">
+                        <label class="block text-xs font-bold text-gray-400 uppercase tracking-wider mb-2">E-mail Corporativo</label>
+                        <div class="relative">
+                            <div class="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
+                                <i class="fas fa-envelope text-gray-600"></i>
+                            </div>
+                            <input type="email" id="profEmail" class="w-full pl-10 pr-4 py-2.5 rounded-lg bg-[#0F1020] border border-[#2E3250] text-gray-400 cursor-not-allowed outline-none" placeholder="email@empresa.com" readonly>
+                        </div>
+                    </div>
+
+                    <div>
+                        <label class="block text-xs font-bold text-gray-400 uppercase tracking-wider mb-2">Cargo / Função</label>
+                        <div class="relative">
+                            <div class="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
+                                <i class="fas fa-briefcase text-gray-600"></i>
+                            </div>
+                            <input type="text" id="profRole" class="w-full pl-10 pr-4 py-2.5 rounded-lg bg-[#0F1020] border border-[#2E3250] text-white focus:border-purple-500 outline-none transition-all placeholder-gray-600" placeholder="Ex: Supervisor">
+                        </div>
+                    </div>
+
+                    <div>
+                        <label class="block text-xs font-bold text-gray-400 uppercase tracking-wider mb-2">Unidade / Filial</label>
+                        <div class="relative">
+                            <div class="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
+                                <i class="fas fa-building text-gray-600"></i>
+                            </div>
+                            <input type="text" id="profUnit" class="w-full pl-10 pr-4 py-2.5 rounded-lg bg-[#0F1020] border border-[#2E3250] text-white focus:border-purple-500 outline-none transition-all placeholder-gray-600" placeholder="Ex: Matriz">
+                        </div>
+                    </div>
+
+                    <div class="col-span-1 md:col-span-2">
+                        <label class="block text-xs font-bold text-gray-400 uppercase tracking-wider mb-2">Telefone Corporativo <span class="text-gray-600 normal-case">(Opcional)</span></label>
+                        <div class="relative">
+                            <div class="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
+                                <i class="fas fa-phone text-gray-600"></i>
+                            </div>
+                            <input type="tel" id="profPhone" class="w-full pl-10 pr-4 py-2.5 rounded-lg bg-[#0F1020] border border-[#2E3250] text-white focus:border-purple-500 outline-none transition-all placeholder-gray-600" placeholder="(11) 90000-0000">
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <div class="p-6 border-t border-[#2E3250] flex justify-end gap-3 bg-[#151725] rounded-b-2xl">
+                <button id="btnCancelProfile" class="px-5 py-2.5 rounded-lg text-sm font-bold text-gray-400 hover:text-white transition-colors">
+                    Cancelar
+                </button>
+                <button id="btnSaveProfile" class="px-6 py-2.5 rounded-lg text-sm font-bold text-white bg-gradient-to-r from-purple-600 to-indigo-600 hover:opacity-90 transition-opacity shadow-lg flex items-center">
+                    <i class="fas fa-save mr-2"></i> Salvar Alterações
+                </button>
+            </div>
+        </div>
     </div>
 
     <script type="module" src="app.js"></script>
