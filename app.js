@@ -32,6 +32,7 @@ let rawSchedule = {};
 let dailyChart = null;
 let isTrendMode = false;
 let currentDay = new Date().getDate();
+let sessionLogs = []; // NOVO: Array para guardar logs da sessão
 
 const currentDateObj = new Date();
 const monthNames = ["Janeiro","Fevereiro","Março","Abril","Maio","Junho","Julho","Agosto","Setembro","Outubro","Novembro","Dezembro"];
@@ -72,6 +73,9 @@ onAuthStateChanged(auth, (user) => {
         if(btnOpenLogin) btnOpenLogin.classList.add('hidden');
         document.getElementById('adminEditHint').classList.remove('hidden');
         document.body.style.paddingBottom = "100px"; 
+        
+        // Log de login
+        logSessionActivity('login', 'Login no sistema');
     } else {
         isAdmin = false;
         adminToolbar.classList.add('hidden');
@@ -126,6 +130,10 @@ async function saveToCloud() {
         status.textContent = "Sincronizado";
         status.className = "text-xs text-gray-300 font-medium transition-colors";
         if(statusIcon) statusIcon.className = "w-1.5 h-1.5 rounded-full bg-emerald-500 shadow-[0_0_8px_rgba(16,185,129,0.6)]";
+        
+        // LOG DE SALVAMENTO
+        logSessionActivity('save', 'Sincronização realizada');
+
         setTimeout(() => {
             btn.innerHTML = '<i class="fas fa-cloud-upload-alt mr-2 group-hover:-translate-y-0.5 transition-transform"></i> Salvar';
             btn.classList.remove('opacity-75', 'cursor-not-allowed');
@@ -158,13 +166,17 @@ const inpPhone = document.getElementById('profPhone');
 // Stats Elements
 const statTeams = document.getElementById('statTeams');
 const statCollabs = document.getElementById('statCollabs');
-const statPending = document.getElementById('statPending');
+
+// Shortcuts
+const shortcutDaily = document.getElementById('shortcutDaily');
+const shortcutIndividual = document.getElementById('shortcutIndividual');
 
 function toggleProfileModal(show) {
     if(show) {
         profileModal.classList.remove('hidden');
         loadAdminProfile();
         updateProfileStats();
+        updateActivityLogUI(); // Renderiza os logs ao abrir
     } else {
         profileModal.classList.add('hidden');
     }
@@ -176,6 +188,18 @@ if(btnCancelProfile) btnCancelProfile.addEventListener('click', () => toggleProf
 if(profileModal) profileModal.addEventListener('click', (e) => {
     if(e.target === profileModal) toggleProfileModal(false);
 });
+
+// Shortcuts Logic
+if(shortcutDaily) shortcutDaily.addEventListener('click', () => {
+    toggleProfileModal(false);
+    document.querySelector('button[data-tab="daily"]').click();
+});
+
+if(shortcutIndividual) shortcutIndividual.addEventListener('click', () => {
+    toggleProfileModal(false);
+    document.querySelector('button[data-tab="personal"]').click();
+});
+
 
 // Calcula estatísticas reais baseado nos dados carregados
 function updateProfileStats() {
@@ -191,10 +215,86 @@ function updateProfileStats() {
 
     if(statCollabs) statCollabs.textContent = collabCount;
     if(statTeams) statTeams.textContent = teams.size || 1; // Pelo menos 1 time
-    
-    // Lógica simples para pendências (ex: se tem alterações não salvas)
-    if(statPending) statPending.textContent = hasUnsavedChanges ? "1" : "0";
 }
+
+// ------------------------------------------
+// LÓGICA DE ATIVIDADE RECENTE (SESSION LOGS)
+// ------------------------------------------
+function logSessionActivity(type, description) {
+    const now = new Date();
+    const timeString = now.toLocaleTimeString('pt-BR', { hour: '2-digit', minute: '2-digit' });
+    
+    // Adiciona no início do array
+    sessionLogs.unshift({
+        type: type, // 'edit', 'save', 'login'
+        desc: description,
+        time: timeString
+    });
+
+    // Mantém apenas os últimos 20 logs para não pesar
+    if (sessionLogs.length > 20) sessionLogs.pop();
+    
+    // Se o modal estiver aberto, atualiza a UI
+    if (!profileModal.classList.contains('hidden')) {
+        updateActivityLogUI();
+    }
+}
+
+function updateActivityLogUI() {
+    const list = document.getElementById('activityLogList');
+    if(!list) return;
+
+    list.innerHTML = ''; // Limpa
+
+    if(sessionLogs.length === 0) {
+        list.innerHTML = '<li class="text-xs text-center text-gray-600 italic py-2">Nenhuma atividade registrada ainda.</li>';
+        return;
+    }
+
+    sessionLogs.forEach(log => {
+        let iconClass = '';
+        let colorClass = '';
+        let bgClass = '';
+        let textClass = 'text-gray-300';
+        let descHTML = log.desc;
+
+        // Configuração visual baseada no tipo
+        if (log.type === 'edit') {
+            iconClass = 'fas fa-pen';
+            colorClass = 'text-blue-400';
+            bgClass = 'bg-blue-500/10 border-blue-500/20';
+            // Deixa o nome em negrito se tiver "Alterou escala de X"
+            descHTML = log.desc.replace(/(Alterou escala de )(.+)/, '$1<span class="font-bold text-white">$2</span>');
+        } else if (log.type === 'save') {
+            iconClass = 'fas fa-save';
+            colorClass = 'text-purple-400';
+            bgClass = 'bg-purple-500/10 border-purple-500/20';
+        } else if (log.type === 'login') {
+            iconClass = 'fas fa-sign-in-alt';
+            colorClass = 'text-green-400';
+            bgClass = 'bg-green-500/10 border-green-500/20';
+        } else {
+            iconClass = 'fas fa-circle';
+            colorClass = 'text-gray-400';
+            bgClass = 'bg-gray-500/10 border-gray-500/20';
+        }
+
+        const li = document.createElement('li');
+        li.className = "flex items-center gap-3 text-xs animate-fade-in-up"; // Animação suave na entrada
+        li.innerHTML = `
+            <div class="w-6 h-6 rounded-full flex items-center justify-center border ${bgClass} ${colorClass}">
+                <i class="${iconClass}"></i>
+            </div>
+            <div class="flex-1">
+                <p class="${textClass}">${descHTML}</p>
+            </div>
+            <span class="text-gray-600 font-mono text-[10px]">${log.time}</span>
+        `;
+        list.appendChild(li);
+    });
+}
+
+// ------------------------------------------
 
 async function loadAdminProfile() {
     const user = auth.currentUser;
@@ -677,6 +777,9 @@ async function handleCellClick(name, dayIndex) {
     }
     if(statusIcon) statusIcon.className = "w-1.5 h-1.5 rounded-full bg-orange-500 animate-pulse";
     
+    // LOG DE EDIÇÃO
+    logSessionActivity('edit', `Alterou escala de ${name}`);
+
     updateCalendar(name, emp.schedule);
     updateDailyView();
     updateProfileStats(); // Atualiza também as stats se houver alteração
