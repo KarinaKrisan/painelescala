@@ -32,7 +32,7 @@
                             '0%': { opacity: '0', transform: 'translate(-50%, 20px)' }, 
                             '100%': { opacity: '1', transform: 'translate(-50%, 0)' },
                         },
-                        fadeInList: { // Apenas Y (Vertical), sem deslocamento X
+                        fadeInList: { // Apenas Y (Vertical), sem deslocamento X para corrigir o "esquadro"
                             '0%': { opacity: '0', transform: 'translateY(10px)' },
                             '100%': { opacity: '1', transform: 'translateY(0)' },
                         },
@@ -280,7 +280,7 @@
                             <div class="flex items-center gap-2">
                                 <h3 class="text-lg font-bold text-white tracking-tight">Meu Perfil</h3>
                                 <span id="profRoleBadge" class="bg-gray-700 text-gray-300 text-[10px] font-bold px-2 py-0.5 rounded border border-gray-600 uppercase">
-                                    Carregando...
+                                    ...
                                 </span>
                             </div>
                             <p class="text-xs text-gray-500 font-medium">Dados do responsável pela sessão.</p>
@@ -408,11 +408,11 @@
                             </div>
                             
                             <div class="grid grid-cols-2 gap-2 mt-2">
-                                 <button id="shortcutIndividual" class="bg-[#0F1020] hover:bg-[#2E3250] border border-[#2E3250] px-3 py-2 rounded-lg flex items-center justify-center gap-2 transition-all group active:scale-95">
+                                <button id="shortcutIndividual" class="bg-[#0F1020] hover:bg-[#2E3250] border border-[#2E3250] px-3 py-2 rounded-lg flex items-center justify-center gap-2 transition-all group active:scale-95">
                                     <i class="fas fa-user text-gray-500 group-hover:text-emerald-400 text-xs"></i>
                                     <span class="text-[10px] font-bold text-gray-400 group-hover:text-white">Individual</span>
                                 </button>
-                                 <button class="bg-[#0F1020] hover:bg-[#2E3250] border border-[#2E3250] px-3 py-2 rounded-lg flex items-center justify-center gap-2 transition-all group active:scale-95">
+                                <button class="bg-[#0F1020] hover:bg-[#2E3250] border border-[#2E3250] px-3 py-2 rounded-lg flex items-center justify-center gap-2 transition-all group active:scale-95">
                                     <i class="fas fa-users text-gray-500 group-hover:text-emerald-400 text-xs"></i>
                                     <span class="text-[10px] font-bold text-gray-400 group-hover:text-white">Setor / Equipe</span>
                                 </button>
