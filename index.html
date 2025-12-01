@@ -23,13 +23,13 @@
                     fontFamily: { sans: ['Inter', 'sans-serif'] },
                     animation: { 
                         'pulse-slow': 'pulse 3s cubic-bezier(0.4, 0, 0.6, 1) infinite',
-                        'fade-in-up': 'fadeInUp 0.5s ease-out forwards', // Para Toolbar (Centralizada X)
-                        'fade-in-list': 'fadeInList 0.4s ease-out forwards', // NOVO: Para Listas (Apenas Y)
+                        'fade-in-up': 'fadeInUp 0.5s ease-out forwards', 
+                        'fade-in-list': 'fadeInList 0.4s ease-out forwards',
                         'modal-pop': 'modalPop 0.3s cubic-bezier(0.16, 1, 0.3, 1) forwards'
                     },
                     keyframes: {
                         fadeInUp: {
-                            '0%': { opacity: '0', transform: 'translate(-50%, 20px)' },
+                            '0%': { opacity: '0', transform: 'translate(-50%, 20px)' }, 
                             '100%': { opacity: '1', transform: 'translate(-50%, 0)' },
                         },
                         fadeInList: {
@@ -283,7 +283,12 @@
                         <i class="fas fa-id-card-alt text-lg"></i>
                     </div>
                     <div>
-                        <h3 class="text-lg font-bold text-white tracking-tight">Meu Perfil Admin</h3>
+                        <div class="flex items-center gap-2">
+                            <h3 class="text-lg font-bold text-white tracking-tight">Meu Perfil</h3>
+                            <span id="profRoleBadge" class="bg-gray-700 text-gray-300 text-[10px] font-bold px-2 py-0.5 rounded border border-gray-600 uppercase">
+                                Carregando...
+                            </span>
+                        </div>
                         <p class="text-xs text-gray-500 font-medium">Dados do responsável pela sessão.</p>
                     </div>
                 </div>
@@ -321,17 +326,19 @@
                             <div class="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
                                 <i class="fas fa-briefcase text-gray-500 group-focus-within:text-purple-400 transition-colors"></i>
                             </div>
-                            <input type="text" id="profRole" class="w-full pl-10 pr-4 py-3 rounded-xl bg-[#0F1020] border border-[#2E3250] text-white focus:border-purple-500 focus:ring-1 focus:ring-purple-500 outline-none transition-all placeholder-gray-700 text-sm" placeholder="Ex: Gerente">
+                            <input type="text" id="profJob" class="w-full pl-10 pr-4 py-3 rounded-xl bg-[#0F1020] border border-[#2E3250] text-white focus:border-purple-500 focus:ring-1 focus:ring-purple-500 outline-none transition-all placeholder-gray-700 text-sm" placeholder="Ex: Gerente">
                         </div>
                     </div>
 
                     <div>
-                        <label class="block text-[10px] font-bold text-gray-400 uppercase tracking-widest mb-2 ml-1">Unidade / Filial</label>
-                        <div class="relative group">
+                        <label class="block text-[10px] font-bold text-gray-400 uppercase tracking-widest mb-2 ml-1 flex items-center gap-1">
+                            Nível de Acesso <i class="fas fa-lock text-[10px] text-gray-600" title="Definido pelo Master"></i>
+                        </label>
+                        <div class="relative">
                             <div class="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
-                                <i class="fas fa-building text-gray-500 group-focus-within:text-purple-400 transition-colors"></i>
+                                <i class="fas fa-shield-alt text-gray-600"></i>
                             </div>
-                            <input type="text" id="profUnit" class="w-full pl-10 pr-4 py-3 rounded-xl bg-[#0F1020] border border-[#2E3250] text-white focus:border-purple-500 focus:ring-1 focus:ring-purple-500 outline-none transition-all placeholder-gray-700 text-sm" placeholder="Ex: São Paulo">
+                            <input type="text" id="profRoleDisplay" class="w-full pl-10 pr-4 py-3 rounded-xl bg-[#0F1020]/50 border border-[#2E3250] text-gray-400 cursor-not-allowed outline-none text-sm font-bold uppercase" readonly>
                         </div>
                     </div>
 
