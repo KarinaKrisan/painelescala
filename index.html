@@ -1,5 +1,5 @@
 <!DOCTYPE html>
-<html lang="pt-BR" class="dark">
+<html lang="pt-BR">
 <head>
     <meta charset="UTF-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
@@ -13,11 +13,11 @@
                 extend: {
                     colors: {
                         cronos: {
-                            bg: '#0F1020',       
-                            card: '#1A1C2E',     
-                            border: '#2E3250',   
-                            primary: '#7C3AED',  
-                            accent: '#F97316',   
+                            bg: '#0F1020',       // Deep Space
+                            card: '#1A1C2E',     // Module Dark
+                            border: '#2E3250',   // Tech Border
+                            primary: '#7C3AED',  // Roxo
+                            accent: '#F97316',   // Laranja
                         }
                     },
                     fontFamily: { sans: ['Inter', 'sans-serif'] },
@@ -50,7 +50,6 @@
     <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&family=JetBrains+Mono:wght@500;700&display=swap" rel="stylesheet">
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css" />
     <style>
-        /* Estilo para abas ativas no modal */
         .modal-tab.active {
             color: #A78BFA;
             border-bottom: 2px solid #7C3AED;
@@ -226,16 +225,16 @@
                 <div class="p-6 border-b border-[#2E3250] bg-[#151725] shrink-0">
                     <div class="flex justify-between items-start mb-6">
                         <div class="flex items-center gap-4">
-                            <div class="relative group cursor-pointer">
-                                <div class="w-16 h-16 rounded-full bg-gradient-to-br from-purple-600 to-blue-600 p-0.5">
-                                    <div class="w-full h-full rounded-full bg-[#1A1C2E] flex items-center justify-center overflow-hidden">
-                                        <i class="fas fa-user text-2xl text-purple-400 group-hover:text-white transition-colors"></i>
-                                    </div>
+                            <div class="relative group cursor-pointer" id="btnChangePhoto">
+                                <div id="photoPreview" class="w-16 h-16 rounded-full bg-[#1A1C2E] flex items-center justify-center overflow-hidden border-2 border-transparent group-hover:border-purple-500 transition-all bg-cover bg-center">
+                                    <i id="photoIcon" class="fas fa-user text-2xl text-purple-400 group-hover:text-white transition-colors"></i>
                                 </div>
                                 <div class="absolute bottom-0 right-0 bg-gray-800 rounded-full w-6 h-6 flex items-center justify-center border border-gray-600 text-[10px] text-white">
                                     <i class="fas fa-camera"></i>
                                 </div>
                             </div>
+                            <input type="file" id="profPhotoInput" class="hidden" accept="image/*">
+
                             <div>
                                 <h3 class="text-xl font-bold text-white tracking-tight">Meu Perfil</h3>
                                 <div class="flex items-center gap-2 mt-1">
@@ -330,25 +329,13 @@
                                         </div>
                                     </div>
                                 </div>
-                                <div class="p-3 flex items-center justify-between bg-[#0F1020]/30">
-                                    <div class="flex items-center gap-3 opacity-60">
-                                        <i class="fas fa-mobile-alt text-gray-500"></i>
-                                        <div>
-                                            <p class="text-xs font-bold text-gray-300">iPhone 13 - iOS 16</p>
-                                            <p class="text-[10px] text-gray-500">São Paulo, BR · 2h atrás</p>
-                                        </div>
-                                    </div>
-                                    <button class="text-xs text-red-400 hover:text-red-300 border border-red-500/20 px-2 py-1 rounded">Desconectar</button>
-                                </div>
                             </div>
-                            <button class="mt-2 text-xs text-red-400 hover:text-red-300 font-bold w-full text-right">Encerrar todas as outras sessões</button>
                         </div>
 
                         <div class="pt-4 border-t border-[#2E3250]">
                             <button id="btnChangePassword" class="w-full bg-[#0F1020] hover:bg-[#2E3250] border border-[#2E3250] text-gray-300 font-bold py-3 rounded-xl transition-all flex items-center justify-center gap-2">
                                 <i class="fas fa-key"></i> Alterar Senha
                             </button>
-                            <p class="text-[10px] text-gray-500 mt-2 text-center">Um link de redefinição será enviado para seu e-mail.</p>
                         </div>
                     </div>
 
@@ -360,31 +347,7 @@
                                     <div class="w-8 h-8 rounded bg-[#0F1020] flex items-center justify-center text-gray-400"><i class="fas fa-globe"></i></div>
                                     <div><p class="text-sm font-bold text-white">Idioma</p><p class="text-[10px] text-gray-500">Português (Brasil)</p></div>
                                 </div>
-                                <button class="text-xs text-purple-400 font-bold">Alterar</button>
                             </div>
-                            
-                            <div class="flex items-center justify-between p-3 bg-[#1A1C2E] border border-[#2E3250] rounded-xl">
-                                <div class="flex items-center gap-3">
-                                    <div class="w-8 h-8 rounded bg-[#0F1020] flex items-center justify-center text-gray-400"><i class="fas fa-moon"></i></div>
-                                    <div><p class="text-sm font-bold text-white">Modo Escuro</p><p class="text-[10px] text-gray-500">Ajuste a aparência do sistema</p></div>
-                                </div>
-                                <div class="relative inline-block w-10 mr-2 align-middle select-none transition duration-200 ease-in">
-                                    <input type="checkbox" name="toggle" id="themeToggle" class="toggle-checkbox absolute block w-5 h-5 rounded-full bg-white border-4 appearance-none cursor-pointer" checked/>
-                                    <label for="themeToggle" class="toggle-label block overflow-hidden h-5 rounded-full bg-gray-700 cursor-pointer"></label>
-                                </div>
-                            </div>
-                        </div>
-
-                        <div class="space-y-3 pt-4 border-t border-[#2E3250]">
-                            <h4 class="text-[10px] font-bold text-gray-400 uppercase tracking-widest">Notificações</h4>
-                            <label class="flex items-center space-x-3 p-3 bg-[#1A1C2E] border border-[#2E3250] rounded-xl cursor-pointer">
-                                <input type="checkbox" checked class="form-checkbox h-4 w-4 text-purple-600 rounded bg-[#0F1020] border-gray-600">
-                                <span class="text-sm text-gray-300">Alertas de troca de turno</span>
-                            </label>
-                            <label class="flex items-center space-x-3 p-3 bg-[#1A1C2E] border border-[#2E3250] rounded-xl cursor-pointer">
-                                <input type="checkbox" class="form-checkbox h-4 w-4 text-purple-600 rounded bg-[#0F1020] border-gray-600">
-                                <span class="text-sm text-gray-300">Resumo semanal por e-mail</span>
-                            </label>
                         </div>
 
                         <div class="pt-4 border-t border-[#2E3250]">
@@ -393,9 +356,6 @@
                                 <ul id="activityLogList" class="space-y-3 mb-4">
                                     <li class="text-xs text-center text-gray-600 italic">Nenhuma atividade recente.</li>
                                 </ul>
-                                <button class="w-full text-xs text-center text-orange-400 hover:text-orange-300 border border-orange-500/20 py-2 rounded-lg transition-colors flex items-center justify-center gap-2">
-                                    <i class="fas fa-flag"></i> Reportar atividade suspeita
-                                </button>
                             </div>
                         </div>
                     </div>
