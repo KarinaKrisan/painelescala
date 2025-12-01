@@ -140,7 +140,7 @@ async function saveToCloud() {
 document.getElementById('btnSaveCloud').addEventListener('click', saveToCloud);
 
 // ==========================================
-// 5.1 ADMIN PROFILE LOGIC (NOVO)
+// 5.1 ADMIN PROFILE LOGIC (MEU PERFIL)
 // ==========================================
 const profileModal = document.getElementById('profileModal');
 const btnOpenProfile = document.getElementById('btnOpenProfile');
