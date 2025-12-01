@@ -155,10 +155,16 @@ const inpRole = document.getElementById('profRole');
 const inpUnit = document.getElementById('profUnit');
 const inpPhone = document.getElementById('profPhone');
 
+// Stats Elements
+const statTeams = document.getElementById('statTeams');
+const statCollabs = document.getElementById('statCollabs');
+const statPending = document.getElementById('statPending');
+
 function toggleProfileModal(show) {
     if(show) {
         profileModal.classList.remove('hidden');
         loadAdminProfile();
+        updateProfileStats();
     } else {
         profileModal.classList.add('hidden');
     }
@@ -170,6 +176,25 @@ if(btnCancelProfile) btnCancelProfile.addEventListener('click', () => toggleProf
 if(profileModal) profileModal.addEventListener('click', (e) => {
     if(e.target === profileModal) toggleProfileModal(false);
 });
+
+// Calcula estatísticas reais baseado nos dados carregados
+function updateProfileStats() {
+    if(!scheduleData) return;
+    
+    const collabCount = Object.keys(scheduleData).length;
+    const teams = new Set();
+    
+    Object.values(scheduleData).forEach(emp => {
+        if(emp.info.Célula) teams.add(emp.info.Célula);
+        else if (emp.info.Grupo) teams.add(emp.info.Grupo); // Fallback caso use nomenclatura Grupo
+    });
+
+    if(statCollabs) statCollabs.textContent = collabCount;
+    if(statTeams) statTeams.textContent = teams.size || 1; // Pelo menos 1 time
+    
+    // Lógica simples para pendências (ex: se tem alterações não salvas)
+    if(statPending) statPending.textContent = hasUnsavedChanges ? "1" : "0";
+}
 
 async function loadAdminProfile() {
     const user = auth.currentUser;
@@ -654,6 +679,7 @@ async function handleCellClick(name, dayIndex) {
     
     updateCalendar(name, emp.schedule);
     updateDailyView();
+    updateProfileStats(); // Atualiza também as stats se houver alteração
     const sel = document.getElementById('employeeSelect');
     updateWeekendTable(sel ? sel.value : null);
 }
