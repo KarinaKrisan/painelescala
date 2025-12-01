@@ -32,7 +32,7 @@ let rawSchedule = {};
 let dailyChart = null;
 let isTrendMode = false;
 let currentDay = new Date().getDate();
-let sessionLogs = []; // Array para guardar logs da sessão
+let sessionLogs = []; 
 
 // Definição de Permissões por Nível (RBAC)
 const ROLE_DEFINITIONS = {
@@ -110,7 +110,6 @@ onAuthStateChanged(auth, (user) => {
         document.getElementById('adminEditHint').classList.remove('hidden');
         document.body.style.paddingBottom = "100px"; 
         
-        // Log de login
         logSessionActivity('login', 'Login no sistema');
     } else {
         isAdmin = false;
@@ -167,7 +166,6 @@ async function saveToCloud() {
         status.className = "text-xs text-gray-300 font-medium transition-colors";
         if(statusIcon) statusIcon.className = "w-1.5 h-1.5 rounded-full bg-emerald-500 shadow-[0_0_8px_rgba(16,185,129,0.6)]";
         
-        // LOG DE SALVAMENTO
         logSessionActivity('save', 'Sincronização realizada');
 
         setTimeout(() => {
@@ -195,9 +193,7 @@ const btnSaveProfile = document.getElementById('btnSaveProfile');
 // Inputs do Modal
 const inpName = document.getElementById('profName');
 const inpEmail = document.getElementById('profEmail');
-const inpRole = document.getElementById('profJob'); // Cargo
-const inpRoleDisplay = document.getElementById('profRoleDisplay'); // Nível de Acesso (Read Only)
-const inpRoleBadge = document.getElementById('profRoleBadge'); // Badge do Header
+const inpRole = document.getElementById('profJob');
 const inpUnit = document.getElementById('profUnit');
 const inpPhone = document.getElementById('profPhone');
 
@@ -227,7 +223,6 @@ if(profileModal) profileModal.addEventListener('click', (e) => {
     if(e.target === profileModal) toggleProfileModal(false);
 });
 
-// Shortcuts Logic
 if(shortcutDaily) shortcutDaily.addEventListener('click', () => {
     toggleProfileModal(false);
     document.querySelector('button[data-tab="daily"]').click();
@@ -238,8 +233,6 @@ if(shortcutIndividual) shortcutIndividual.addEventListener('click', () => {
     document.querySelector('button[data-tab="personal"]').click();
 });
 
-
-// Calcula estatísticas reais baseado nos dados carregados
 function updateProfileStats() {
     if(!scheduleData) return;
     
@@ -260,18 +253,23 @@ function updateProfileStats() {
 // ------------------------------------------
 function updatePermissionsUI(roleKey) {
     const list = document.getElementById('permissionsList');
+    // Buscamos os elementos aqui para garantir que eles existem
+    const badge = document.getElementById('profRoleBadge');
+    const displayInput = document.getElementById('profRoleDisplay');
+
     if(!list) return;
     list.innerHTML = '';
 
-    const roleData = ROLE_DEFINITIONS[roleKey] || ROLE_DEFINITIONS['local']; // Fallback seguro
+    // Garante que roleKey seja string e minúscula
+    const safeKey = String(roleKey || 'local').toLowerCase();
+    const roleData = ROLE_DEFINITIONS[safeKey] || ROLE_DEFINITIONS['local'];
 
-    // Atualiza Visual do Badge e Input
-    if(inpRoleBadge) {
-        inpRoleBadge.textContent = roleData.label;
-        inpRoleBadge.className = `text-[10px] font-bold px-2 py-0.5 rounded border uppercase ${roleData.color}`;
+    if(badge) {
+        badge.textContent = roleData.label;
+        badge.className = `text-[10px] font-bold px-2 py-0.5 rounded border uppercase ${roleData.color}`;
     }
-    if(inpRoleDisplay) {
-        inpRoleDisplay.value = roleData.label;
+    if(displayInput) {
+        displayInput.value = roleData.label;
     }
 
     roleData.perms.forEach(perm => {
@@ -328,10 +326,6 @@ function updateActivityLogUI() {
             colorClass = 'text-blue-400';
             bgClass = 'bg-blue-500/10 border-blue-500/20';
             // Regex para destacar: (Quem) alterou a escala de (Quem)
-            // Ex: Karina alterou a escala de João
-            // Grupo 1: Karina
-            // Grupo 2: alterou a escala de
-            // Grupo 3: João
             descHTML = log.desc.replace(/(.*?)( alterou a escala de )(.+)/, 
                 '<span class="font-bold text-white">$1</span>$2<span class="font-bold text-white">$3</span>');
         } else if (log.type === 'save') {
@@ -371,6 +365,10 @@ async function loadAdminProfile() {
 
     inpEmail.value = user.email; 
     
+    // Mostra loading
+    const badge = document.getElementById('profRoleBadge');
+    if(badge) badge.textContent = "Carregando...";
+
     btnSaveProfile.innerHTML = '<i class="fas fa-spinner fa-spin mr-2"></i> Carregando...';
     btnSaveProfile.disabled = true;
 
@@ -381,7 +379,7 @@ async function loadAdminProfile() {
         if (docSnap.exists()) {
             const data = docSnap.data();
             inpName.value = data.name || '';
-            inpRole.value = data.role || ''; // Cargo (Job Title)
+            inpRole.value = data.role || '';
             inpUnit.value = data.unit || '';
             inpPhone.value = data.phone || '';
             
@@ -390,12 +388,11 @@ async function loadAdminProfile() {
             updatePermissionsUI(systemRole);
 
         } else {
-            // Novo perfil
             inpName.value = '';
             inpRole.value = '';
             inpUnit.value = '';
             inpPhone.value = '';
-            updatePermissionsUI('local'); // Default para novos
+            updatePermissionsUI('local');
         }
     } catch (e) {
         console.error("Erro ao carregar perfil:", e);
@@ -409,12 +406,10 @@ if(btnSaveProfile) btnSaveProfile.addEventListener('click', async () => {
     const user = auth.currentUser;
     if(!user) return;
 
-    // IMPORTANTE: NÃO salvamos o 'systemRole' aqui.
-    // O nível de acesso só pode ser alterado por outro Master, não pelo próprio usuário.
     const profileData = {
         name: inpName.value,
         email: user.email,
-        role: inpRole.value, // Cargo
+        role: inpRole.value, 
         unit: inpUnit.value,
         phone: inpPhone.value,
         updatedAt: new Date().toISOString()
@@ -426,7 +421,6 @@ if(btnSaveProfile) btnSaveProfile.addEventListener('click', async () => {
     try {
         await setDoc(doc(db, "admins", user.uid), profileData, { merge: true });
         toggleProfileModal(false);
-        // Opcional: Mostrar toast de sucesso
     } catch (e) {
         console.error("Erro ao salvar perfil:", e);
         alert("Erro ao salvar perfil.");
@@ -854,8 +848,10 @@ async function handleCellClick(name, dayIndex) {
     }
     if(statusIcon) statusIcon.className = "w-1.5 h-1.5 rounded-full bg-orange-500 animate-pulse";
     
-    // PEGA NOME DO ADMIN LOGADO PARA O LOG
-    const currentAdminName = document.getElementById('profName').value || "Admin";
+    // PEGA NOME DO ADMIN LOGADO PARA O LOG (AGORA NO ESCOPO CORRETO)
+    const profNameInput = document.getElementById('profName');
+    const currentAdminName = (profNameInput && profNameInput.value) ? profNameInput.value : "Admin";
+    
     logSessionActivity('edit', `${currentAdminName} alterou a escala de ${name}`);
 
     updateCalendar(name, emp.schedule);
