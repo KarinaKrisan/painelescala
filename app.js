@@ -1,14 +1,10 @@
 // app.js - Cosmic Dark Edition (Rounded)
 // ==========================================
-// 1. IMPORTAÇÕES FIREBASE (WEB SDK)
-// ==========================================
 import { initializeApp } from "https://www.gstatic.com/firebasejs/11.0.2/firebase-app.js";
 import { getFirestore, doc, getDoc, setDoc } from "https://www.gstatic.com/firebasejs/11.0.2/firebase-firestore.js";
-import { getAuth, onAuthStateChanged, signOut } from "https://www.gstatic.com/firebasejs/11.0.2/firebase-auth.js";
+import { getAuth, onAuthStateChanged, signOut, sendPasswordResetEmail } from "https://www.gstatic.com/firebasejs/11.0.2/firebase-auth.js";
 
-// ==========================================
 // 2. CONFIGURAÇÃO
-// ==========================================
 const firebaseConfig = {
   apiKey: "AIzaSyCBKSPH7lfUt0VsQPhJX3a0CQ2wYcziQvM",
   authDomain: "dadosescala.firebaseapp.com",
@@ -22,28 +18,24 @@ const app = initializeApp(firebaseConfig);
 const db = getFirestore(app);
 const auth = getAuth(app);
 
-// ==========================================
 // 3. ESTADO
-// ==========================================
 let isAdmin = false;
 let hasUnsavedChanges = false;
 let scheduleData = {}; 
 let rawSchedule = {};  
-let dailyChart = null;
-let isTrendMode = false;
-let currentDay = new Date().getDate();
 let sessionLogs = []; 
-let unsavedChangesSet = new Set(); // NOVO: Rastreia quem foi alterado
+let unsavedChangesSet = new Set(); 
 
-// Definição de Permissões por Nível (RBAC) - ATUALIZADO
+// RBAC Definitions
 const ROLE_DEFINITIONS = {
     'master': {
         label: 'ADM Master',
         color: 'text-purple-400 bg-purple-900/30 border-purple-500/50',
         perms: [
-            "Gerenciar todos os usuários e níveis de permissão",
+            "Gerenciar todos os usuários (criar, editar, desativar)",
+            "Definir níveis de permissão (ADM, Supervisor, Colaborador)",
             "Criar, editar e excluir equipes, setores e unidades",
-            "Acesso global a todas as escalas e relatórios estratégicos",
+            "Acesso a todas as escalas e relatórios estratégicos",
             "Configurar regras de jornada, feriados e integrações",
             "Auditoria completa e configurações globais do app"
         ]
@@ -63,9 +55,9 @@ const ROLE_DEFINITIONS = {
         label: 'ADM Local',
         color: 'text-emerald-400 bg-emerald-900/30 border-emerald-500/50',
         perms: [
-            "Gestão do dia a dia: editar escala da equipe específica",
-            "Registrar atestados e pequenas alterações",
-            "Aprovar ajustes simples de rotina",
+            "Visualizar e editar escalas da equipe específica",
+            "Registrar atestados e pequenas alterações de rotina",
+            "Aprovar ajustes simples dentro da unidade",
             "Acesso a relatórios básicos (frequência/cobertura)",
             "Visualizar pendências da equipe"
         ]
@@ -74,27 +66,17 @@ const ROLE_DEFINITIONS = {
 
 const currentDateObj = new Date();
 const monthNames = ["Janeiro","Fevereiro","Março","Abril","Maio","Junho","Julho","Agosto","Setembro","Outubro","Novembro","Dezembro"];
-const systemYear = currentDateObj.getFullYear();
-const systemMonth = currentDateObj.getMonth(); 
-
-const availableMonths = [
-    { year: 2025, month: 10 }, { year: 2025, month: 11 }, 
-    { year: 2026, month: 0 }, { year: 2026, month: 1 }, { year: 2026, month: 2 }, 
-    { year: 2026, month: 3 }, { year: 2026, month: 4 }, { year: 2026, month: 5 }, 
-    { year: 2026, month: 6 }, { year: 2026, month: 7 }, { year: 2026, month: 8 }, 
-    { year: 2026, month: 9 }, { year: 2026, month: 10 }, { year: 2026, month: 11 }  
-];
-
-let selectedMonthObj = availableMonths.find(m => m.year === systemYear && m.month === systemMonth) || availableMonths[availableMonths.length-1];
+let systemYear = currentDateObj.getFullYear();
+let systemMonth = currentDateObj.getMonth(); 
+let selectedMonthObj = { year: systemYear, month: systemMonth };
+let currentDay = new Date().getDate();
 
 const statusMap = { 'T':'Trabalhando','F':'Folga','FS':'Folga Sáb','FD':'Folga Dom','FE':'Férias','OFF-SHIFT':'Exp.Encerrado', 'F_EFFECTIVE': 'Exp.Encerrado' };
 const daysOfWeek = ["Domingo","Segunda","Terça","Quarta","Quinta","Sexta","Sábado"];
 
 function pad(n){ return n < 10 ? '0' + n : '' + n; }
 
-// ==========================================
-// 4. AUTH & UI LOGIC
-// ==========================================
+// 4. AUTH & UI
 const adminToolbar = document.getElementById('adminToolbar');
 const btnOpenLogin = document.getElementById('btnOpenLogin');
 const btnLogout = document.getElementById('btnLogout');
@@ -113,8 +95,6 @@ onAuthStateChanged(auth, (user) => {
         document.body.style.paddingBottom = "100px"; 
         
         logSessionActivity('login', 'Login no sistema');
-        
-        // Pré-carrega o perfil para ter o nome disponível
         loadAdminProfile(true); 
     } else {
         isAdmin = false;
@@ -128,28 +108,24 @@ onAuthStateChanged(auth, (user) => {
     if(sel && sel.value) updatePersonalView(sel.value);
 });
 
-// ==========================================
-// 5. FIRESTORE DATA
-// ==========================================
+// 5. FIRESTORE
 async function loadDataFromCloud() {
     const docId = `escala-${selectedMonthObj.year}-${String(selectedMonthObj.month+1).padStart(2,'0')}`;
     try {
         const docRef = doc(db, "escalas", docId);
         const docSnap = await getDoc(docRef);
-
         if (docSnap.exists()) {
             rawSchedule = docSnap.data();
             processScheduleData(); 
             updateDailyView();
             initSelect();
         } else {
-            console.log("Nenhum documento encontrado.");
             rawSchedule = {}; 
             processScheduleData();
             updateDailyView();
         }
     } catch (e) {
-        console.error("Erro ao baixar dados:", e);
+        console.error("Erro dados:", e);
     }
 }
 
@@ -160,7 +136,6 @@ async function saveToCloud() {
     const statusIcon = document.getElementById('saveStatusIcon');
     
     btn.innerHTML = '<i class="fas fa-spinner fa-spin mr-2"></i> ...';
-    btn.classList.add('opacity-75', 'cursor-not-allowed');
     
     const docId = `escala-${selectedMonthObj.year}-${String(selectedMonthObj.month+1).padStart(2,'0')}`;
     
@@ -171,62 +146,65 @@ async function saveToCloud() {
         status.className = "text-xs text-gray-300 font-medium transition-colors";
         if(statusIcon) statusIcon.className = "w-1.5 h-1.5 rounded-full bg-emerald-500 shadow-[0_0_8px_rgba(16,185,129,0.6)]";
         
-        // --- GERAÇÃO DE LOGS AO SALVAR ---
+        // Logs de Edição
         const profNameInput = document.getElementById('profName');
         const adminName = (profNameInput && profNameInput.value) ? profNameInput.value : "Admin";
-
         if(unsavedChangesSet.size > 0) {
-            unsavedChangesSet.forEach(empName => {
-                logSessionActivity('save', `${adminName} salvou a escala de ${empName}`);
-            });
-            unsavedChangesSet.clear(); // Limpa a lista após salvar
+            unsavedChangesSet.forEach(empName => logSessionActivity('save', `${adminName} salvou a escala de ${empName}`));
+            unsavedChangesSet.clear();
         } else {
             logSessionActivity('save', 'Sincronização realizada');
         }
-        // ---------------------------------
 
         setTimeout(() => {
-            btn.innerHTML = '<i class="fas fa-cloud-upload-alt mr-2 group-hover:-translate-y-0.5 transition-transform"></i> Salvar';
-            btn.classList.remove('opacity-75', 'cursor-not-allowed');
+            btn.innerHTML = '<i class="fas fa-cloud-upload-alt mr-2"></i> Salvar';
         }, 1000);
     } catch (e) {
-        console.error("Erro ao salvar:", e);
-        alert("Erro ao salvar!");
+        console.error("Erro salvar:", e);
         btn.innerHTML = '<i class="fas fa-exclamation-circle"></i> Erro';
     }
 }
-
 document.getElementById('btnSaveCloud').addEventListener('click', saveToCloud);
 
-// ==========================================
-// 5.1 ADMIN PROFILE LOGIC (MEU PERFIL)
-// ==========================================
+// 5.1 PROFILE LOGIC
 const profileModal = document.getElementById('profileModal');
 const btnOpenProfile = document.getElementById('btnOpenProfile');
 const btnCloseProfile = document.getElementById('btnCloseProfile');
 const btnCancelProfile = document.getElementById('btnCancelProfile');
 const btnSaveProfile = document.getElementById('btnSaveProfile');
+const btnChangePassword = document.getElementById('btnChangePassword');
 
-// Inputs do Modal
+// Tabs Logic
+const modalTabs = document.querySelectorAll('.modal-tab');
+const tabContents = document.querySelectorAll('.modal-content-tab');
+
+modalTabs.forEach(tab => {
+    tab.addEventListener('click', () => {
+        // Remove active class from all
+        modalTabs.forEach(t => t.classList.remove('active', 'border-b-2', 'border-purple-500', 'text-purple-400'));
+        modalTabs.forEach(t => t.classList.add('text-gray-400'));
+        tabContents.forEach(c => c.classList.add('hidden'));
+
+        // Add active to current
+        tab.classList.add('active', 'border-b-2', 'border-purple-500', 'text-purple-400');
+        tab.classList.remove('text-gray-400');
+        const targetId = tab.getAttribute('data-target');
+        document.getElementById(targetId).classList.remove('hidden');
+    });
+});
+
+// Inputs
 const inpName = document.getElementById('profName');
 const inpEmail = document.getElementById('profEmail');
+const inpRegId = document.getElementById('profRegId'); // Novo
 const inpRole = document.getElementById('profJob');
 const inpUnit = document.getElementById('profUnit');
 const inpPhone = document.getElementById('profPhone');
-
-// Stats Elements
-const statTeams = document.getElementById('statTeams');
-const statCollabs = document.getElementById('statCollabs');
-
-// Shortcuts
-const shortcutDaily = document.getElementById('shortcutDaily');
-const shortcutIndividual = document.getElementById('shortcutIndividual');
 
 function toggleProfileModal(show) {
     if(show) {
         profileModal.classList.remove('hidden');
         loadAdminProfile();
-        updateProfileStats();
         updateActivityLogUI(); 
     } else {
         profileModal.classList.add('hidden');
@@ -236,47 +214,38 @@ function toggleProfileModal(show) {
 if(btnOpenProfile) btnOpenProfile.addEventListener('click', () => toggleProfileModal(true));
 if(btnCloseProfile) btnCloseProfile.addEventListener('click', () => toggleProfileModal(false));
 if(btnCancelProfile) btnCancelProfile.addEventListener('click', () => toggleProfileModal(false));
-if(profileModal) profileModal.addEventListener('click', (e) => {
-    if(e.target === profileModal) toggleProfileModal(false);
-});
+if(profileModal) profileModal.addEventListener('click', (e) => { if(e.target === profileModal) toggleProfileModal(false); });
 
-if(shortcutDaily) shortcutDaily.addEventListener('click', () => {
-    toggleProfileModal(false);
-    document.querySelector('button[data-tab="daily"]').click();
-});
+// Atalhos
+document.getElementById('shortcutDaily').addEventListener('click', () => { toggleProfileModal(false); document.querySelector('button[data-tab="daily"]').click(); });
+document.getElementById('shortcutIndividual').addEventListener('click', () => { toggleProfileModal(false); document.querySelector('button[data-tab="personal"]').click(); });
 
-if(shortcutIndividual) shortcutIndividual.addEventListener('click', () => {
-    toggleProfileModal(false);
-    document.querySelector('button[data-tab="personal"]').click();
-});
-
-function updateProfileStats() {
-    if(!scheduleData) return;
-    
-    const collabCount = Object.keys(scheduleData).length;
-    const teams = new Set();
-    
-    Object.values(scheduleData).forEach(emp => {
-        if(emp.info.Célula) teams.add(emp.info.Célula);
-        else if (emp.info.Grupo) teams.add(emp.info.Grupo); 
+// Change Password
+if(btnChangePassword) {
+    btnChangePassword.addEventListener('click', async () => {
+        const user = auth.currentUser;
+        if(user && user.email) {
+            if(confirm(`Enviar e-mail de redefinição de senha para ${user.email}?`)) {
+                try {
+                    await sendPasswordResetEmail(auth, user.email);
+                    alert("E-mail enviado! Verifique sua caixa de entrada.");
+                } catch(e) {
+                    alert("Erro ao enviar e-mail: " + e.message);
+                }
+            }
+        }
     });
-
-    if(statCollabs) statCollabs.textContent = collabCount;
-    if(statTeams) statTeams.textContent = teams.size || 1; 
 }
 
-// ------------------------------------------
-// LÓGICA DE PERMISSÕES DINÂMICAS (RBAC)
-// ------------------------------------------
 function updatePermissionsUI(roleKey) {
     const list = document.getElementById('permissionsList');
     const badge = document.getElementById('profRoleBadge');
     const displayInput = document.getElementById('profRoleDisplay');
+    const dateDisplay = document.getElementById('lastPermUpdate');
 
     if(!list) return;
     list.innerHTML = '';
 
-    // Normaliza a chave para minúsculas e remove espaços
     const safeKey = String(roleKey || 'local').trim().toLowerCase();
     const roleData = ROLE_DEFINITIONS[safeKey] || ROLE_DEFINITIONS['local'];
 
@@ -284,180 +253,126 @@ function updatePermissionsUI(roleKey) {
         badge.textContent = roleData.label;
         badge.className = `text-[10px] font-bold px-2 py-0.5 rounded border uppercase ${roleData.color}`;
     }
-    if(displayInput) {
-        displayInput.value = roleData.label;
-    }
+    if(displayInput) displayInput.value = roleData.label;
+    
+    // Mock date if not exists
+    if(dateDisplay) dateDisplay.textContent = new Date().toLocaleDateString();
 
     roleData.perms.forEach(perm => {
         const li = document.createElement('li');
         li.className = "flex items-start gap-3 animate-fade-in-list";
-        li.innerHTML = `
-            <i class="fas fa-check-circle text-emerald-500 mt-0.5 text-xs"></i>
-            <span class="text-xs text-gray-300 leading-tight">${perm}</span>
-        `;
+        li.innerHTML = `<i class="fas fa-check-circle text-emerald-500 mt-0.5 text-xs"></i><span class="text-xs text-gray-300 leading-tight">${perm}</span>`;
         list.appendChild(li);
     });
 }
 
-// ------------------------------------------
-// LÓGICA DE ATIVIDADE RECENTE
-// ------------------------------------------
 function logSessionActivity(type, description) {
     const now = new Date();
     const timeString = now.toLocaleTimeString('pt-BR', { hour: '2-digit', minute: '2-digit' });
-    
-    sessionLogs.unshift({
-        type: type, 
-        desc: description,
-        time: timeString
-    });
-
+    sessionLogs.unshift({ type, desc: description, time: timeString });
     if (sessionLogs.length > 20) sessionLogs.pop();
-    
-    if (!profileModal.classList.contains('hidden')) {
-        updateActivityLogUI();
-    }
+    if (!profileModal.classList.contains('hidden')) updateActivityLogUI();
 }
 
 function updateActivityLogUI() {
     const list = document.getElementById('activityLogList');
     if(!list) return;
-
     list.innerHTML = ''; 
-
     if(sessionLogs.length === 0) {
         list.innerHTML = '<li class="text-xs text-center text-gray-600 italic py-2">Nenhuma atividade registrada ainda.</li>';
         return;
     }
-
     sessionLogs.forEach(log => {
-        let iconClass = '';
-        let colorClass = '';
-        let bgClass = '';
-        let textClass = 'text-gray-300';
+        let iconClass = 'fas fa-circle';
+        let colorClass = 'text-gray-400';
+        let bgClass = 'bg-gray-500/10 border-gray-500/20';
         let descHTML = log.desc;
 
         if (log.type === 'edit') {
-            iconClass = 'fas fa-pen';
-            colorClass = 'text-blue-400';
-            bgClass = 'bg-blue-500/10 border-blue-500/20';
+            iconClass = 'fas fa-pen'; colorClass = 'text-blue-400'; bgClass = 'bg-blue-500/10 border-blue-500/20';
         } else if (log.type === 'save') {
-            iconClass = 'fas fa-save';
-            colorClass = 'text-purple-400';
-            bgClass = 'bg-purple-500/10 border-purple-500/20';
-            // Destaque para: (Quem) salvou a escala de (Quem)
-            descHTML = log.desc.replace(/(.*)( salvou a escala de )(.*)/, 
-                '<span class="font-bold text-white">$1</span>$2<span class="font-bold text-white">$3</span>');
+            iconClass = 'fas fa-save'; colorClass = 'text-purple-400'; bgClass = 'bg-purple-500/10 border-purple-500/20';
+            descHTML = log.desc.replace(/(.*)( salvou a escala de )(.*)/, '<span class="font-bold text-white">$1</span>$2<span class="font-bold text-white">$3</span>');
         } else if (log.type === 'login') {
-            iconClass = 'fas fa-sign-in-alt';
-            colorClass = 'text-green-400';
-            bgClass = 'bg-green-500/10 border-green-500/20';
-        } else {
-            iconClass = 'fas fa-circle';
-            colorClass = 'text-gray-400';
-            bgClass = 'bg-gray-500/10 border-gray-500/20';
+            iconClass = 'fas fa-sign-in-alt'; colorClass = 'text-green-400'; bgClass = 'bg-green-500/10 border-green-500/20';
         }
 
         const li = document.createElement('li');
         li.className = "flex items-center gap-3 text-xs animate-fade-in-list"; 
         li.innerHTML = `
-            <div class="w-6 h-6 rounded-full flex items-center justify-center border ${bgClass} ${colorClass} shrink-0">
-                <i class="${iconClass}"></i>
-            </div>
-            <div class="flex-1 truncate">
-                <p class="${textClass}">${descHTML}</p>
-            </div>
+            <div class="w-6 h-6 rounded-full flex items-center justify-center border ${bgClass} ${colorClass} shrink-0"><i class="${iconClass}"></i></div>
+            <div class="flex-1 truncate"><p class="text-gray-300">${descHTML}</p></div>
             <span class="text-gray-600 font-mono text-[10px] shrink-0">${log.time}</span>
         `;
         list.appendChild(li);
     });
 }
 
-// ------------------------------------------
-
 async function loadAdminProfile(silent = false) {
     const user = auth.currentUser;
     if(!user) return;
-
     if(!silent) {
         inpEmail.value = user.email; 
         const badge = document.getElementById('profRoleBadge');
         if(badge) badge.textContent = "Verificando...";
-        btnSaveProfile.innerHTML = '<i class="fas fa-spinner fa-spin mr-2"></i> Carregando...';
         btnSaveProfile.disabled = true;
     }
-
     try {
         const docRef = doc(db, "admins", user.uid);
         const docSnap = await getDoc(docRef);
-
         if (docSnap.exists()) {
             const data = docSnap.data();
-            // Preenche os campos se não for silencioso
             if(!silent) {
                 inpName.value = data.name || '';
-                inpRole.value = data.role || '';
+                inpRole.value = data.role || ''; 
                 inpUnit.value = data.unit || '';
                 inpPhone.value = data.phone || '';
+                if(inpRegId) inpRegId.value = data.registrationId || ''; // Novo campo
             }
-            
-            // Lógica de Role Segura (com fallback)
-            const systemRole = data.systemRole || 'local';
-            updatePermissionsUI(systemRole);
-
+            updatePermissionsUI(data.systemRole || 'local');
         } else {
-            // Perfil novo
-            if(!silent) {
-                inpName.value = '';
-                inpRole.value = '';
-            }
+            if(!silent) { inpName.value = ''; inpRole.value = ''; }
             updatePermissionsUI('local');
         }
     } catch (e) {
-        console.error("Erro ao carregar perfil:", e);
-        updatePermissionsUI('local'); // Fallback para não travar
+        console.error("Erro perfil:", e);
+        updatePermissionsUI('local');
     } finally {
-        if(!silent) {
-            btnSaveProfile.innerHTML = '<i class="fas fa-save mr-2"></i> Salvar Alterações';
-            btnSaveProfile.disabled = false;
-        }
+        if(!silent) { btnSaveProfile.disabled = false; }
     }
 }
 
 if(btnSaveProfile) btnSaveProfile.addEventListener('click', async () => {
     const user = auth.currentUser;
     if(!user) return;
-
     const profileData = {
         name: inpName.value,
         email: user.email,
         role: inpRole.value, 
         unit: inpUnit.value,
         phone: inpPhone.value,
+        registrationId: inpRegId ? inpRegId.value : '', // Salva ID
         updatedAt: new Date().toISOString()
     };
-
     btnSaveProfile.innerHTML = '<i class="fas fa-spinner fa-spin mr-2"></i> Salvando...';
     btnSaveProfile.disabled = true;
-
     try {
         await setDoc(doc(db, "admins", user.uid), profileData, { merge: true });
-        // Recarrega para garantir que a role se mantenha e atualize a UI
         loadAdminProfile(); 
-        // Não fecha o modal automaticamente para feedback, ou fecha se preferir:
-        toggleProfileModal(false);
     } catch (e) {
-        console.error("Erro ao salvar perfil:", e);
-        alert("Erro ao salvar perfil.");
+        alert("Erro ao salvar.");
     } finally {
-        btnSaveProfile.innerHTML = '<i class="fas fa-save mr-2"></i> Salvar Alterações';
+        btnSaveProfile.innerHTML = '<i class="fas fa-save mr-2"></i> Salvar';
         btnSaveProfile.disabled = false;
     }
 });
 
+// Outras funções de renderização (mantidas do anterior)
+// ... (generate5x2, parseDay, buildFinalSchedule, processScheduleData, updateDailyView, updateCalendar, handleCellClick etc.)
+// Apenas garanta que handleCellClick chame unsavedChangesSet.add(name)
 
 // ==========================================
-// 6. DATA PROCESSING
+// 6. DATA PROCESSING (MANTIDO IGUAL)
 // ==========================================
 function generate5x2ScheduleDefaultForMonth(monthObj) {
     const totalDays = new Date(monthObj.year, monthObj.month+1, 0).getDate();
@@ -541,9 +456,7 @@ function processScheduleData() {
     }
 }
 
-// ==========================================
 // 7. CHART & UI
-// ==========================================
 function parseSingleTimeRange(rangeStr) {
     if (!rangeStr || typeof rangeStr !== 'string') return null;
     const m = rangeStr.match(/(\d{1,2}):(\d{2})\s*às\s*(\d{1,2}):(\d{2})/);
@@ -714,8 +627,6 @@ function updateDailyView() {
 
     const currentDateLabel = document.getElementById('currentDateLabel');
     const dayOfWeekIndex = new Date(selectedMonthObj.year, selectedMonthObj.month, currentDay).getDay();
-    const now = new Date();
-    const isToday = (now.getDate() === currentDay && now.getMonth() === selectedMonthObj.month && now.getFullYear() === selectedMonthObj.year);
     
     currentDateLabel.textContent = `${daysOfWeek[dayOfWeekIndex]}, ${pad(currentDay)}/${pad(selectedMonthObj.month+1)}`;
 
@@ -733,14 +644,13 @@ function updateDailyView() {
         let display = status;
 
         if (status === 'FE') { v++; display='FE'; }
-        else if (isToday && status === 'T') {
+        else if (emp.schedule[currentDay-1] === 'T') {
             if (!isWorkingTime(emp.info.Horário)) { os++; display='OFF-SHIFT'; status='F_EFFECTIVE'; }
             else w++;
         }
         else if (status === 'T') w++;
         else o++; 
 
-        // CRIAÇÃO DO ITEM DA LISTA COM BORDAS ARREDONDADAS (rounded-xl)
         const row = `
             <li class="flex justify-between items-center text-sm p-4 rounded-xl mb-2 bg-[#1A1C2E] hover:bg-[#2E3250] border border-[#2E3250] hover:border-purple-500 transition-all cursor-default shadow-sm group">
                 <div class="flex flex-col">
@@ -769,94 +679,6 @@ function updateDailyView() {
     updateDailyChartDonut(w, o, os, v);
 }
 
-// ==========================================
-// 8. PERSONAL & ADMIN
-// ==========================================
-function initSelect() {
-    const select = document.getElementById('employeeSelect');
-    if (!select) return;
-    select.innerHTML = '<option value="">Selecione um colaborador</option>';
-    Object.keys(scheduleData).sort().forEach(name=>{
-        const opt = document.createElement('option'); opt.value=name; opt.textContent=name; select.appendChild(opt);
-    });
-    
-    const newSelect = select.cloneNode(true);
-    select.parentNode.replaceChild(newSelect, select);
-    
-    newSelect.addEventListener('change', e => {
-        const name = e.target.value;
-        if(name) {
-            updatePersonalView(name);
-        } else {
-            document.getElementById('personalInfoCard').classList.add('hidden');
-            document.getElementById('calendarContainer').classList.add('hidden');
-        }
-    });
-}
-
-function updatePersonalView(name) {
-    const emp = scheduleData[name];
-    if (!emp) return;
-    const card = document.getElementById('personalInfoCard');
-    
-    const cargo = emp.info.Cargo || emp.info.Grupo || 'Colaborador';
-    const horario = emp.info.Horário || '--:--';
-    const celula = emp.info.Célula || emp.info.Celula || 'Sitelbra';
-    let turno = emp.info.Turno || 'Comercial';
-
-    let statusToday = emp.schedule[currentDay - 1] || 'F';
-    let displayStatus = statusToday;
-    const now = new Date();
-    const isToday = (now.getDate() === currentDay && now.getMonth() === selectedMonthObj.month && now.getFullYear() === selectedMonthObj.year);
-    if (isToday && statusToday === 'T' && !isWorkingTime(emp.info.Horário)) displayStatus = 'OFF-SHIFT';
-
-    const colorClasses = {
-        'T': 'bg-green-500 shadow-[0_0_10px_#22c55e]',
-        'F': 'bg-yellow-500 shadow-[0_0_10px_#eab308]',
-        'FS': 'bg-sky-500 shadow-[0_0_10px_#0ea5e9]',
-        'FD': 'bg-indigo-500 shadow-[0_0_10px_#6366f1]',
-        'FE': 'bg-red-500 shadow-[0_0_10px_#ef4444]',
-        'OFF-SHIFT': 'bg-fuchsia-500 shadow-[0_0_10px_#d946ef]'
-    };
-    let dotClass = colorClasses[displayStatus] || 'bg-gray-500';
-
-    card.classList.remove('hidden');
-    card.className = "mb-8 bg-[#1A1C2E] rounded-xl border border-[#2E3250] overflow-hidden";
-    card.innerHTML = `
-        <div class="px-6 py-5 flex justify-between items-center bg-gradient-to-r from-[#1A1C2E] to-[#2E3250]/30">
-            <div>
-                <h2 class="text-xl md:text-2xl font-bold text-white tracking-tight">${name}</h2>
-                <p class="text-purple-400 text-xs font-bold uppercase tracking-widest mt-1">${cargo}</p>
-            </div>
-            <div class="w-3 h-3 rounded-full ${dotClass}"></div>
-        </div>
-        <div class="grid grid-cols-3 divide-x divide-[#2E3250] bg-[#0F1020]/50 border-t border-[#2E3250]">
-            <div class="py-4 text-center">
-                <span class="block text-[10px] text-gray-500 font-bold uppercase tracking-wider">Célula</span>
-                <span class="block text-sm font-bold text-gray-300 mt-1">${celula}</span>
-            </div>
-            <div class="py-4 text-center">
-                <span class="block text-[10px] text-gray-500 font-bold uppercase tracking-wider">Turno</span>
-                <span class="block text-sm font-bold text-gray-300 mt-1">${turno}</span>
-            </div>
-            <div class="py-4 text-center">
-                <span class="block text-[10px] text-gray-500 font-bold uppercase tracking-wider">Horário</span>
-                <span class="block text-sm font-bold text-gray-300 mt-1">${horario}</span>
-            </div>
-        </div>
-    `;
-
-    document.getElementById('calendarContainer').classList.remove('hidden');
-    updateCalendar(name, emp.schedule);
-}
-
-function cycleStatus(current) {
-    const sequence = ['T', 'F', 'FS', 'FD', 'FE'];
-    let idx = sequence.indexOf(current);
-    if(idx === -1) return 'T';
-    return sequence[(idx + 1) % sequence.length];
-}
-
 async function handleCellClick(name, dayIndex) {
     if (!isAdmin) return;
     const emp = scheduleData[name];
@@ -873,39 +695,33 @@ async function handleCellClick(name, dayIndex) {
     }
     if(statusIcon) statusIcon.className = "w-1.5 h-1.5 rounded-full bg-orange-500 animate-pulse";
     
-    // --- LÓGICA DE LOG (PENDENTE) ---
-    // Adiciona o nome do colaborador alterado à lista de pendências.
-    // O log só será gerado quando o botão SALVAR for clicado.
+    // Log pendente
     unsavedChangesSet.add(name);
-    // ---------------------------------
 
     updateCalendar(name, emp.schedule);
     updateDailyView();
-    updateProfileStats(); 
+    updateProfileStats();
     const sel = document.getElementById('employeeSelect');
     updateWeekendTable(sel ? sel.value : null);
+}
+
+function cycleStatus(current) {
+    const sequence = ['T', 'F', 'FS', 'FD', 'FE'];
+    let idx = sequence.indexOf(current);
+    if(idx === -1) return 'T';
+    return sequence[(idx + 1) % sequence.length];
 }
 
 function updateCalendar(name, schedule) {
     const grid = document.getElementById('calendarGrid');
     const isMobile = window.innerWidth <= 767;
     grid.innerHTML = '';
-    
     if(isMobile) {
         grid.className = 'space-y-2 mt-4';
         schedule.forEach((st, i) => {
-            let pillClasses = "flex justify-between items-center p-3 px-4 rounded-xl border transition-all text-sm";
-            if(isAdmin) pillClasses += " cursor-pointer active:scale-95";
-            
-            // Dark Mode Mobile Pills
-            pillClasses += " bg-[#1A1C2E] border-[#2E3250] text-gray-300";
-
             const el = document.createElement('div');
-            el.className = pillClasses;
-            el.innerHTML = `
-                <span class="font-mono text-gray-500">Dia ${pad(i+1)}</span>
-                <span class="day-status status-${st}">${statusMap[st]||st}</span>
-            `;
+            el.className = "flex justify-between items-center p-3 px-4 rounded-xl border transition-all text-sm bg-[#1A1C2E] border-[#2E3250] text-gray-300 active:scale-95 cursor-pointer";
+            el.innerHTML = `<span class="font-mono text-gray-500">Dia ${pad(i+1)}</span><span class="day-status status-${st}">${statusMap[st]||st}</span>`;
             if(isAdmin) el.onclick = () => handleCellClick(name, i);
             grid.appendChild(el);
         });
@@ -914,21 +730,13 @@ function updateCalendar(name, schedule) {
         const m = { y: selectedMonthObj.year, mo: selectedMonthObj.month };
         const empty = new Date(m.y, m.mo, 1).getDay();
         for(let i=0;i<empty;i++) grid.insertAdjacentHTML('beforeend','<div class="calendar-cell bg-[#1A1C2E] opacity-50"></div>');
-        
         schedule.forEach((st, i) => {
             const cell = document.createElement('div');
-            cell.className = "calendar-cell relative group";
-            
+            cell.className = "calendar-cell relative group cursor-pointer";
             const badge = document.createElement('div');
             badge.className = `day-status-badge status-${st}`;
             badge.textContent = statusMap[st]||st;
-            
-            if(isAdmin) {
-                cell.classList.add('cursor-pointer');
-                cell.title = "Clique para alterar";
-                cell.onclick = () => handleCellClick(name, i);
-            }
-
+            if(isAdmin) { cell.title = "Clique para alterar"; cell.onclick = () => handleCellClick(name, i); }
             cell.innerHTML = `<div class="day-number group-hover:text-white transition-colors">${pad(i+1)}</div>`;
             cell.appendChild(badge);
             grid.appendChild(cell);
@@ -936,17 +744,12 @@ function updateCalendar(name, schedule) {
     }
 }
 
-// ==========================================
-// 9. INIT
-// ==========================================
 function initGlobal() {
     initTabs();
-    
     const header = document.getElementById('monthSelectorContainer');
     if(!document.getElementById('monthSel')) {
         const sel = document.createElement('select'); sel.id='monthSel';
         sel.className = 'bg-[#1A1C2E] text-white text-sm font-medium px-4 py-2 rounded-lg border border-[#2E3250] focus:ring-2 focus:ring-purple-500 outline-none cursor-pointer w-full md:w-auto shadow-lg';
-        
         availableMonths.forEach(m => {
             const opt = document.createElement('option'); 
             opt.value = `${m.year}-${m.month}`;
@@ -954,7 +757,6 @@ function initGlobal() {
             if(m.month === selectedMonthObj.month && m.year === selectedMonthObj.year) opt.selected = true;
             sel.appendChild(opt);
         });
-        
         sel.addEventListener('change', e=>{
             const [y,mo] = e.target.value.split('-').map(Number);
             selectedMonthObj={year:y, month:mo};
@@ -962,10 +764,8 @@ function initGlobal() {
         });
         header.appendChild(sel);
     }
-
     const ds = document.getElementById('dateSlider');
     if (ds) ds.addEventListener('input', e => { currentDay = parseInt(e.target.value); updateDailyView(); });
-
     loadDataFromCloud();
 }
 
@@ -992,7 +792,6 @@ function updateWeekendTable(specificName) {
     const m = { y: selectedMonthObj.year, mo: selectedMonthObj.month };
     const total = new Date(m.y, m.mo+1, 0).getDate();
     const fmtDate = (d) => `${pad(d)}/${pad(m.mo+1)}`;
-
     for (let d=1; d<=total; d++){
         const dow = new Date(m.y, m.mo, d).getDay();
         if (dow === 6) { 
@@ -1003,17 +802,12 @@ function updateWeekendTable(specificName) {
                 if(scheduleData[n].schedule[satDate-1]==='T') satW.push(n);
                 if(sunDate && scheduleData[n].schedule[sunDate-1]==='T') sunW.push(n);
             });
-
             if(satW.length || sunW.length) {
-                const makeTags = (list, colorClass) => {
-                    if(!list.length) return '<span class="text-gray-600 text-xs italic">Sem escala</span>';
-                    return list.map(name => `<span class="inline-block bg-[#0F1020] border border-${colorClass}-900 text-${colorClass}-400 px-2 py-1 rounded text-xs font-bold mr-1 mb-1 shadow-sm">${name}</span>`).join('');
-                };
-                const satTags = makeTags(satW, 'sky');
-                const sunTags = makeTags(sunW, 'indigo');
+                const makeTags = (list, colorClass) => list.map(name => `<span class="inline-block bg-[#0F1020] border border-${colorClass}-900 text-${colorClass}-400 px-2 py-1 rounded text-xs font-bold mr-1 mb-1 shadow-sm">${name}</span>`).join('');
+                const satTags = makeTags(satW, 'sky') || '<span class="text-gray-600 text-xs italic">Sem escala</span>';
+                const sunTags = makeTags(sunW, 'indigo') || '<span class="text-gray-600 text-xs italic">Sem escala</span>';
                 const labelSat = `Sábado ${fmtDate(satDate)}`;
                 const labelSun = sunDate ? `Domingo ${fmtDate(sunDate)}` : 'Domingo';
-
                 const cardHTML = `
                 <div class="bg-[#1A1C2E] rounded-xl shadow-lg border border-[#2E3250] overflow-hidden">
                     <div class="bg-[#2E3250]/50 p-3 flex justify-between items-center border-b border-[#2E3250]">
@@ -1021,13 +815,8 @@ function updateWeekendTable(specificName) {
                         <span class="text-xs font-mono text-purple-400 bg-purple-900/20 px-2 py-0.5 rounded border border-purple-500/30">${fmtDate(satDate)}</span>
                     </div>
                     <div class="p-4 space-y-4">
-                        <div>
-                            <h4 class="text-sky-500 font-bold text-xs uppercase mb-2 flex items-center gap-2"><i class="fas fa-calendar-day"></i> ${labelSat}</h4>
-                            <div class="flex flex-wrap">${satTags}</div>
-                        </div>
-                        ${sunDate ? `<div class="pt-3 border-t border-[#2E3250]">
-                            <h4 class="text-indigo-500 font-bold text-xs uppercase mb-2 flex items-center gap-2"><i class="fas fa-calendar-day"></i> ${labelSun}</h4>
-                            <div class="flex flex-wrap">${sunTags}</div></div>` : ''}
+                        <div><h4 class="text-sky-500 font-bold text-xs uppercase mb-2 flex items-center gap-2"><i class="fas fa-calendar-day"></i> ${labelSat}</h4><div class="flex flex-wrap">${satTags}</div></div>
+                        ${sunDate ? `<div class="pt-3 border-t border-[#2E3250]"><h4 class="text-indigo-500 font-bold text-xs uppercase mb-2 flex items-center gap-2"><i class="fas fa-calendar-day"></i> ${labelSun}</h4><div class="flex flex-wrap">${sunTags}</div></div>` : ''}
                     </div>
                 </div>`;
                 container.insertAdjacentHTML('beforeend', cardHTML);
