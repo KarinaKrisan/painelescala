@@ -34,6 +34,42 @@ let isTrendMode = false;
 let currentDay = new Date().getDate();
 let sessionLogs = []; // Array para guardar logs da sessão
 
+// Definição de Permissões por Nível (RBAC)
+const ROLE_DEFINITIONS = {
+    'master': {
+        label: 'ADM Master',
+        color: 'text-purple-400 bg-purple-900/30 border-purple-500/50',
+        perms: [
+            "Acesso total ao sistema e configurações",
+            "Criar e gerenciar outros administradores",
+            "Auditoria completa de logs e acessos",
+            "Excluir dados críticos e backups",
+            "Todas as permissões de ADM Geral"
+        ]
+    },
+    'geral': {
+        label: 'ADM Geral',
+        color: 'text-blue-400 bg-blue-900/30 border-blue-500/50',
+        perms: [
+            "Criar, editar e excluir escalas globais",
+            "Gerenciar cadastro de colaboradores",
+            "Aprovar solicitações de todas as unidades",
+            "Visualizar relatórios gerenciais",
+            "Gerenciar notificações do sistema"
+        ]
+    },
+    'local': {
+        label: 'ADM Local',
+        color: 'text-emerald-400 bg-emerald-900/30 border-emerald-500/50',
+        perms: [
+            "Visualizar escala da própria unidade",
+            "Sugerir alterações de turno (requer aprovação)",
+            "Gerenciar folgas da equipe local",
+            "Visualizar dashboard simplificado"
+        ]
+    }
+};
+
 const currentDateObj = new Date();
 const monthNames = ["Janeiro","Fevereiro","Março","Abril","Maio","Junho","Julho","Agosto","Setembro","Outubro","Novembro","Dezembro"];
 const systemYear = currentDateObj.getFullYear();
@@ -159,7 +195,9 @@ const btnSaveProfile = document.getElementById('btnSaveProfile');
 // Inputs do Modal
 const inpName = document.getElementById('profName');
 const inpEmail = document.getElementById('profEmail');
-const inpRole = document.getElementById('profRole');
+const inpRole = document.getElementById('profJob'); // Cargo
+const inpRoleDisplay = document.getElementById('profRoleDisplay'); // Nível de Acesso (Read Only)
+const inpRoleBadge = document.getElementById('profRoleBadge'); // Badge do Header
 const inpUnit = document.getElementById('profUnit');
 const inpPhone = document.getElementById('profPhone');
 
@@ -176,8 +214,7 @@ function toggleProfileModal(show) {
         profileModal.classList.remove('hidden');
         loadAdminProfile();
         updateProfileStats();
-        updateActivityLogUI(); // Renderiza logs
-        updatePermissionsUI(); // Renderiza permissões
+        updateActivityLogUI(); 
     } else {
         profileModal.classList.add('hidden');
     }
@@ -211,34 +248,35 @@ function updateProfileStats() {
     
     Object.values(scheduleData).forEach(emp => {
         if(emp.info.Célula) teams.add(emp.info.Célula);
-        else if (emp.info.Grupo) teams.add(emp.info.Grupo); // Fallback caso use nomenclatura Grupo
+        else if (emp.info.Grupo) teams.add(emp.info.Grupo); 
     });
 
     if(statCollabs) statCollabs.textContent = collabCount;
-    if(statTeams) statTeams.textContent = teams.size || 1; // Pelo menos 1 time
+    if(statTeams) statTeams.textContent = teams.size || 1; 
 }
 
 // ------------------------------------------
-// LÓGICA DE PERMISSÕES DINÂMICAS (NOVO)
+// LÓGICA DE PERMISSÕES DINÂMICAS (RBAC)
 // ------------------------------------------
-function updatePermissionsUI() {
+function updatePermissionsUI(roleKey) {
     const list = document.getElementById('permissionsList');
     if(!list) return;
     list.innerHTML = '';
 
-    // Definição das permissões para o cargo atual (Admin)
-    const permissions = [
-        "Criar, editar e excluir escalas",
-        "Criar e editar colaboradores e equipes",
-        "Aprovar/recusar trocas de horários ou folgas",
-        "Visualizar dashboards e relatórios completos",
-        "Gerenciar notificações do sistema",
-        "Controlar horários especiais (férias, afastamentos, banco)"
-    ];
+    const roleData = ROLE_DEFINITIONS[roleKey] || ROLE_DEFINITIONS['local']; // Fallback seguro
 
-    permissions.forEach(perm => {
+    // Atualiza Visual do Badge e Input
+    if(inpRoleBadge) {
+        inpRoleBadge.textContent = roleData.label;
+        inpRoleBadge.className = `text-[10px] font-bold px-2 py-0.5 rounded border uppercase ${roleData.color}`;
+    }
+    if(inpRoleDisplay) {
+        inpRoleDisplay.value = roleData.label;
+    }
+
+    roleData.perms.forEach(perm => {
         const li = document.createElement('li');
-        li.className = "flex items-start gap-3";
+        li.className = "flex items-start gap-3 animate-fade-in-list";
         li.innerHTML = `
             <i class="fas fa-check-circle text-emerald-500 mt-0.5 text-xs"></i>
             <span class="text-xs text-gray-300 leading-tight">${perm}</span>
@@ -248,15 +286,14 @@ function updatePermissionsUI() {
 }
 
 // ------------------------------------------
-// LÓGICA DE ATIVIDADE RECENTE (SESSION LOGS)
+// LÓGICA DE ATIVIDADE RECENTE
 // ------------------------------------------
 function logSessionActivity(type, description) {
     const now = new Date();
     const timeString = now.toLocaleTimeString('pt-BR', { hour: '2-digit', minute: '2-digit' });
     
-    // Adiciona no início do array
     sessionLogs.unshift({
-        type: type, // 'edit', 'save', 'login'
+        type: type, 
         desc: description,
         time: timeString
     });
@@ -306,7 +343,6 @@ function updateActivityLogUI() {
         }
 
         const li = document.createElement('li');
-        // CORREÇÃO AQUI: Usando 'animate-fade-in-list' ao invés de 'animate-fade-in-up'
         li.className = "flex items-center gap-3 text-xs animate-fade-in-list"; 
         li.innerHTML = `
             <div class="w-6 h-6 rounded-full flex items-center justify-center border ${bgClass} ${colorClass}">
@@ -327,7 +363,7 @@ async function loadAdminProfile() {
     const user = auth.currentUser;
     if(!user) return;
 
-    inpEmail.value = user.email; // Preenche email do Auth automaticamente
+    inpEmail.value = user.email; 
     
     btnSaveProfile.innerHTML = '<i class="fas fa-spinner fa-spin mr-2"></i> Carregando...';
     btnSaveProfile.disabled = true;
@@ -339,15 +375,22 @@ async function loadAdminProfile() {
         if (docSnap.exists()) {
             const data = docSnap.data();
             inpName.value = data.name || '';
-            inpRole.value = data.role || '';
+            inpRole.value = data.role || ''; // Cargo (Job Title)
             inpUnit.value = data.unit || '';
             inpPhone.value = data.phone || '';
+            
+            // LÓGICA DE ROLE (NÍVEL DE ACESSO)
+            // Se o campo 'systemRole' não existir, assume 'local' por segurança
+            const systemRole = data.systemRole || 'local';
+            updatePermissionsUI(systemRole);
+
         } else {
-            // Se não existe perfil ainda, limpa os campos
+            // Novo perfil
             inpName.value = '';
             inpRole.value = '';
             inpUnit.value = '';
             inpPhone.value = '';
+            updatePermissionsUI('local'); // Default para novos
         }
     } catch (e) {
         console.error("Erro ao carregar perfil:", e);
@@ -361,10 +404,12 @@ if(btnSaveProfile) btnSaveProfile.addEventListener('click', async () => {
     const user = auth.currentUser;
     if(!user) return;
 
+    // IMPORTANTE: NÃO salvamos o 'systemRole' aqui.
+    // O nível de acesso só pode ser alterado por outro Master, não pelo próprio usuário.
     const profileData = {
         name: inpName.value,
         email: user.email,
-        role: inpRole.value,
+        role: inpRole.value, // Cargo
         unit: inpUnit.value,
         phone: inpPhone.value,
         updatedAt: new Date().toISOString()
