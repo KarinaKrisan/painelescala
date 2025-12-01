@@ -32,7 +32,7 @@ let rawSchedule = {};
 let dailyChart = null;
 let isTrendMode = false;
 let currentDay = new Date().getDate();
-let sessionLogs = []; 
+let sessionLogs = []; // Array para guardar logs da sessão
 
 // Definição de Permissões por Nível (RBAC)
 const ROLE_DEFINITIONS = {
@@ -110,6 +110,7 @@ onAuthStateChanged(auth, (user) => {
         document.getElementById('adminEditHint').classList.remove('hidden');
         document.body.style.paddingBottom = "100px"; 
         
+        // Log de login
         logSessionActivity('login', 'Login no sistema');
     } else {
         isAdmin = false;
@@ -193,7 +194,9 @@ const btnSaveProfile = document.getElementById('btnSaveProfile');
 // Inputs do Modal
 const inpName = document.getElementById('profName');
 const inpEmail = document.getElementById('profEmail');
-const inpRole = document.getElementById('profJob');
+const inpRole = document.getElementById('profJob'); // Cargo
+const inpRoleDisplay = document.getElementById('profRoleDisplay'); // Nível de Acesso (Read Only)
+const inpRoleBadge = document.getElementById('profRoleBadge'); // Badge do Header
 const inpUnit = document.getElementById('profUnit');
 const inpPhone = document.getElementById('profPhone');
 
@@ -223,6 +226,7 @@ if(profileModal) profileModal.addEventListener('click', (e) => {
     if(e.target === profileModal) toggleProfileModal(false);
 });
 
+// Shortcuts Logic
 if(shortcutDaily) shortcutDaily.addEventListener('click', () => {
     toggleProfileModal(false);
     document.querySelector('button[data-tab="daily"]').click();
@@ -233,6 +237,8 @@ if(shortcutIndividual) shortcutIndividual.addEventListener('click', () => {
     document.querySelector('button[data-tab="personal"]').click();
 });
 
+
+// Calcula estatísticas reais baseado nos dados carregados
 function updateProfileStats() {
     if(!scheduleData) return;
     
@@ -260,8 +266,8 @@ function updatePermissionsUI(roleKey) {
     if(!list) return;
     list.innerHTML = '';
 
-    // Garante que roleKey seja string e minúscula
-    const safeKey = String(roleKey || 'local').toLowerCase();
+    // Garante que roleKey seja string e minúscula e sem espaços
+    const safeKey = String(roleKey || 'local').trim().toLowerCase();
     const roleData = ROLE_DEFINITIONS[safeKey] || ROLE_DEFINITIONS['local'];
 
     if(badge) {
@@ -343,6 +349,7 @@ function updateActivityLogUI() {
         }
 
         const li = document.createElement('li');
+        // CORREÇÃO: Usando a animação correta para listas
         li.className = "flex items-center gap-3 text-xs animate-fade-in-list"; 
         li.innerHTML = `
             <div class="w-6 h-6 rounded-full flex items-center justify-center border ${bgClass} ${colorClass}">
@@ -365,9 +372,9 @@ async function loadAdminProfile() {
 
     inpEmail.value = user.email; 
     
-    // Mostra loading
+    // Feedback visual imediato antes da promessa
     const badge = document.getElementById('profRoleBadge');
-    if(badge) badge.textContent = "Carregando...";
+    if(badge) badge.textContent = "Verificando...";
 
     btnSaveProfile.innerHTML = '<i class="fas fa-spinner fa-spin mr-2"></i> Carregando...';
     btnSaveProfile.disabled = true;
@@ -379,7 +386,7 @@ async function loadAdminProfile() {
         if (docSnap.exists()) {
             const data = docSnap.data();
             inpName.value = data.name || '';
-            inpRole.value = data.role || '';
+            inpRole.value = data.role || ''; // Cargo (Job Title)
             inpUnit.value = data.unit || '';
             inpPhone.value = data.phone || '';
             
@@ -388,14 +395,17 @@ async function loadAdminProfile() {
             updatePermissionsUI(systemRole);
 
         } else {
+            // Novo perfil
             inpName.value = '';
             inpRole.value = '';
             inpUnit.value = '';
             inpPhone.value = '';
-            updatePermissionsUI('local');
+            updatePermissionsUI('local'); // Default para novos
         }
     } catch (e) {
         console.error("Erro ao carregar perfil:", e);
+        // Fallback para evitar travamento da UI
+        updatePermissionsUI('local');
     } finally {
         btnSaveProfile.innerHTML = '<i class="fas fa-save mr-2"></i> Salvar Alterações';
         btnSaveProfile.disabled = false;
@@ -406,10 +416,12 @@ if(btnSaveProfile) btnSaveProfile.addEventListener('click', async () => {
     const user = auth.currentUser;
     if(!user) return;
 
+    // IMPORTANTE: NÃO salvamos o 'systemRole' aqui.
+    // O nível de acesso só pode ser alterado por outro Master, não pelo próprio usuário.
     const profileData = {
         name: inpName.value,
         email: user.email,
-        role: inpRole.value, 
+        role: inpRole.value, // Cargo
         unit: inpUnit.value,
         phone: inpPhone.value,
         updatedAt: new Date().toISOString()
@@ -848,7 +860,6 @@ async function handleCellClick(name, dayIndex) {
     }
     if(statusIcon) statusIcon.className = "w-1.5 h-1.5 rounded-full bg-orange-500 animate-pulse";
     
-    // PEGA NOME DO ADMIN LOGADO PARA O LOG (AGORA NO ESCOPO CORRETO)
     const profNameInput = document.getElementById('profName');
     const currentAdminName = (profNameInput && profNameInput.value) ? profNameInput.value : "Admin";
     
