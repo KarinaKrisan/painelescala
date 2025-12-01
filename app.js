@@ -32,7 +32,7 @@ let rawSchedule = {};
 let dailyChart = null;
 let isTrendMode = false;
 let currentDay = new Date().getDate();
-let sessionLogs = []; // NOVO: Array para guardar logs da sessão
+let sessionLogs = []; // Array para guardar logs da sessão
 
 const currentDateObj = new Date();
 const monthNames = ["Janeiro","Fevereiro","Março","Abril","Maio","Junho","Julho","Agosto","Setembro","Outubro","Novembro","Dezembro"];
@@ -176,7 +176,8 @@ function toggleProfileModal(show) {
         profileModal.classList.remove('hidden');
         loadAdminProfile();
         updateProfileStats();
-        updateActivityLogUI(); // Renderiza os logs ao abrir
+        updateActivityLogUI(); // Renderiza logs
+        updatePermissionsUI(); // Renderiza permissões
     } else {
         profileModal.classList.add('hidden');
     }
@@ -218,6 +219,36 @@ function updateProfileStats() {
 }
 
 // ------------------------------------------
+// LÓGICA DE PERMISSÕES DINÂMICAS (NOVO)
+// ------------------------------------------
+function updatePermissionsUI() {
+    const list = document.getElementById('permissionsList');
+    if(!list) return;
+    list.innerHTML = '';
+
+    // Definição das permissões para o cargo atual (Admin)
+    // Se quiser criar lógica de cargos, pode trocar este array baseado no user
+    const permissions = [
+        "Criar, editar e excluir escalas",
+        "Criar e editar colaboradores e equipes",
+        "Aprovar/recusar trocas de horários ou folgas",
+        "Visualizar dashboards e relatórios completos",
+        "Gerenciar notificações do sistema",
+        "Controlar horários especiais (férias, afastamentos, banco)"
+    ];
+
+    permissions.forEach(perm => {
+        const li = document.createElement('li');
+        li.className = "flex items-start gap-3";
+        li.innerHTML = `
+            <i class="fas fa-check-circle text-emerald-500 mt-0.5 text-xs"></i>
+            <span class="text-xs text-gray-300 leading-tight">${perm}</span>
+        `;
+        list.appendChild(li);
+    });
+}
+
+// ------------------------------------------
 // LÓGICA DE ATIVIDADE RECENTE (SESSION LOGS)
 // ------------------------------------------
 function logSessionActivity(type, description) {
@@ -231,10 +262,8 @@ function logSessionActivity(type, description) {
         time: timeString
     });
 
-    // Mantém apenas os últimos 20 logs para não pesar
     if (sessionLogs.length > 20) sessionLogs.pop();
     
-    // Se o modal estiver aberto, atualiza a UI
     if (!profileModal.classList.contains('hidden')) {
         updateActivityLogUI();
     }
@@ -244,7 +273,7 @@ function updateActivityLogUI() {
     const list = document.getElementById('activityLogList');
     if(!list) return;
 
-    list.innerHTML = ''; // Limpa
+    list.innerHTML = ''; 
 
     if(sessionLogs.length === 0) {
         list.innerHTML = '<li class="text-xs text-center text-gray-600 italic py-2">Nenhuma atividade registrada ainda.</li>';
@@ -258,12 +287,10 @@ function updateActivityLogUI() {
         let textClass = 'text-gray-300';
         let descHTML = log.desc;
 
-        // Configuração visual baseada no tipo
         if (log.type === 'edit') {
             iconClass = 'fas fa-pen';
             colorClass = 'text-blue-400';
             bgClass = 'bg-blue-500/10 border-blue-500/20';
-            // Deixa o nome em negrito se tiver "Alterou escala de X"
             descHTML = log.desc.replace(/(Alterou escala de )(.+)/, '$1<span class="font-bold text-white">$2</span>');
         } else if (log.type === 'save') {
             iconClass = 'fas fa-save';
@@ -280,7 +307,7 @@ function updateActivityLogUI() {
         }
 
         const li = document.createElement('li');
-        li.className = "flex items-center gap-3 text-xs animate-fade-in-up"; // Animação suave na entrada
+        li.className = "flex items-center gap-3 text-xs animate-fade-in-up"; 
         li.innerHTML = `
             <div class="w-6 h-6 rounded-full flex items-center justify-center border ${bgClass} ${colorClass}">
                 <i class="${iconClass}"></i>
