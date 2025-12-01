@@ -1,10 +1,14 @@
 // app.js - Cosmic Dark Edition (Rounded)
 // ==========================================
+// 1. IMPORTAÇÕES FIREBASE (WEB SDK)
+// ==========================================
 import { initializeApp } from "https://www.gstatic.com/firebasejs/11.0.2/firebase-app.js";
 import { getFirestore, doc, getDoc, setDoc } from "https://www.gstatic.com/firebasejs/11.0.2/firebase-firestore.js";
-import { getAuth, onAuthStateChanged, signOut, sendPasswordResetEmail } from "https://www.gstatic.com/firebasejs/11.0.2/firebase-auth.js";
+import { getAuth, onAuthStateChanged, signOut } from "https://www.gstatic.com/firebasejs/11.0.2/firebase-auth.js";
 
-// 2. CONFIGURAÇÃO - USANDO SUA CHAVE EXATA
+// ==========================================
+// 2. CONFIGURAÇÃO
+// ==========================================
 const firebaseConfig = {
   apiKey: "AIzaSyCBKSPH7lfUt0VsQPhJX3a0CQ2wYcziQvM",
   authDomain: "dadosescala.firebaseapp.com",
@@ -18,39 +22,48 @@ const app = initializeApp(firebaseConfig);
 const db = getFirestore(app);
 const auth = getAuth(app);
 
+// ==========================================
 // 3. ESTADO
+// ==========================================
 let isAdmin = false;
 let hasUnsavedChanges = false;
 let scheduleData = {}; 
 let rawSchedule = {};  
-let sessionLogs = []; 
-let unsavedChangesSet = new Set(); 
-let currentPhotoString = "";
-
-const ROLE_DEFINITIONS = {
-    'master': { label: 'ADM Master', color: 'text-purple-400 bg-purple-900/30 border-purple-500/50', perms: ["Gerenciar usuários e níveis", "Criar/Excluir equipes e unidades", "Acesso total a relatórios", "Configurações globais e auditoria"] },
-    'geral': { label: 'ADM Geral', color: 'text-blue-400 bg-blue-900/30 border-blue-500/50', perms: ["Gestão de escalas da unidade", "Cadastrar colaboradores", "Aprovar trocas e férias", "Relatórios operacionais"] },
-    'local': { label: 'ADM Local', color: 'text-emerald-400 bg-emerald-900/30 border-emerald-500/50', perms: ["Visualizar e editar equipe", "Registrar atestados", "Aprovar ajustes simples", "Dashboard básico"] }
-};
+let dailyChart = null;
+let isTrendMode = false;
+let currentDay = new Date().getDate();
 
 const currentDateObj = new Date();
 const monthNames = ["Janeiro","Fevereiro","Março","Abril","Maio","Junho","Julho","Agosto","Setembro","Outubro","Novembro","Dezembro"];
-let systemYear = currentDateObj.getFullYear();
-let systemMonth = currentDateObj.getMonth(); 
-let selectedMonthObj = { year: systemYear, month: systemMonth };
-let currentDay = new Date().getDate();
+const systemYear = currentDateObj.getFullYear();
+const systemMonth = currentDateObj.getMonth(); 
+
+const availableMonths = [
+    { year: 2025, month: 10 }, { year: 2025, month: 11 }, 
+    { year: 2026, month: 0 }, { year: 2026, month: 1 }, { year: 2026, month: 2 }, 
+    { year: 2026, month: 3 }, { year: 2026, month: 4 }, { year: 2026, month: 5 }, 
+    { year: 2026, month: 6 }, { year: 2026, month: 7 }, { year: 2026, month: 8 }, 
+    { year: 2026, month: 9 }, { year: 2026, month: 10 }, { year: 2026, month: 11 }  
+];
+
+let selectedMonthObj = availableMonths.find(m => m.year === systemYear && m.month === systemMonth) || availableMonths[availableMonths.length-1];
 
 const statusMap = { 'T':'Trabalhando','F':'Folga','FS':'Folga Sáb','FD':'Folga Dom','FE':'Férias','OFF-SHIFT':'Exp.Encerrado', 'F_EFFECTIVE': 'Exp.Encerrado' };
 const daysOfWeek = ["Domingo","Segunda","Terça","Quarta","Quinta","Sexta","Sábado"];
 
 function pad(n){ return n < 10 ? '0' + n : '' + n; }
 
-// 4. AUTH & UI
+// ==========================================
+// 4. AUTH & UI LOGIC
+// ==========================================
 const adminToolbar = document.getElementById('adminToolbar');
 const btnOpenLogin = document.getElementById('btnOpenLogin');
 const btnLogout = document.getElementById('btnLogout');
 
-if(btnLogout) btnLogout.addEventListener('click', () => { signOut(auth); window.location.reload(); });
+if(btnLogout) btnLogout.addEventListener('click', () => {
+    signOut(auth);
+    window.location.reload();
+});
 
 onAuthStateChanged(auth, (user) => {
     if (user) {
@@ -59,9 +72,6 @@ onAuthStateChanged(auth, (user) => {
         if(btnOpenLogin) btnOpenLogin.classList.add('hidden');
         document.getElementById('adminEditHint').classList.remove('hidden');
         document.body.style.paddingBottom = "100px"; 
-        
-        logSessionActivity('login', 'Login no sistema');
-        loadAdminProfile(true); 
     } else {
         isAdmin = false;
         adminToolbar.classList.add('hidden');
@@ -74,46 +84,39 @@ onAuthStateChanged(auth, (user) => {
     if(sel && sel.value) updatePersonalView(sel.value);
 });
 
-// 5. FIRESTORE - CARREGAMENTO SEGURO
+// ==========================================
+// 5. FIRESTORE DATA
+// ==========================================
 async function loadDataFromCloud() {
     const docId = `escala-${selectedMonthObj.year}-${String(selectedMonthObj.month+1).padStart(2,'0')}`;
-    console.log("Buscando documento:", docId); // LOG PARA DEBUG
-
     try {
         const docRef = doc(db, "escalas", docId);
         const docSnap = await getDoc(docRef);
+
         if (docSnap.exists()) {
             rawSchedule = docSnap.data();
             processScheduleData(); 
             updateDailyView();
             initSelect();
         } else {
-            console.warn("Documento não encontrado para:", docId);
+            console.log("Nenhum documento encontrado.");
             rawSchedule = {}; 
             processScheduleData();
             updateDailyView();
         }
     } catch (e) {
-        console.error("Erro crítico ao baixar dados:", e);
-        alert("Erro ao conectar com o banco de dados. Verifique sua conexão.");
+        console.error("Erro ao baixar dados:", e);
     }
 }
 
-// SALVAMENTO SEGURO
 async function saveToCloud() {
     if(!isAdmin) return;
-    
-    // TRAVA DE SEGURANÇA: Não salva se estiver vazio
-    if (!rawSchedule || Object.keys(rawSchedule).length === 0) {
-        alert("Atenção: Nenhum dado carregado para salvar. A operação foi bloqueada para evitar perda de dados.");
-        return;
-    }
-
     const btn = document.getElementById('btnSaveCloud');
     const status = document.getElementById('saveStatus');
     const statusIcon = document.getElementById('saveStatusIcon');
     
     btn.innerHTML = '<i class="fas fa-spinner fa-spin mr-2"></i> ...';
+    btn.classList.add('opacity-75', 'cursor-not-allowed');
     
     const docId = `escala-${selectedMonthObj.year}-${String(selectedMonthObj.month+1).padStart(2,'0')}`;
     
@@ -123,82 +126,32 @@ async function saveToCloud() {
         status.textContent = "Sincronizado";
         status.className = "text-xs text-gray-300 font-medium transition-colors";
         if(statusIcon) statusIcon.className = "w-1.5 h-1.5 rounded-full bg-emerald-500 shadow-[0_0_8px_rgba(16,185,129,0.6)]";
-        
-        const profNameInput = document.getElementById('profName');
-        const adminName = (profNameInput && profNameInput.value) ? profNameInput.value.split(' ')[0] : "Admin";
-        
-        if(unsavedChangesSet.size > 0) {
-            unsavedChangesSet.forEach(empName => logSessionActivity('save', `${adminName} salvou escala de ${empName}`));
-            unsavedChangesSet.clear();
-        } else {
-            logSessionActivity('save', 'Sincronização realizada');
-        }
-
-        setTimeout(() => { btn.innerHTML = '<i class="fas fa-cloud-upload-alt mr-2"></i> Salvar'; }, 1000);
+        setTimeout(() => {
+            btn.innerHTML = '<i class="fas fa-cloud-upload-alt mr-2 group-hover:-translate-y-0.5 transition-transform"></i> Salvar';
+            btn.classList.remove('opacity-75', 'cursor-not-allowed');
+        }, 1000);
     } catch (e) {
-        console.error("Erro salvar:", e);
-        alert("Erro ao salvar no banco de dados!");
+        console.error("Erro ao salvar:", e);
+        alert("Erro ao salvar!");
         btn.innerHTML = '<i class="fas fa-exclamation-circle"></i> Erro';
     }
 }
+
 document.getElementById('btnSaveCloud').addEventListener('click', saveToCloud);
 
-// 5.1 PROFILE LOGIC & CONTROLS ACTIVATION
+// ==========================================
+// 5.1 ADMIN PROFILE LOGIC (MEU PERFIL)
+// ==========================================
 const profileModal = document.getElementById('profileModal');
 const btnOpenProfile = document.getElementById('btnOpenProfile');
 const btnCloseProfile = document.getElementById('btnCloseProfile');
 const btnCancelProfile = document.getElementById('btnCancelProfile');
 const btnSaveProfile = document.getElementById('btnSaveProfile');
-const btnChangePassword = document.getElementById('btnChangePassword');
 
-// Photo Logic
-const btnChangePhoto = document.getElementById('btnChangePhoto');
-const profPhotoInput = document.getElementById('profPhotoInput');
-const photoPreview = document.getElementById('photoPreview');
-const photoIcon = document.getElementById('photoIcon');
-
-if(btnChangePhoto && profPhotoInput) {
-    btnChangePhoto.addEventListener('click', () => profPhotoInput.click());
-}
-if(profPhotoInput) {
-    profPhotoInput.addEventListener('change', (e) => {
-        const file = e.target.files[0];
-        if (file) {
-            const reader = new FileReader();
-            reader.onload = (evt) => {
-                photoPreview.style.backgroundImage = `url('${evt.target.result}')`;
-                photoIcon.classList.add('hidden');
-                currentPhotoString = evt.target.result;
-            };
-            reader.readAsDataURL(file);
-        }
-    });
-}
-
-// Tabs Logic
-const modalTabs = document.querySelectorAll('.modal-tab');
-const tabContents = document.querySelectorAll('.modal-content-tab');
-
-modalTabs.forEach(tab => {
-    tab.addEventListener('click', () => {
-        modalTabs.forEach(t => {
-            t.classList.remove('active', 'border-b-2', 'border-purple-500', 'text-purple-400');
-            t.classList.add('text-gray-400');
-        });
-        tabContents.forEach(c => c.classList.add('hidden'));
-
-        tab.classList.add('active', 'border-b-2', 'border-purple-500', 'text-purple-400');
-        tab.classList.remove('text-gray-400');
-        const targetId = tab.getAttribute('data-target');
-        document.getElementById(targetId).classList.remove('hidden');
-    });
-});
-
-// Inputs
+// Inputs do Modal
 const inpName = document.getElementById('profName');
 const inpEmail = document.getElementById('profEmail');
-const inpRegId = document.getElementById('profRegId'); 
-const inpRole = document.getElementById('profJob');
+const inpRole = document.getElementById('profRole');
 const inpUnit = document.getElementById('profUnit');
 const inpPhone = document.getElementById('profPhone');
 
@@ -206,7 +159,6 @@ function toggleProfileModal(show) {
     if(show) {
         profileModal.classList.remove('hidden');
         loadAdminProfile();
-        updateActivityLogUI(); 
     } else {
         profileModal.classList.add('hidden');
     }
@@ -215,195 +167,645 @@ function toggleProfileModal(show) {
 if(btnOpenProfile) btnOpenProfile.addEventListener('click', () => toggleProfileModal(true));
 if(btnCloseProfile) btnCloseProfile.addEventListener('click', () => toggleProfileModal(false));
 if(btnCancelProfile) btnCancelProfile.addEventListener('click', () => toggleProfileModal(false));
-if(profileModal) profileModal.addEventListener('click', (e) => { if(e.target === profileModal) toggleProfileModal(false); });
-
-// --- ATIVAÇÃO DO CONTROLE DE ESCALAS ---
-const shortcutDaily = document.getElementById('shortcutDaily');
-const shortcutWeekly = document.getElementById('shortcutWeekly');
-const shortcutMonthly = document.getElementById('shortcutMonthly');
-const shortcutIndividual = document.getElementById('shortcutIndividual');
-const shortcutTeam = document.getElementById('shortcutTeam');
-const btnNewSchedule = document.getElementById('btnNewSchedule');
-const btnViewHistory = document.getElementById('btnViewHistory');
-
-if(shortcutDaily) shortcutDaily.addEventListener('click', () => { toggleProfileModal(false); document.querySelector('button[data-tab="daily"]').click(); });
-if(shortcutIndividual) shortcutIndividual.addEventListener('click', () => { toggleProfileModal(false); document.querySelector('button[data-tab="personal"]').click(); });
-
-if(shortcutWeekly) shortcutWeekly.addEventListener('click', () => alert("Visualização Semanal em desenvolvimento."));
-if(shortcutMonthly) shortcutMonthly.addEventListener('click', () => alert("Visualização Mensal em desenvolvimento."));
-if(shortcutTeam) shortcutTeam.addEventListener('click', () => alert("Filtro por Equipe em desenvolvimento."));
-
-if(btnNewSchedule) btnNewSchedule.addEventListener('click', () => alert("Assistente de Nova Escala em desenvolvimento."));
-if(btnViewHistory) btnViewHistory.addEventListener('click', () => {
-    // Muda para a aba de Configurações onde está o log
-    const configTab = document.querySelector('button[data-target="tab-config"]');
-    if(configTab) configTab.click();
+if(profileModal) profileModal.addEventListener('click', (e) => {
+    if(e.target === profileModal) toggleProfileModal(false);
 });
-// ---------------------------------------
 
-if(btnChangePassword) {
-    btnChangePassword.addEventListener('click', async () => {
-        const user = auth.currentUser;
-        if(user && user.email && confirm(`Enviar link para ${user.email}?`)) {
-            try { await sendPasswordResetEmail(auth, user.email); alert("E-mail enviado!"); } catch(e) { alert("Erro: " + e.message); }
-        }
-    });
-}
-
-function updatePermissionsUI(roleKey) {
-    const list = document.getElementById('permissionsList');
-    const badge = document.getElementById('profRoleBadge');
-    const displayInput = document.getElementById('profRoleDisplay');
-    const dateDisplay = document.getElementById('lastPermUpdate');
-
-    if(!list) return;
-    list.innerHTML = '';
-
-    const safeKey = String(roleKey || 'local').trim().toLowerCase();
-    const roleData = ROLE_DEFINITIONS[safeKey] || ROLE_DEFINITIONS['local'];
-
-    if(badge) {
-        badge.textContent = roleData.label;
-        badge.className = `text-[10px] font-bold px-2 py-0.5 rounded border uppercase ${roleData.color}`;
-    }
-    if(displayInput) displayInput.value = roleData.label;
-    if(dateDisplay) dateDisplay.textContent = new Date().toLocaleDateString();
-
-    roleData.perms.forEach(perm => {
-        const li = document.createElement('li');
-        li.className = "flex items-start gap-3 animate-fade-in-list";
-        li.innerHTML = `<i class="fas fa-check-circle text-emerald-500 mt-0.5 text-xs"></i><span class="text-xs text-gray-300 leading-tight">${perm}</span>`;
-        list.appendChild(li);
-    });
-}
-
-function logSessionActivity(type, description) {
-    const now = new Date();
-    const timeString = now.toLocaleTimeString('pt-BR', { hour: '2-digit', minute: '2-digit' });
-    sessionLogs.unshift({ type, desc: description, time: timeString });
-    if (sessionLogs.length > 20) sessionLogs.pop();
-    if (!profileModal.classList.contains('hidden')) updateActivityLogUI();
-}
-
-function updateActivityLogUI() {
-    const list = document.getElementById('activityLogList');
-    if(!list) return;
-    list.innerHTML = ''; 
-    if(sessionLogs.length === 0) {
-        list.innerHTML = '<li class="text-xs text-center text-gray-600 italic py-2">Nenhuma atividade registrada ainda.</li>';
-        return;
-    }
-    sessionLogs.forEach(log => {
-        let iconClass = 'fas fa-circle';
-        let colorClass = 'text-gray-400';
-        let bgClass = 'bg-gray-500/10 border-gray-500/20';
-        let descHTML = log.desc;
-
-        if (log.type === 'edit') { iconClass = 'fas fa-pen'; colorClass = 'text-blue-400'; bgClass = 'bg-blue-500/10 border-blue-500/20'; }
-        else if (log.type === 'save') { 
-            iconClass = 'fas fa-save'; colorClass = 'text-purple-400'; bgClass = 'bg-purple-500/10 border-purple-500/20';
-            descHTML = log.desc.replace(/(.*)( salvou a escala de )(.*)/, '<span class="font-bold text-white">$1</span>$2<span class="font-bold text-white">$3</span>');
-        } 
-        else if (log.type === 'login') { iconClass = 'fas fa-sign-in-alt'; colorClass = 'text-green-400'; bgClass = 'bg-green-500/10 border-green-500/20'; }
-
-        const li = document.createElement('li');
-        li.className = "flex items-center gap-3 text-xs animate-fade-in-list"; 
-        li.innerHTML = `<div class="w-6 h-6 rounded-full flex items-center justify-center border ${bgClass} ${colorClass} shrink-0"><i class="${iconClass}"></i></div><div class="flex-1 truncate"><p class="text-gray-300">${descHTML}</p></div><span class="text-gray-600 font-mono text-[10px] shrink-0">${log.time}</span>`;
-        list.appendChild(li);
-    });
-}
-
-async function loadAdminProfile(silent = false) {
+async function loadAdminProfile() {
     const user = auth.currentUser;
     if(!user) return;
-    if(!silent) {
-        inpEmail.value = user.email; 
-        const badge = document.getElementById('profRoleBadge');
-        if(badge) badge.textContent = "Verificando...";
-        btnSaveProfile.disabled = true;
-    }
+
+    inpEmail.value = user.email; // Preenche email do Auth automaticamente
+    
+    btnSaveProfile.innerHTML = '<i class="fas fa-spinner fa-spin mr-2"></i> Carregando...';
+    btnSaveProfile.disabled = true;
+
     try {
         const docRef = doc(db, "admins", user.uid);
         const docSnap = await getDoc(docRef);
+
         if (docSnap.exists()) {
             const data = docSnap.data();
-            if(!silent) {
-                inpName.value = data.name || '';
-                inpRole.value = data.role || ''; 
-                inpUnit.value = data.unit || '';
-                inpPhone.value = data.phone || '';
-                if(inpRegId) inpRegId.value = data.registrationId || ''; 
-                if (data.photoBase64) {
-                    currentPhotoString = data.photoBase64;
-                    photoPreview.style.backgroundImage = `url('${data.photoBase64}')`;
-                    photoIcon.classList.add('hidden');
-                }
-            }
-            updatePermissionsUI(data.systemRole || 'local');
+            inpName.value = data.name || '';
+            inpRole.value = data.role || '';
+            inpUnit.value = data.unit || '';
+            inpPhone.value = data.phone || '';
         } else {
-            if(!silent) { inpName.value = ''; inpRole.value = ''; }
-            updatePermissionsUI('local');
+            // Se não existe perfil ainda, limpa os campos
+            inpName.value = '';
+            inpRole.value = '';
+            inpUnit.value = '';
+            inpPhone.value = '';
         }
     } catch (e) {
-        console.error("Erro perfil:", e);
-        updatePermissionsUI('local');
+        console.error("Erro ao carregar perfil:", e);
     } finally {
-        if(!silent && btnSaveProfile) btnSaveProfile.disabled = false;
+        btnSaveProfile.innerHTML = '<i class="fas fa-save mr-2"></i> Salvar Alterações';
+        btnSaveProfile.disabled = false;
     }
 }
 
 if(btnSaveProfile) btnSaveProfile.addEventListener('click', async () => {
     const user = auth.currentUser;
     if(!user) return;
+
     const profileData = {
         name: inpName.value,
         email: user.email,
-        role: inpRole.value, 
+        role: inpRole.value,
         unit: inpUnit.value,
         phone: inpPhone.value,
-        registrationId: inpRegId ? inpRegId.value : '', 
-        photoBase64: currentPhotoString, 
         updatedAt: new Date().toISOString()
     };
+
     btnSaveProfile.innerHTML = '<i class="fas fa-spinner fa-spin mr-2"></i> Salvando...';
     btnSaveProfile.disabled = true;
+
     try {
         await setDoc(doc(db, "admins", user.uid), profileData, { merge: true });
-        loadAdminProfile(); 
-        alert("Salvo com sucesso!");
+        toggleProfileModal(false);
+        // Opcional: Mostrar toast de sucesso
     } catch (e) {
-        alert("Erro ao salvar.");
+        console.error("Erro ao salvar perfil:", e);
+        alert("Erro ao salvar perfil.");
     } finally {
-        btnSaveProfile.innerHTML = '<i class="fas fa-save mr-2"></i> Salvar';
+        btnSaveProfile.innerHTML = '<i class="fas fa-save mr-2"></i> Salvar Alterações';
         btnSaveProfile.disabled = false;
     }
 });
 
-function handleCellClick(name, dayIndex) { 
-    if (!isAdmin) return; 
-    const emp = scheduleData[name]; 
-    const newStatus = cycleStatus(emp.schedule[dayIndex]); 
-    emp.schedule[dayIndex] = newStatus; 
-    rawSchedule[name].calculatedSchedule = emp.schedule; 
-    hasUnsavedChanges = true; 
-    const statusEl = document.getElementById('saveStatus'); 
-    const statusIcon = document.getElementById('saveStatusIcon'); 
-    if(statusEl) { statusEl.textContent = "Alterado (Não salvo)"; statusEl.className = "text-xs text-orange-400 font-bold"; } 
-    if(statusIcon) statusIcon.className = "w-1.5 h-1.5 rounded-full bg-orange-500 animate-pulse"; 
-    
-    unsavedChangesSet.add(name); 
-    
-    updateCalendar(name, emp.schedule); 
-    updateDailyView(); 
-    updateProfileStats(); 
-    const sel = document.getElementById('employeeSelect'); 
-    updateWeekendTable(sel ? sel.value : null); 
+
+// ==========================================
+// 6. DATA PROCESSING
+// ==========================================
+function generate5x2ScheduleDefaultForMonth(monthObj) {
+    const totalDays = new Date(monthObj.year, monthObj.month+1, 0).getDate();
+    const arr = [];
+    for (let d=1; d<=totalDays; d++){
+        const dow = new Date(monthObj.year, monthObj.month, d).getDay();
+        arr.push((dow===0||dow===6) ? 'F' : 'T');
+    }
+    return arr;
 }
 
-// ... Funções auxiliares (generate5x2, parseDayList, etc.) mantidas iguais ...
-function generate5x2ScheduleDefaultForMonth(monthObj) { const totalDays = new Date(monthObj.year, monthObj.month+1, 0).getDate(); const arr = []; for (let d=1; d<=totalDays; d++){ const dow = new Date(monthObj.year, monthObj.month, d).getDay(); arr.push((dow===0||dow===6) ? 'F' : 'T'); } return arr; }
-function parseDayListForMonth(dayString, monthObj) { if (!dayString) return []; if (Array.isArray(dayString)) return dayString; const totalDays = new Date(monthObj.year, monthObj.month+1, 0).getDate(); const days = new Set(); const normalized = String(dayString).replace(/\b(at[eé]|até|a)\b/gi,' a ').replace(/–|—/g,'-').replace(/\s+/g,' ').trim(); const parts = normalized.split(',').map(p=>p.trim()).filter(p=>p.length>0); parts.forEach(part=>{ const simple = part.match(/^(\d{1,2})-(\d{1,2})$/); if (simple) { for(let x=parseInt(simple[1]); x<=parseInt(simple[2]); x++) if(x>=1 && x<=totalDays) days.add(x); return; } const number = part.match(/^(\d{1,2})$/); if (number) { const v=parseInt(number[1]); if(v>=1 && v<=totalDays) days.add(v); return; } if (/fins? de semana|fim de semana/i.test(part)) { for (let d=1; d<=totalDays; d++){ const dow = new Date(monthObj.year, monthObj.month, d).getDay(); if (dow===0||dow===6) days.add(d); } return; } if (/segunda a sexta/i.test(part)) { for (let d=1; d<=totalDays; d++){ const dow = new Date(monthObj.year, monthObj.month, d).getDay(); if (dow>=1 && dow<=5) days.add(d); } return; } }); return Array.from(days).sort((a,b)=>a-b); }
-function buildFinalScheduleForMonth(employeeData, monthObj) { const totalDays = new Date(monthObj.year, monthObj.month+1, 0).getDate(); if (employeeData.calculatedSchedule && Array.isArray(employeeData.calculatedSchedule)) return employeeData.calculatedSchedule; const schedule = new Array(totalDays).fill(null); let tArr = []; if(typeof employeeData.T === 'string' && /segunda a sexta/i.test(employeeData.T)) tArr = generate5x2ScheduleDefaultForMonth(monthObj); else if(Array.isArray(employeeData.T)) { const arr = new Array(totalDays).fill('F'); employeeData.T.forEach(x => { if(typeof x === 'number') arr[x-1] = 'T'; }); tArr = arr; } const vacDays = parseDayListForMonth(employeeData.FE, monthObj); vacDays.forEach(d => { if (d>=1 && d<=totalDays) schedule[d-1] = 'FE'; }); const fsDays = parseDayListForMonth(employeeData.FS, monthObj); fsDays.forEach(d => { if(schedule[d-1] !== 'FE') schedule[d-1] = 'FS'; }); const fdDays = parseDayListForMonth(employeeData.FD, monthObj); fdDays.forEach(d => { if(schedule[d-1] !== 'FE') schedule[d-1] = 'FD'; }); for(let i=0; i<totalDays; i++) { if(!schedule[i]) { if(tArr[i] === 'T') schedule[i] = 'T'; else schedule[i] = 'F'; } } return schedule; }
-function processScheduleData() { scheduleData = {}; if (!rawSchedule) return; Object.keys(rawSchedule).forEach(name => { const finalArr = buildFinalScheduleForMonth(rawSchedule[name], selectedMonthObj); scheduleData[name] = { info: rawSchedule[name], schedule: finalArr }; rawSchedule[name].calculatedSchedule = finalArr; }); const totalDays = new Date(selectedMonthObj.year, selectedMonthObj.month+1, 0).getDate(); const slider = document.getElementById('dateSlider'); if (slider) { slider.max = totalDays; document.getElementById('sliderMaxLabel').textContent = `Dia ${totalDays}`; if (currentDay > totalDays) currentDay = totalDays; slider.value = currentDay; } }
+function parseDayListForMonth(dayString, monthObj) {
+    if (!dayString) return [];
+    if (Array.isArray(dayString)) return dayString; 
+    const totalDays = new Date(monthObj.year, monthObj.month+1, 0).getDate();
+    const days = new Set();
+    const normalized = String(dayString).replace(/\b(at[eé]|até|a)\b/gi,' a ').replace(/–|—/g,'-').replace(/\s+/g,' ').trim();
+    const parts = normalized.split(',').map(p=>p.trim()).filter(p=>p.length>0);
+
+    parts.forEach(part=>{
+        const simple = part.match(/^(\d{1,2})-(\d{1,2})$/);
+        if (simple) { for(let x=parseInt(simple[1]); x<=parseInt(simple[2]); x++) if(x>=1 && x<=totalDays) days.add(x); return; }
+        const number = part.match(/^(\d{1,2})$/);
+        if (number) { const v=parseInt(number[1]); if(v>=1 && v<=totalDays) days.add(v); return; }
+        if (/fins? de semana|fim de semana/i.test(part)) {
+            for (let d=1; d<=totalDays; d++){ const dow = new Date(monthObj.year, monthObj.month, d).getDay(); if (dow===0||dow===6) days.add(d); }
+            return;
+        }
+        if (/segunda a sexta/i.test(part)) {
+            for (let d=1; d<=totalDays; d++){ const dow = new Date(monthObj.year, monthObj.month, d).getDay(); if (dow>=1 && dow<=5) days.add(d); }
+            return;
+        }
+    });
+    return Array.from(days).sort((a,b)=>a-b);
+}
+
+function buildFinalScheduleForMonth(employeeData, monthObj) {
+    const totalDays = new Date(monthObj.year, monthObj.month+1, 0).getDate();
+    if (employeeData.calculatedSchedule && Array.isArray(employeeData.calculatedSchedule)) return employeeData.calculatedSchedule;
+
+    const schedule = new Array(totalDays).fill(null);
+    let tArr = [];
+    if(typeof employeeData.T === 'string' && /segunda a sexta/i.test(employeeData.T)) tArr = generate5x2ScheduleDefaultForMonth(monthObj);
+    else if(Array.isArray(employeeData.T)) {
+        const arr = new Array(totalDays).fill('F');
+        employeeData.T.forEach(x => { if(typeof x === 'number') arr[x-1] = 'T'; });
+        tArr = arr;
+    }
+
+    const vacDays = parseDayListForMonth(employeeData.FE, monthObj);
+    vacDays.forEach(d => { if (d>=1 && d<=totalDays) schedule[d-1] = 'FE'; });
+    const fsDays = parseDayListForMonth(employeeData.FS, monthObj);
+    fsDays.forEach(d => { if(schedule[d-1] !== 'FE') schedule[d-1] = 'FS'; });
+    const fdDays = parseDayListForMonth(employeeData.FD, monthObj);
+    fdDays.forEach(d => { if(schedule[d-1] !== 'FE') schedule[d-1] = 'FD'; });
+
+    for(let i=0; i<totalDays; i++) {
+        if(!schedule[i]) {
+            if(tArr[i] === 'T') schedule[i] = 'T';
+            else schedule[i] = 'F';
+        }
+    }
+    return schedule;
+}
+
+function processScheduleData() {
+    scheduleData = {};
+    if (!rawSchedule) return;
+    Object.keys(rawSchedule).forEach(name => {
+        const finalArr = buildFinalScheduleForMonth(rawSchedule[name], selectedMonthObj);
+        scheduleData[name] = { info: rawSchedule[name], schedule: finalArr };
+        rawSchedule[name].calculatedSchedule = finalArr;
+    });
+    const totalDays = new Date(selectedMonthObj.year, selectedMonthObj.month+1, 0).getDate();
+    const slider = document.getElementById('dateSlider');
+    if (slider) {
+        slider.max = totalDays;
+        document.getElementById('sliderMaxLabel').textContent = `Dia ${totalDays}`;
+        if (currentDay > totalDays) currentDay = totalDays;
+        slider.value = currentDay;
+    }
+}
+
+// ==========================================
+// 7. CHART & UI
+// ==========================================
+function parseSingleTimeRange(rangeStr) {
+    if (!rangeStr || typeof rangeStr !== 'string') return null;
+    const m = rangeStr.match(/(\d{1,2}):(\d{2})\s*às\s*(\d{1,2}):(\d{2})/);
+    if (!m) return null;
+    return { startTotal: parseInt(m[1])*60 + parseInt(m[2]), endTotal: parseInt(m[3])*60 + parseInt(m[4]) };
+}
+
+function isWorkingTime(timeRange) {
+    if (!timeRange || /12x36/i.test(timeRange)) return true;
+    const now = new Date();
+    const curr = now.getHours()*60 + now.getMinutes();
+    const ranges = Array.isArray(timeRange) ? timeRange : [timeRange];
+    for (const r of ranges) {
+        const p = parseSingleTimeRange(r);
+        if (!p) continue;
+        if (p.startTotal > p.endTotal) { if (curr >= p.startTotal || curr <= p.endTotal) return true; }
+        else { if (curr >= p.startTotal && curr <= p.endTotal) return true; }
+    }
+    return false;
+}
+
+window.toggleChartMode = function() {
+    isTrendMode = !isTrendMode;
+    const btn = document.getElementById("btnToggleChart");
+    const title = document.getElementById("chartTitle");
+    if (isTrendMode) {
+        if(btn) btn.textContent = "Voltar";
+        if(title) title.textContent = "Tendência Mensal";
+        renderMonthlyTrendChart();
+    } else {
+        if(btn) btn.textContent = "Ver Tendência";
+        if(title) title.textContent = "Capacidade Atual";
+        updateDailyView();
+    }
+}
+
+const centerTextPlugin = {
+    id: 'centerTextPlugin',
+    beforeDraw: (chart) => {
+        if (chart.config.type !== 'doughnut') return;
+        const { ctx, width, height, data } = chart;
+        const total = data.datasets[0].data.reduce((a, b) => a + b, 0);
+        const wIdx = data.labels.findIndex(l => l.includes('Trabalhando'));
+        const wCount = wIdx !== -1 ? data.datasets[0].data[wIdx] : 0;
+        const pct = total > 0 ? ((wCount / total) * 100).toFixed(0) : 0;
+        ctx.save();
+        ctx.font = 'bolder 3rem sans-serif';
+        ctx.fillStyle = '#FFFFFF';
+        ctx.textAlign = 'center';
+        ctx.textBaseline = 'middle';
+        ctx.fillText(`${pct}%`, width/2, height/2 - 10);
+        ctx.font = '600 0.7rem sans-serif';
+        ctx.fillStyle = '#94A3B8';
+        ctx.fillText('CAPACIDADE', width/2, height/2 + 25);
+        ctx.restore();
+    }
+};
+
+function renderMonthlyTrendChart() {
+    const totalDays = new Date(selectedMonthObj.year, selectedMonthObj.month + 1, 0).getDate();
+    const labels = [];
+    const dataPoints = [];
+    const pointColors = [];
+
+    for (let d = 1; d <= totalDays; d++) {
+        let working = 0;
+        let totalStaff = 0;
+        Object.keys(scheduleData).forEach(name => {
+            const employee = scheduleData[name];
+            if(!employee.schedule) return;
+            const status = employee.schedule[d-1];
+            if (status === 'T') working++;
+            if (status !== 'FE') totalStaff++;
+        });
+        const percentage = totalStaff > 0 ? ((working / totalStaff) * 100).toFixed(0) : 0;
+        labels.push(d);
+        dataPoints.push(percentage);
+        pointColors.push(percentage < 75 ? '#F87171' : '#34D399');
+    }
+
+    const ctx = document.getElementById('dailyChart').getContext('2d');
+    if (dailyChart) { dailyChart.destroy(); dailyChart = null; }
+
+    dailyChart = new Chart(ctx, {
+        type: 'line',
+        data: {
+            labels: labels,
+            datasets: [{
+                label: 'Capacidade (%)',
+                data: dataPoints,
+                borderColor: '#7C3AED',
+                backgroundColor: 'rgba(124, 58, 237, 0.15)',
+                pointBackgroundColor: pointColors,
+                pointBorderColor: '#0F1020',
+                pointRadius: 4,
+                pointHoverRadius: 7,
+                fill: true,
+                tension: 0.3
+            }]
+        },
+        options: {
+            responsive: true,
+            maintainAspectRatio: false,
+            interaction: { mode: 'index', intersect: false },
+            plugins: { legend: { display: false }, centerTextPlugin: false },
+            scales: {
+                y: { min: 0, max: 100, ticks: { callback: v => v+'%', color: '#64748B' }, grid: { color: '#2E3250' } },
+                x: { ticks: { color: '#64748B' }, grid: { display: false } }
+            }
+        },
+        plugins: [{
+            id: 'targetLine',
+            beforeDraw: (chart) => {
+                const { ctx, chartArea: { left, right }, scales: { y } } = chart;
+                const yValue = y.getPixelForValue(75);
+                if(yValue) {
+                    ctx.save();
+                    ctx.beginPath();
+                    ctx.strokeStyle = '#4B5563';
+                    ctx.lineWidth = 1;
+                    ctx.setLineDash([5, 5]);
+                    ctx.moveTo(left, yValue);
+                    ctx.lineTo(right, yValue);
+                    ctx.stroke();
+                    ctx.restore();
+                }
+            }
+        }]
+    });
+}
+
+function updateDailyChartDonut(working, off, offShift, vacation) {
+    const labels = [`Trabalhando (${working})`, `Folga (${off})`, `Encerrado (${offShift})`, `Férias (${vacation})`];
+    const rawColors = ['#34D399','#FBBF24','#E879F9','#F87171'];
+    const fData=[], fLabels=[], fColors=[];
+    [working, off, offShift, vacation].forEach((d,i)=>{ 
+        if(d>0 || (working+off+offShift+vacation)===0){ fData.push(d); fLabels.push(labels[i]); fColors.push(rawColors[i]); }
+    });
+
+    const ctx = document.getElementById('dailyChart').getContext('2d');
+    if (dailyChart) {
+        if (dailyChart.config.type !== 'doughnut') { dailyChart.destroy(); dailyChart = null; }
+    }
+    if (!dailyChart) {
+        dailyChart = new Chart(ctx, {
+            type: 'doughnut',
+            data: { labels: fLabels, datasets:[{ data: fData, backgroundColor: fColors, borderWidth: 0, hoverOffset:5 }] },
+            options: { 
+                responsive: true, 
+                maintainAspectRatio: false, 
+                cutout: '75%', 
+                plugins: { 
+                    legend: { position:'bottom', labels:{ padding:15, boxWidth: 8, color: '#94A3B8', font: {size: 10} } } 
+                } 
+            },
+            plugins: [centerTextPlugin]
+        });
+    } else {
+        dailyChart.data.labels = fLabels;
+        dailyChart.data.datasets[0].data = fData;
+        dailyChart.data.datasets[0].backgroundColor = fColors;
+        dailyChart.update();
+    }
+}
+
+function updateDailyView() {
+    if (isTrendMode) window.toggleChartMode();
+
+    const currentDateLabel = document.getElementById('currentDateLabel');
+    const dayOfWeekIndex = new Date(selectedMonthObj.year, selectedMonthObj.month, currentDay).getDay();
+    const now = new Date();
+    const isToday = (now.getDate() === currentDay && now.getMonth() === selectedMonthObj.month && now.getFullYear() === selectedMonthObj.year);
+    
+    currentDateLabel.textContent = `${daysOfWeek[dayOfWeekIndex]}, ${pad(currentDay)}/${pad(selectedMonthObj.month+1)}`;
+
+    let w=0, o=0, v=0, os=0;
+    let wH='', oH='', vH='', osH='';
+
+    if (Object.keys(scheduleData).length === 0) {
+        updateDailyChartDonut(0,0,0,0);
+        return;
+    }
+
+    Object.keys(scheduleData).forEach(name=>{
+        const emp = scheduleData[name];
+        let status = emp.schedule[currentDay-1] || 'F';
+        let display = status;
+
+        if (status === 'FE') { v++; display='FE'; }
+        else if (isToday && status === 'T') {
+            if (!isWorkingTime(emp.info.Horário)) { os++; display='OFF-SHIFT'; status='F_EFFECTIVE'; }
+            else w++;
+        }
+        else if (status === 'T') w++;
+        else o++; 
+
+        // CRIAÇÃO DO ITEM DA LISTA COM BORDAS ARREDONDADAS (rounded-xl)
+        const row = `
+            <li class="flex justify-between items-center text-sm p-4 rounded-xl mb-2 bg-[#1A1C2E] hover:bg-[#2E3250] border border-[#2E3250] hover:border-purple-500 transition-all cursor-default shadow-sm group">
+                <div class="flex flex-col">
+                    <span class="font-bold text-gray-200 group-hover:text-white transition-colors">${name}</span>
+                    <span class="text-[10px] text-gray-500 font-mono mt-0.5">${emp.info.Horário||'--'}</span>
+                </div>
+                <span class="day-status status-${display} rounded-lg px-2.5 py-1 text-[10px] font-bold tracking-wide shadow-none border-0 bg-opacity-10">${statusMap[display]||display}</span>
+            </li>`;
+
+        if (status==='T') wH+=row;
+        else if (status==='F_EFFECTIVE') osH+=row;
+        else if (['FE'].includes(status)) vH+=row;
+        else oH+=row;
+    });
+
+    document.getElementById('kpiWorking').textContent = w;
+    document.getElementById('kpiOffShift').textContent = os;
+    document.getElementById('kpiOff').textContent = o;
+    document.getElementById('kpiVacation').textContent = v;
+
+    document.getElementById('listWorking').innerHTML = wH || '<li class="text-gray-600 text-xs text-center py-4 italic">Ninguém neste status.</li>';
+    document.getElementById('listOffShift').innerHTML = osH || '<li class="text-gray-600 text-xs text-center py-4 italic">Ninguém neste status.</li>';
+    document.getElementById('listOff').innerHTML = oH || '<li class="text-gray-600 text-xs text-center py-4 italic">Ninguém neste status.</li>';
+    document.getElementById('listVacation').innerHTML = vH || '<li class="text-gray-600 text-xs text-center py-4 italic">Ninguém neste status.</li>';
+
+    updateDailyChartDonut(w, o, os, v);
+}
+
+// ==========================================
+// 8. PERSONAL & ADMIN
+// ==========================================
+function initSelect() {
+    const select = document.getElementById('employeeSelect');
+    if (!select) return;
+    select.innerHTML = '<option value="">Selecione um colaborador</option>';
+    Object.keys(scheduleData).sort().forEach(name=>{
+        const opt = document.createElement('option'); opt.value=name; opt.textContent=name; select.appendChild(opt);
+    });
+    
+    const newSelect = select.cloneNode(true);
+    select.parentNode.replaceChild(newSelect, select);
+    
+    newSelect.addEventListener('change', e => {
+        const name = e.target.value;
+        if(name) {
+            updatePersonalView(name);
+        } else {
+            document.getElementById('personalInfoCard').classList.add('hidden');
+            document.getElementById('calendarContainer').classList.add('hidden');
+        }
+    });
+}
+
+function updatePersonalView(name) {
+    const emp = scheduleData[name];
+    if (!emp) return;
+    const card = document.getElementById('personalInfoCard');
+    
+    const cargo = emp.info.Cargo || emp.info.Grupo || 'Colaborador';
+    const horario = emp.info.Horário || '--:--';
+    const celula = emp.info.Célula || emp.info.Celula || 'Sitelbra';
+    let turno = emp.info.Turno || 'Comercial';
+
+    let statusToday = emp.schedule[currentDay - 1] || 'F';
+    let displayStatus = statusToday;
+    const now = new Date();
+    const isToday = (now.getDate() === currentDay && now.getMonth() === selectedMonthObj.month && now.getFullYear() === selectedMonthObj.year);
+    if (isToday && statusToday === 'T' && !isWorkingTime(emp.info.Horário)) displayStatus = 'OFF-SHIFT';
+
+    const colorClasses = {
+        'T': 'bg-green-500 shadow-[0_0_10px_#22c55e]',
+        'F': 'bg-yellow-500 shadow-[0_0_10px_#eab308]',
+        'FS': 'bg-sky-500 shadow-[0_0_10px_#0ea5e9]',
+        'FD': 'bg-indigo-500 shadow-[0_0_10px_#6366f1]',
+        'FE': 'bg-red-500 shadow-[0_0_10px_#ef4444]',
+        'OFF-SHIFT': 'bg-fuchsia-500 shadow-[0_0_10px_#d946ef]'
+    };
+    let dotClass = colorClasses[displayStatus] || 'bg-gray-500';
+
+    card.classList.remove('hidden');
+    card.className = "mb-8 bg-[#1A1C2E] rounded-xl border border-[#2E3250] overflow-hidden";
+    card.innerHTML = `
+        <div class="px-6 py-5 flex justify-between items-center bg-gradient-to-r from-[#1A1C2E] to-[#2E3250]/30">
+            <div>
+                <h2 class="text-xl md:text-2xl font-bold text-white tracking-tight">${name}</h2>
+                <p class="text-purple-400 text-xs font-bold uppercase tracking-widest mt-1">${cargo}</p>
+            </div>
+            <div class="w-3 h-3 rounded-full ${dotClass}"></div>
+        </div>
+        <div class="grid grid-cols-3 divide-x divide-[#2E3250] bg-[#0F1020]/50 border-t border-[#2E3250]">
+            <div class="py-4 text-center">
+                <span class="block text-[10px] text-gray-500 font-bold uppercase tracking-wider">Célula</span>
+                <span class="block text-sm font-bold text-gray-300 mt-1">${celula}</span>
+            </div>
+            <div class="py-4 text-center">
+                <span class="block text-[10px] text-gray-500 font-bold uppercase tracking-wider">Turno</span>
+                <span class="block text-sm font-bold text-gray-300 mt-1">${turno}</span>
+            </div>
+            <div class="py-4 text-center">
+                <span class="block text-[10px] text-gray-500 font-bold uppercase tracking-wider">Horário</span>
+                <span class="block text-sm font-bold text-gray-300 mt-1">${horario}</span>
+            </div>
+        </div>
+    `;
+
+    document.getElementById('calendarContainer').classList.remove('hidden');
+    updateCalendar(name, emp.schedule);
+}
+
+function cycleStatus(current) {
+    const sequence = ['T', 'F', 'FS', 'FD', 'FE'];
+    let idx = sequence.indexOf(current);
+    if(idx === -1) return 'T';
+    return sequence[(idx + 1) % sequence.length];
+}
+
+async function handleCellClick(name, dayIndex) {
+    if (!isAdmin) return;
+    const emp = scheduleData[name];
+    const newStatus = cycleStatus(emp.schedule[dayIndex]);
+    emp.schedule[dayIndex] = newStatus;
+    rawSchedule[name].calculatedSchedule = emp.schedule;
+    
+    hasUnsavedChanges = true;
+    const statusEl = document.getElementById('saveStatus');
+    const statusIcon = document.getElementById('saveStatusIcon');
+    if(statusEl) {
+        statusEl.textContent = "Alterado (Não salvo)";
+        statusEl.className = "text-xs text-orange-400 font-bold";
+    }
+    if(statusIcon) statusIcon.className = "w-1.5 h-1.5 rounded-full bg-orange-500 animate-pulse";
+    
+    updateCalendar(name, emp.schedule);
+    updateDailyView();
+    const sel = document.getElementById('employeeSelect');
+    updateWeekendTable(sel ? sel.value : null);
+}
+
+function updateCalendar(name, schedule) {
+    const grid = document.getElementById('calendarGrid');
+    const isMobile = window.innerWidth <= 767;
+    grid.innerHTML = '';
+    
+    if(isMobile) {
+        grid.className = 'space-y-2 mt-4';
+        schedule.forEach((st, i) => {
+            let pillClasses = "flex justify-between items-center p-3 px-4 rounded-xl border transition-all text-sm";
+            if(isAdmin) pillClasses += " cursor-pointer active:scale-95";
+            
+            // Dark Mode Mobile Pills
+            pillClasses += " bg-[#1A1C2E] border-[#2E3250] text-gray-300";
+
+            const el = document.createElement('div');
+            el.className = pillClasses;
+            el.innerHTML = `
+                <span class="font-mono text-gray-500">Dia ${pad(i+1)}</span>
+                <span class="day-status status-${st}">${statusMap[st]||st}</span>
+            `;
+            if(isAdmin) el.onclick = () => handleCellClick(name, i);
+            grid.appendChild(el);
+        });
+    } else {
+        grid.className = 'calendar-grid-container';
+        const m = { y: selectedMonthObj.year, mo: selectedMonthObj.month };
+        const empty = new Date(m.y, m.mo, 1).getDay();
+        for(let i=0;i<empty;i++) grid.insertAdjacentHTML('beforeend','<div class="calendar-cell bg-[#1A1C2E] opacity-50"></div>');
+        
+        schedule.forEach((st, i) => {
+            const cell = document.createElement('div');
+            cell.className = "calendar-cell relative group";
+            
+            const badge = document.createElement('div');
+            badge.className = `day-status-badge status-${st}`;
+            badge.textContent = statusMap[st]||st;
+            
+            if(isAdmin) {
+                cell.classList.add('cursor-pointer');
+                cell.title = "Clique para alterar";
+                cell.onclick = () => handleCellClick(name, i);
+            }
+
+            cell.innerHTML = `<div class="day-number group-hover:text-white transition-colors">${pad(i+1)}</div>`;
+            cell.appendChild(badge);
+            grid.appendChild(cell);
+        });
+    }
+}
+
+// ==========================================
+// 9. INIT
+// ==========================================
+function initGlobal() {
+    initTabs();
+    
+    const header = document.getElementById('monthSelectorContainer');
+    if(!document.getElementById('monthSel')) {
+        const sel = document.createElement('select'); sel.id='monthSel';
+        sel.className = 'bg-[#1A1C2E] text-white text-sm font-medium px-4 py-2 rounded-lg border border-[#2E3250] focus:ring-2 focus:ring-purple-500 outline-none cursor-pointer w-full md:w-auto shadow-lg';
+        
+        availableMonths.forEach(m => {
+            const opt = document.createElement('option'); 
+            opt.value = `${m.year}-${m.month}`;
+            opt.textContent = `${monthNames[m.month]}/${m.year}`;
+            if(m.month === selectedMonthObj.month && m.year === selectedMonthObj.year) opt.selected = true;
+            sel.appendChild(opt);
+        });
+        
+        sel.addEventListener('change', e=>{
+            const [y,mo] = e.target.value.split('-').map(Number);
+            selectedMonthObj={year:y, month:mo};
+            loadDataFromCloud(); 
+        });
+        header.appendChild(sel);
+    }
+
+    const ds = document.getElementById('dateSlider');
+    if (ds) ds.addEventListener('input', e => { currentDay = parseInt(e.target.value); updateDailyView(); });
+
+    loadDataFromCloud();
+}
+
+function initTabs() {
+    document.querySelectorAll('.tab-button').forEach(b => {
+        b.addEventListener('click', () => {
+            document.querySelectorAll('.tab-button').forEach(x=>x.classList.remove('active'));
+            document.querySelectorAll('.tab-content').forEach(x=>x.classList.add('hidden'));
+            b.classList.add('active');
+            document.getElementById(`${b.dataset.tab}View`).classList.remove('hidden');
+            if(b.dataset.tab==='personal') {
+                const sel = document.getElementById('employeeSelect');
+                if(sel && sel.value) updateWeekendTable(sel.value); 
+                else updateWeekendTable(null);
+            }
+        });
+    });
+}
+
+function updateWeekendTable(specificName) {
+    const container = document.getElementById('weekendPlantaoContainer');
+    if (!container) return;
+    container.innerHTML = '';
+    const m = { y: selectedMonthObj.year, mo: selectedMonthObj.month };
+    const total = new Date(m.y, m.mo+1, 0).getDate();
+    const fmtDate = (d) => `${pad(d)}/${pad(m.mo+1)}`;
+
+    for (let d=1; d<=total; d++){
+        const dow = new Date(m.y, m.mo, d).getDay();
+        if (dow === 6) { 
+            const satDate = d;
+            const sunDate = d+1 <= total ? d+1 : null;
+            let satW=[], sunW=[];
+            Object.keys(scheduleData).forEach(n=>{
+                if(scheduleData[n].schedule[satDate-1]==='T') satW.push(n);
+                if(sunDate && scheduleData[n].schedule[sunDate-1]==='T') sunW.push(n);
+            });
+
+            if(satW.length || sunW.length) {
+                const makeTags = (list, colorClass) => {
+                    if(!list.length) return '<span class="text-gray-600 text-xs italic">Sem escala</span>';
+                    return list.map(name => `<span class="inline-block bg-[#0F1020] border border-${colorClass}-900 text-${colorClass}-400 px-2 py-1 rounded text-xs font-bold mr-1 mb-1 shadow-sm">${name}</span>`).join('');
+                };
+                const satTags = makeTags(satW, 'sky');
+                const sunTags = makeTags(sunW, 'indigo');
+                const labelSat = `Sábado ${fmtDate(satDate)}`;
+                const labelSun = sunDate ? `Domingo ${fmtDate(sunDate)}` : 'Domingo';
+
+                const cardHTML = `
+                <div class="bg-[#1A1C2E] rounded-xl shadow-lg border border-[#2E3250] overflow-hidden">
+                    <div class="bg-[#2E3250]/50 p-3 flex justify-between items-center border-b border-[#2E3250]">
+                        <span class="text-xs font-bold text-gray-400 uppercase tracking-wider">Fim de Semana</span>
+                        <span class="text-xs font-mono text-purple-400 bg-purple-900/20 px-2 py-0.5 rounded border border-purple-500/30">${fmtDate(satDate)}</span>
+                    </div>
+                    <div class="p-4 space-y-4">
+                        <div>
+                            <h4 class="text-sky-500 font-bold text-xs uppercase mb-2 flex items-center gap-2"><i class="fas fa-calendar-day"></i> ${labelSat}</h4>
+                            <div class="flex flex-wrap">${satTags}</div>
+                        </div>
+                        ${sunDate ? `<div class="pt-3 border-t border-[#2E3250]">
+                            <h4 class="text-indigo-500 font-bold text-xs uppercase mb-2 flex items-center gap-2"><i class="fas fa-calendar-day"></i> ${labelSun}</h4>
+                            <div class="flex flex-wrap">${sunTags}</div></div>` : ''}
+                    </div>
+                </div>`;
+                container.insertAdjacentHTML('beforeend', cardHTML);
+            }
+        }
+    }
+}
 
 document.addEventListener('DOMContentLoaded', initGlobal);
