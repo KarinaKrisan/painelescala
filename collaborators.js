@@ -399,9 +399,7 @@ function listenToRequests() {
 
 // Global handler para os botões do Inbox (precisa estar no window pois é module)
 window.handleRequest = async (docId, accepted) => {
-    const btnText = accepted ? 'Aceitando...' : 'Recusando...';
     // Em produção, adicione loading UI aqui
-    
     try {
         const ref = doc(db, "requests", docId);
         await updateDoc(ref, {
