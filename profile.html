@@ -88,13 +88,11 @@
 </head>
 <body class="min-h-screen flex flex-col relative overflow-x-hidden selection:bg-purple-500 selection:text-white">
 
-    <!-- Background Decoration -->
     <div class="fixed top-0 left-0 w-full h-full pointer-events-none z-0">
         <div class="absolute top-[-20%] right-[10%] w-[500px] h-[500px] bg-purple-900/10 rounded-full blur-[100px]"></div>
         <div class="absolute bottom-[-10%] left-[-10%] w-[400px] h-[400px] bg-blue-900/05 rounded-full blur-[100px]"></div>
     </div>
 
-    <!-- Header Navigation -->
     <header class="relative z-10 p-6 flex justify-between items-center max-w-5xl mx-auto w-full">
         <div class="flex items-center gap-3">
             <button id="btnBackHeader" class="bg-gray-800/50 hover:bg-gray-700 text-gray-300 p-2 rounded-lg transition-all border border-gray-700/50 group cursor-pointer">
@@ -107,26 +105,21 @@
         </button>
     </header>
 
-    <!-- Main Content -->
     <main class="relative z-10 flex-1 flex flex-col items-center justify-start p-4 pb-20 animate-fade-in-up">
         
         <div class="w-full max-w-4xl space-y-6">
             
-            <!-- Banner / Cover -->
             <div class="w-full h-32 bg-gradient-to-r from-purple-900/40 to-indigo-900/40 rounded-t-3xl border-t border-x border-cronos-border relative overflow-hidden">
                 <div class="absolute inset-0 bg-[url('https://www.transparenttextures.com/patterns/cubes.png')] opacity-10"></div>
             </div>
 
-            <!-- Profile Card -->
             <div class="glass-panel rounded-b-3xl rounded-t-none p-8 shadow-2xl relative -mt-6 border-t-0">
                 
                 <form id="profileForm">
                     <div class="flex flex-col lg:flex-row gap-10 items-start">
                         
-                        <!-- Coluna Esquerda: Avatar e Status -->
                         <div class="flex flex-col items-center space-y-4 w-full lg:w-64 flex-shrink-0 -mt-20">
                             
-                            <!-- Avatar Upload -->
                             <div class="relative group image-upload-trigger cursor-pointer">
                                 <div id="avatarContainer" class="w-40 h-40 rounded-full avatar-gradient flex items-center justify-center text-5xl font-bold text-white shadow-2xl border-8 border-[#1A1C2E] overflow-hidden bg-cover bg-center">
                                     <span id="avatarInitials">--</span>
@@ -155,10 +148,8 @@
                             </div>
                         </div>
 
-                        <!-- Coluna Direita: Dados -->
                         <div class="flex-1 w-full space-y-8">
                             
-                            <!-- Seção 1: Informações Pessoais -->
                             <div>
                                 <h3 class="text-white font-semibold mb-4 flex items-center gap-2 border-b border-gray-700/50 pb-2">
                                     <i class="fas fa-user-circle text-purple-500"></i> Informações Pessoais
@@ -175,13 +166,11 @@
                                 </div>
                             </div>
 
-                            <!-- Seção 2: Dados Corporativos -->
                             <div>
                                 <h3 class="text-white font-semibold mb-4 flex items-center gap-2 border-b border-gray-700/50 pb-2">
                                     <i class="fas fa-briefcase text-orange-500"></i> Dados Corporativos
                                 </h3>
                                 <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
-                                    <!-- Cargo / Função -->
                                     <div>
                                         <label class="block text-xs font-bold text-gray-400 uppercase tracking-wider mb-2">Cargo / Função</label>
                                         <div class="relative">
@@ -190,7 +179,6 @@
                                         </div>
                                     </div>
 
-                                    <!-- Departamento -->
                                     <div>
                                         <label class="block text-xs font-bold text-gray-400 uppercase tracking-wider mb-2">Departamento / Equipe</label>
                                         <div class="relative">
@@ -199,7 +187,6 @@
                                         </div>
                                     </div>
 
-                                    <!-- Ramal / Telefone -->
                                     <div class="col-span-2">
                                         <label class="block text-xs font-bold text-gray-400 uppercase tracking-wider mb-2">Contato Profissional (Ramal / Tel)</label>
                                         <div class="relative">
@@ -210,7 +197,6 @@
                                 </div>
                             </div>
 
-                            <!-- Seção 3: Credenciais e Permissões (SOMENTE LEITURA PARA O PRÓPRIO USUÁRIO) -->
                             <div class="opacity-75 pointer-events-none" title="Gerenciado pelo Master Admin">
                                 <div class="flex justify-between items-center mb-4 border-b border-gray-700/50 pb-2">
                                     <h3 class="text-white font-semibold flex items-center gap-2">
@@ -221,7 +207,6 @@
                                 
                                 <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
                                     
-                                    <!-- Nível de Acesso -->
                                     <div>
                                         <label class="block text-xs font-bold text-gray-400 uppercase tracking-wider mb-2">Nível de Acesso</label>
                                         <div class="relative">
@@ -241,7 +226,6 @@
                                         </div>
                                     </div>
 
-                                    <!-- Unidades Operacionais -->
                                     <div>
                                         <label class="block text-xs font-bold text-gray-400 uppercase tracking-wider mb-2">Unidades / Áreas Associadas</label>
                                         <div class="relative">
@@ -250,12 +234,10 @@
                                         </div>
                                     </div>
 
-                                    <!-- Funções Permitidas -->
                                     <div class="col-span-2">
                                         <label class="block text-xs font-bold text-gray-400 uppercase tracking-wider mb-3">Funções Atribuídas</label>
                                         <div class="grid grid-cols-1 md:grid-cols-3 gap-4 bg-black/20 p-4 rounded-xl border border-gray-700/50">
                                             
-                                            <!-- Grupo Operacional -->
                                             <div class="space-y-3">
                                                 <h5 class="text-[10px] text-purple-400 font-bold uppercase border-b border-gray-700 pb-1 mb-2">Operacional</h5>
                                                 
@@ -275,7 +257,6 @@
                                                 </label>
                                             </div>
 
-                                            <!-- Grupo Gestão -->
                                             <div class="space-y-3">
                                                 <h5 class="text-[10px] text-orange-400 font-bold uppercase border-b border-gray-700 pb-1 mb-2">Gestão</h5>
 
@@ -295,7 +276,6 @@
                                                 </label>
                                             </div>
 
-                                            <!-- Grupo Sistema -->
                                             <div class="space-y-3">
                                                 <h5 class="text-[10px] text-red-400 font-bold uppercase border-b border-gray-700 pb-1 mb-2">Sistema</h5>
 
@@ -315,7 +295,6 @@
                                 </div>
                             </div>
 
-                            <!-- Seção 4: Configurações do Usuário -->
                             <div>
                                 <h3 class="text-white font-semibold mb-4 flex items-center gap-2 border-b border-gray-700/50 pb-2">
                                     <i class="fas fa-cog text-blue-400"></i> Configurações do Usuário
@@ -323,7 +302,6 @@
                                 
                                 <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
                                     
-                                    <!-- Preferências de Notificação -->
                                     <div class="col-span-2 md:col-span-1">
                                         <label class="block text-xs font-bold text-gray-400 uppercase tracking-wider mb-3">Preferências de Notificação</label>
                                         <div class="bg-black/20 p-4 rounded-xl border border-gray-700/50 space-y-4">
@@ -364,9 +342,7 @@
                                         </div>
                                     </div>
 
-                                    <!-- Interface -->
                                     <div class="col-span-2 md:col-span-1 space-y-6">
-                                        <!-- Idioma -->
                                         <div>
                                             <label class="block text-xs font-bold text-gray-400 uppercase tracking-wider mb-2">Idioma da Interface</label>
                                             <div class="relative">
@@ -384,14 +360,12 @@
                                 </div>
                             </div>
 
-                            <!-- Seção 5: Segurança Avançada -->
                             <div>
                                 <h3 class="text-white font-semibold mb-4 flex items-center gap-2 border-b border-gray-700/50 pb-2">
                                     <i class="fas fa-lock text-red-500"></i> Segurança Avançada
                                 </h3>
                                 
                                 <div class="grid grid-cols-1 md:grid-cols-2 gap-6 mb-6">
-                                    <!-- Alteração de Senha -->
                                     <div class="bg-black/20 p-4 rounded-xl border border-gray-700/50 h-full">
                                         <h4 class="text-xs font-bold text-gray-400 uppercase tracking-wider mb-3">Alteração de Senha</h4>
                                         <div class="space-y-4">
@@ -413,7 +387,6 @@
                                         </div>
                                     </div>
 
-                                    <!-- 2FA -->
                                     <div class="bg-black/20 p-4 rounded-xl border border-gray-700/50 h-full flex flex-col justify-between">
                                         <div>
                                             <div class="flex items-center gap-2 mb-2">
@@ -443,50 +416,42 @@
                                     </div>
                                 </div>
 
-                                <!-- Histórico e Dispositivos -->
                                 <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
                                     
-                                    <!-- Histórico de Login -->
                                     <div class="bg-black/20 p-4 rounded-xl border border-gray-700/50">
                                         <div class="flex justify-between items-center mb-3">
                                             <h4 class="text-xs font-bold text-gray-400 uppercase tracking-wider">Histórico de Logins</h4>
                                             <button type="button" class="text-[10px] text-blue-400 hover:text-blue-300 transition-colors">Ver tudo</button>
                                         </div>
                                         <ul class="space-y-3" id="loginHistoryList">
-                                            <!-- Preenchido via JS -->
-                                        </ul>
+                                            </ul>
                                     </div>
 
-                                    <!-- Dispositivos Conectados -->
                                     <div class="bg-black/20 p-4 rounded-xl border border-gray-700/50">
                                         <div class="flex justify-between items-center mb-3">
                                             <h4 class="text-xs font-bold text-gray-400 uppercase tracking-wider">Dispositivos Conectados</h4>
                                             <button type="button" class="text-[10px] text-red-400 hover:text-red-300 transition-colors">Sair de todos</button>
                                         </div>
                                         <ul class="space-y-3" id="devicesList">
-                                            <!-- Preenchido via JS -->
-                                        </ul>
+                                            </ul>
                                     </div>
                                 </div>
                             </div>
 
-                            <!-- PAINEL ADMIN: GESTÃO DE OUTROS USUÁRIOS (OCULTO POR PADRÃO) -->
                             <div id="adminPanelContainer" class="hidden mt-8 border-t-2 border-purple-500/30 pt-8">
                                 <div class="bg-purple-900/10 p-6 rounded-2xl border border-purple-500/20">
                                     <h3 class="text-purple-300 font-bold text-lg mb-4 flex items-center gap-2">
                                         <i class="fas fa-users-cog"></i> Área do Master Admin: Gerenciar Permissões
                                     </h3>
-                                    <p class="text-sm text-gray-400 mb-4">Busque um usuário pelo ID para conceder ou revogar permissões.</p>
+                                    <p class="text-sm text-gray-400 mb-4">Busque um usuário pelo ID ou E-mail para conceder ou revogar permissões.</p>
                                     
-                                    <!-- Busca -->
                                     <div class="flex gap-2 mb-6">
-                                        <input type="text" id="targetUidInput" class="input-dark flex-1 px-4 py-3 rounded-xl font-mono text-sm" placeholder="Cole o ID do usuário aqui (User UID)">
+                                        <input type="text" id="targetUidInput" class="input-dark flex-1 px-4 py-3 rounded-xl font-mono text-sm" placeholder="Cole o ID (UID) ou o E-mail do usuário aqui">
                                         <button type="button" id="btnFetchTarget" class="bg-purple-600 hover:bg-purple-500 text-white px-6 py-3 rounded-xl font-bold transition-colors">
                                             <i class="fas fa-search mr-2"></i> Buscar
                                         </button>
                                     </div>
 
-                                    <!-- Formulário de Edição do Alvo (Oculto até buscar) -->
                                     <div id="targetUserForm" class="hidden bg-black/20 p-6 rounded-xl border border-gray-700/50">
                                         <div class="flex items-center justify-between mb-4 pb-2 border-b border-gray-700">
                                             <span class="text-sm text-gray-300">Editando permissões para: <strong id="targetUserLabel" class="text-white">...</strong></span>
@@ -518,7 +483,6 @@
                                 </div>
                             </div>
 
-                            <!-- Actions -->
                             <div class="pt-8 flex items-center justify-end gap-4 border-t border-gray-700/30 mt-6">
                                 <span id="statusMessage" class="text-sm font-medium opacity-0 transition-opacity duration-300"></span>
                                 <button type="button" id="btnCancel" class="px-6 py-3 rounded-xl font-bold text-gray-400 hover:text-white hover:bg-gray-800 transition-colors">
@@ -534,18 +498,17 @@
                 </form>
             </div>
 
-            <!-- Footer Info -->
             <div class="text-center text-gray-600 text-xs pb-6">
                 <p>Cronos Admin v1.0 &bull; Meu ID: <span id="userIdLabel" class="font-mono select-all cursor-pointer text-gray-500 hover:text-white" title="Clique para copiar">...</span></p>
             </div>
         </div>
     </main>
 
-    <!-- Script Module -->
     <script type="module">
         import { initializeApp } from "https://www.gstatic.com/firebasejs/11.0.2/firebase-app.js";
         import { getAuth, onAuthStateChanged, updateProfile, updatePassword, signOut } from "https://www.gstatic.com/firebasejs/11.0.2/firebase-auth.js";
-        import { getFirestore, doc, getDoc, setDoc } from "https://www.gstatic.com/firebasejs/11.0.2/firebase-firestore.js";
+        // Importações adicionais: collectionGroup, query, where, getDocs
+        import { getFirestore, doc, getDoc, setDoc, collectionGroup, query, where, getDocs } from "https://www.gstatic.com/firebasejs/11.0.2/firebase-firestore.js";
 
         // Configuração Firebase
         const firebaseConfig = {
@@ -800,35 +763,55 @@
             }
         });
 
-        // --- LÓGICA DO PAINEL ADMIN (BUSCAR E SALVAR OUTROS) ---
+        // --- LÓGICA DO PAINEL ADMIN (BUSCAR POR UID OU EMAIL) ---
         
         btnFetchTarget.addEventListener('click', async () => {
-            const targetUid = targetUidInput.value.trim();
-            if (!targetUid) {
-                alert("Por favor, insira um ID de usuário válido.");
+            let targetInput = targetUidInput.value.trim();
+            if (!targetInput) {
+                alert("Por favor, insira um ID ou E-mail válido.");
                 return;
             }
 
             btnFetchTarget.innerHTML = '<i class="fas fa-spinner fa-spin"></i>';
             targetUserForm.classList.add('hidden');
 
+            let targetUid = targetInput; // Assume que é UID por padrão
+
             try {
-                // Tenta buscar o doc do usuário alvo
+                // --- NOVA LÓGICA: SE FOR E-MAIL, BUSCA O UID PRIMEIRO ---
+                if (targetInput.includes('@')) {
+                    const usersQuery = query(
+                        collectionGroup(db, 'profile'), 
+                        where('email', '==', targetInput)
+                    );
+                    
+                    const querySnapshot = await getDocs(usersQuery);
+
+                    if (!querySnapshot.empty) {
+                        const userDoc = querySnapshot.docs[0];
+                        // Estrutura: users/{UID}/profile/data -> parent.parent.id = UID
+                        targetUid = userDoc.ref.parent.parent.id; 
+                    } else {
+                        alert("Nenhum usuário encontrado com este e-mail (O usuário precisa ter salvo o perfil ao menos uma vez).");
+                        btnFetchTarget.innerHTML = '<i class="fas fa-search mr-2"></i> Buscar';
+                        return;
+                    }
+                }
+                // --------------------------------------------------------
+
                 const targetRef = doc(db, 'artifacts', appId, 'users', targetUid, 'profile', 'data');
                 const targetSnap = await getDoc(targetRef);
 
                 targetUserForm.classList.remove('hidden');
+                targetUserLabel.textContent = targetUid; 
                 
                 if (targetSnap.exists()) {
                     const data = targetSnap.data();
-                    targetUserLabel.textContent = targetUid; // Poderíamos buscar o nome se estivesse no doc
                     targetAccessLevel.value = data.accessLevel || 'analista';
                     targetUnits.value = data.operationalUnits || '';
                     targetStatusBadge.textContent = "Perfil Encontrado";
                     targetStatusBadge.className = "text-[10px] bg-green-900 text-green-300 px-2 py-1 rounded";
                 } else {
-                    // Usuário novo ou sem perfil ainda
-                    targetUserLabel.textContent = targetUid;
                     targetAccessLevel.value = 'analista';
                     targetUnits.value = '';
                     targetStatusBadge.textContent = "Novo Perfil (Será criado)";
@@ -837,21 +820,24 @@
 
             } catch (error) {
                 console.error("Erro ao buscar alvo:", error);
-                alert("Erro ao buscar usuário. Verifique o ID e suas permissões.");
+                if (error.code === 'failed-precondition') {
+                    alert("Atenção: É necessário criar um índice no Firestore para buscar por E-mail. Verifique o console do navegador (F12) e clique no link fornecido pelo erro do Firebase.");
+                } else {
+                    alert("Erro ao buscar usuário. Verifique se o ID/E-mail está correto.");
+                }
             } finally {
                 btnFetchTarget.innerHTML = '<i class="fas fa-search mr-2"></i> Buscar';
             }
         });
 
         btnSaveTargetPermissions.addEventListener('click', async () => {
-            const targetUid = targetUidInput.value.trim();
-            if (!targetUid) return;
+            const targetUid = targetUserLabel.textContent; // Pega o UID do label (que pode ter vindo do email)
+            if (!targetUid || targetUid === '...') return;
 
             const newLevel = targetAccessLevel.value;
             const newUnits = targetUnits.value;
 
             // Define as permissões baseadas no nível escolhido para o alvo
-            // (Simplificação: Salva a lista de permissões default para aquele cargo)
             let newPermissionsList = [];
             if (newLevel === 'operador' || newLevel === 'analista') {
                 newPermissionsList = ['view_dashboards', 'interact_alerts', 'personal_config'];
@@ -891,7 +877,7 @@
         btnCancel.addEventListener('click', goBack);
         btnBackHeader.addEventListener('click', goBack);
 
-        // --- Salvar MEU Perfil (Apenas dados pessoais/config) ---
+        // --- Salvar MEU Perfil (Incluindo E-mail para busca) ---
         form.addEventListener('submit', async (e) => {
             e.preventDefault();
             const user = auth.currentUser;
@@ -903,8 +889,6 @@
             const newPhone = phoneInput.value.trim();
             const newPass = newPassInput.value;
             const confirmPass = confirmPassInput.value;
-            
-            // Nota: NÃO salvamos accessLevel ou units aqui para evitar sobrescrever com valores disabled
             
             const newSettings = {
                 emailNotifications: notifEmail.checked,
@@ -935,11 +919,11 @@
                 if (promises.length > 0) await Promise.all(promises);
 
                 const extraData = {
+                    email: user.email, // IMPORTANTE: Salvar email para permitir busca admin
                     jobTitle: newJob,
                     department: newDept,
                     phone: newPhone,
                     photoURL: currentPhotoURL,
-                    // Não salvamos permissões aqui para garantir que não haja auto-elevação acidental
                     settings: newSettings
                 };
                 
