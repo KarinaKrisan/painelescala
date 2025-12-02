@@ -138,10 +138,10 @@
                             <div class="w-full pt-4 border-t border-gray-700/50">
                                 <div class="flex justify-between text-xs text-gray-400 mb-2">
                                     <span>Perfil Completo</span>
-                                    <span class="text-green-400">90%</span>
+                                    <span class="text-green-400">95%</span>
                                 </div>
                                 <div class="w-full bg-gray-800 rounded-full h-1.5">
-                                    <div class="bg-gradient-to-r from-green-400 to-emerald-500 h-1.5 rounded-full" style="width: 90%"></div>
+                                    <div class="bg-gradient-to-r from-green-400 to-emerald-500 h-1.5 rounded-full" style="width: 95%"></div>
                                 </div>
                             </div>
                         </div>
@@ -201,7 +201,7 @@
                                 </div>
                             </div>
 
-                            <!-- Seção 3: Credenciais e Permissões (NOVA) -->
+                            <!-- Seção 3: Credenciais e Permissões -->
                             <div>
                                 <h3 class="text-white font-semibold mb-4 flex items-center gap-2 border-b border-gray-700/50 pb-2">
                                     <i class="fas fa-user-shield text-emerald-500"></i> Credenciais e Permissões
@@ -263,7 +263,95 @@
                                 </div>
                             </div>
 
-                            <!-- Seção 4: Segurança -->
+                            <!-- Seção 4: Configurações do Usuário (NOVA) -->
+                            <div>
+                                <h3 class="text-white font-semibold mb-4 flex items-center gap-2 border-b border-gray-700/50 pb-2">
+                                    <i class="fas fa-cog text-blue-400"></i> Configurações do Usuário
+                                </h3>
+                                
+                                <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
+                                    
+                                    <!-- Preferências de Notificação -->
+                                    <div class="col-span-2 md:col-span-1">
+                                        <label class="block text-xs font-bold text-gray-400 uppercase tracking-wider mb-3">Preferências de Notificação</label>
+                                        <div class="bg-black/20 p-4 rounded-xl border border-gray-700/50 space-y-4">
+                                            
+                                            <div class="space-y-3">
+                                                <label class="flex items-center gap-3 cursor-pointer group">
+                                                    <input type="checkbox" id="notifEmail" class="custom-checkbox w-4 h-4 rounded bg-gray-700 border-gray-600 focus:ring-blue-500 transition-colors">
+                                                    <span class="text-sm text-gray-300 group-hover:text-white transition-colors flex-1">Alertas via E-mail</span>
+                                                    <i class="fas fa-envelope text-gray-500 text-xs"></i>
+                                                </label>
+                                                
+                                                <label class="flex items-center gap-3 cursor-pointer group">
+                                                    <input type="checkbox" id="notifSMS" class="custom-checkbox w-4 h-4 rounded bg-gray-700 border-gray-600 focus:ring-blue-500 transition-colors">
+                                                    <span class="text-sm text-gray-300 group-hover:text-white transition-colors flex-1">Alertas via SMS</span>
+                                                    <i class="fas fa-sms text-gray-500 text-xs"></i>
+                                                </label>
+                                                
+                                                <label class="flex items-center gap-3 cursor-pointer group">
+                                                    <input type="checkbox" id="notifPush" class="custom-checkbox w-4 h-4 rounded bg-gray-700 border-gray-600 focus:ring-blue-500 transition-colors">
+                                                    <span class="text-sm text-gray-300 group-hover:text-white transition-colors flex-1">Push Notifications</span>
+                                                    <i class="fas fa-mobile-alt text-gray-500 text-xs"></i>
+                                                </label>
+                                            </div>
+
+                                            <div class="pt-3 border-t border-gray-700/50">
+                                                <label class="block text-[10px] font-bold text-gray-500 uppercase tracking-wider mb-2">Prioridade de Alerta</label>
+                                                <div class="relative">
+                                                    <select id="alertPriority" class="input-dark w-full px-3 py-2 rounded-lg text-sm appearance-none cursor-pointer">
+                                                        <option value="low">Baixa (Apenas Resumos Diários)</option>
+                                                        <option value="medium" selected>Média (Alterações Importantes)</option>
+                                                        <option value="high">Alta (Tempo Real / Crítico)</option>
+                                                    </select>
+                                                    <div class="pointer-events-none absolute inset-y-0 right-0 flex items-center px-3 text-gray-500">
+                                                        <i class="fas fa-chevron-down text-xs"></i>
+                                                    </div>
+                                                </div>
+                                            </div>
+                                        </div>
+                                    </div>
+
+                                    <!-- Interface e Favoritos -->
+                                    <div class="col-span-2 md:col-span-1 space-y-6">
+                                        <!-- Idioma -->
+                                        <div>
+                                            <label class="block text-xs font-bold text-gray-400 uppercase tracking-wider mb-2">Idioma da Interface</label>
+                                            <div class="relative">
+                                                 <select id="languageInput" class="input-dark w-full px-4 py-3 rounded-xl appearance-none cursor-pointer focus:ring-2 focus:ring-blue-500/50">
+                                                    <option value="pt-BR">Português (Brasil)</option>
+                                                    <option value="en-US">English (US)</option>
+                                                    <option value="es-ES">Español</option>
+                                                </select>
+                                                 <div class="pointer-events-none absolute inset-y-0 right-0 flex items-center px-4 text-gray-500">
+                                                    <i class="fas fa-language text-sm"></i>
+                                                </div>
+                                            </div>
+                                        </div>
+
+                                        <!-- Favoritos -->
+                                         <div>
+                                            <label class="block text-xs font-bold text-gray-400 uppercase tracking-wider mb-3">Dashboards Favoritos</label>
+                                            <div class="bg-black/20 p-4 rounded-xl border border-gray-700/50 space-y-2">
+                                                <label class="flex items-center gap-2 cursor-pointer group">
+                                                    <input type="checkbox" name="favorites" value="realtime" class="custom-checkbox w-4 h-4 rounded bg-gray-700 border-gray-600 focus:ring-blue-500">
+                                                    <span class="text-sm text-gray-300 group-hover:text-white transition-colors">Operação em Tempo Real</span>
+                                                </label>
+                                                <label class="flex items-center gap-2 cursor-pointer group">
+                                                    <input type="checkbox" name="favorites" value="reports" class="custom-checkbox w-4 h-4 rounded bg-gray-700 border-gray-600 focus:ring-blue-500">
+                                                    <span class="text-sm text-gray-300 group-hover:text-white transition-colors">Relatórios de Escala</span>
+                                                </label>
+                                                <label class="flex items-center gap-2 cursor-pointer group">
+                                                    <input type="checkbox" name="favorites" value="kpi" class="custom-checkbox w-4 h-4 rounded bg-gray-700 border-gray-600 focus:ring-blue-500">
+                                                    <span class="text-sm text-gray-300 group-hover:text-white transition-colors">Indicadores (KPIs)</span>
+                                                </label>
+                                            </div>
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+
+                            <!-- Seção 5: Segurança -->
                             <div>
                                 <h3 class="text-white font-semibold mb-4 flex items-center gap-2 border-b border-gray-700/50 pb-2">
                                     <i class="fas fa-lock text-gray-400"></i> Segurança
@@ -327,28 +415,36 @@
         // Elementos DOM
         const form = document.getElementById('profileForm');
         
-        // Inputs
+        // Inputs Pessoais/Corp
         const displayNameInput = document.getElementById('displayNameInput');
         const emailInput = document.getElementById('emailInput');
         const jobTitleInput = document.getElementById('jobTitleInput');
         const deptInput = document.getElementById('deptInput');
         const phoneInput = document.getElementById('phoneInput');
         
-        // Novos Inputs
+        // Inputs Permissões
         const accessLevelInput = document.getElementById('accessLevelInput');
         const unitsInput = document.getElementById('unitsInput');
         const permissionCheckboxes = document.querySelectorAll('input[name="permissions"]');
 
+        // Inputs Configurações (NOVOS)
+        const notifEmail = document.getElementById('notifEmail');
+        const notifSMS = document.getElementById('notifSMS');
+        const notifPush = document.getElementById('notifPush');
+        const alertPriority = document.getElementById('alertPriority');
+        const languageInput = document.getElementById('languageInput');
+        const favoriteCheckboxes = document.querySelectorAll('input[name="favorites"]');
+
+        // Inputs Senha
         const newPassInput = document.getElementById('newPassword');
         const confirmPassInput = document.getElementById('confirmPassword');
         
-        // Avatar
+        // Avatar e UI
         const avatarContainer = document.getElementById('avatarContainer');
         const avatarInitials = document.getElementById('avatarInitials');
         const avatarInput = document.getElementById('avatarInput');
         const uploadTrigger = document.querySelector('.image-upload-trigger');
         
-        // UI
         const btnSave = document.getElementById('btnSave');
         const btnLogout = document.getElementById('btnLogout');
         const btnCancel = document.getElementById('btnCancel');
@@ -403,7 +499,6 @@
             // Atualiza badge de nível
             if(level) {
                 previewLevel.textContent = level;
-                // Cores dinâmicas para o badge
                 if(level === 'admin') previewLevel.className = "mt-2 inline-block px-2 py-0.5 rounded text-[10px] font-bold uppercase tracking-wider bg-purple-900/50 text-purple-300 border border-purple-500/50";
                 else if(level === 'gestor') previewLevel.className = "mt-2 inline-block px-2 py-0.5 rounded text-[10px] font-bold uppercase tracking-wider bg-emerald-900/50 text-emerald-300 border border-emerald-500/50";
                 else previewLevel.className = "mt-2 inline-block px-2 py-0.5 rounded text-[10px] font-bold uppercase tracking-wider bg-gray-700 text-gray-300 border border-gray-600";
@@ -445,10 +540,22 @@
                 accessLevelInput.value = savedData.accessLevel || 'analista';
                 unitsInput.value = savedData.operationalUnits || '';
                 
-                // Permissões (Checkboxes)
                 const savedPermissions = savedData.permissions || [];
                 permissionCheckboxes.forEach(cb => {
                     cb.checked = savedPermissions.includes(cb.value);
+                });
+
+                // Configurações do Usuário (Novos)
+                const settings = savedData.settings || {};
+                notifEmail.checked = settings.emailNotifications !== false; // Default true se undefined
+                notifSMS.checked = settings.smsNotifications || false;
+                notifPush.checked = settings.pushNotifications || false;
+                alertPriority.value = settings.alertPriority || 'medium';
+                languageInput.value = settings.language || 'pt-BR';
+                
+                const savedFavorites = settings.favorites || [];
+                favoriteCheckboxes.forEach(cb => {
+                    cb.checked = savedFavorites.includes(cb.value);
                 });
                 
                 currentPhotoURL = savedData.photoURL || user.photoURL;
@@ -484,12 +591,19 @@
             const newPass = newPassInput.value;
             const confirmPass = confirmPassInput.value;
             
-            // Novos Campos
             const newAccessLevel = accessLevelInput.value;
             const newUnits = unitsInput.value.trim();
-            const newPermissions = Array.from(permissionCheckboxes)
-                .filter(cb => cb.checked)
-                .map(cb => cb.value);
+            const newPermissions = Array.from(permissionCheckboxes).filter(cb => cb.checked).map(cb => cb.value);
+
+            // Coletar novas configurações
+            const newSettings = {
+                emailNotifications: notifEmail.checked,
+                smsNotifications: notifSMS.checked,
+                pushNotifications: notifPush.checked,
+                alertPriority: alertPriority.value,
+                language: languageInput.value,
+                favorites: Array.from(favoriteCheckboxes).filter(cb => cb.checked).map(cb => cb.value)
+            };
 
             const originalBtnContent = btnSave.innerHTML;
             btnSave.innerHTML = '<i class="fas fa-spinner fa-spin"></i> Salvando...';
@@ -515,10 +629,10 @@
                     department: newDept,
                     phone: newPhone,
                     photoURL: currentPhotoURL,
-                    // Novos dados salvos
                     accessLevel: newAccessLevel,
                     operationalUnits: newUnits,
-                    permissions: newPermissions
+                    permissions: newPermissions,
+                    settings: newSettings // Salvando objeto de configurações
                 };
                 localStorage.setItem(`cronos_user_${user.uid}`, JSON.stringify(extraData));
 
@@ -554,7 +668,6 @@
              previewRole.textContent = e.target.value || "Colaborador";
         });
         
-        // Atualiza a badge de nível ao mudar o select
         accessLevelInput.addEventListener('change', (e) => {
             updateAvatarUI(displayNameInput.value, currentPhotoURL, e.target.value);
         });
