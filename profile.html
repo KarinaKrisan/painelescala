@@ -51,120 +51,199 @@
             box-shadow: 0 0 0 2px rgba(124, 58, 237, 0.2);
             outline: none;
         }
+        .input-dark:disabled, .input-dark[readonly] {
+            background-color: #131525;
+            color: #64748b;
+            cursor: not-allowed;
+        }
         .btn-gradient {
             background: linear-gradient(135deg, #7C3AED 0%, #D946EF 100%);
         }
         .avatar-gradient {
             background: linear-gradient(135deg, #A78BFA, #F472B6);
         }
+        /* Custom File Input Trigger */
+        .image-upload-trigger:hover .upload-overlay {
+            opacity: 1;
+        }
     </style>
 </head>
 <body class="min-h-screen flex flex-col relative overflow-x-hidden selection:bg-purple-500 selection:text-white">
 
+    <!-- Background Decoration -->
     <div class="fixed top-0 left-0 w-full h-full pointer-events-none z-0">
-        <div class="absolute top-[-20%] right-[10%] w-[500px] h-[500px] bg-purple-900/20 rounded-full blur-[100px]"></div>
-        <div class="absolute bottom-[-10%] left-[-10%] w-[400px] h-[400px] bg-blue-900/10 rounded-full blur-[100px]"></div>
+        <div class="absolute top-[-20%] right-[10%] w-[500px] h-[500px] bg-purple-900/10 rounded-full blur-[100px]"></div>
+        <div class="absolute bottom-[-10%] left-[-10%] w-[400px] h-[400px] bg-blue-900/05 rounded-full blur-[100px]"></div>
     </div>
 
+    <!-- Header Navigation -->
     <header class="relative z-10 p-6 flex justify-between items-center max-w-5xl mx-auto w-full">
         <div class="flex items-center gap-3">
-            <a href="index.html" class="bg-gray-800/50 hover:bg-gray-700 text-gray-300 p-2 rounded-lg transition-all border border-gray-700/50 group">
+            <button id="btnBackHeader" class="bg-gray-800/50 hover:bg-gray-700 text-gray-300 p-2 rounded-lg transition-all border border-gray-700/50 group cursor-pointer">
                 <i class="fas fa-arrow-left group-hover:-translate-x-0.5 transition-transform"></i>
-            </a>
+            </button>
             <h1 class="text-xl font-bold tracking-tight text-white">Configurações da Conta</h1>
         </div>
-        <button id="btnLogout" class="text-sm font-medium text-red-400 hover:text-red-300 transition-colors flex items-center gap-2 px-4 py-2 rounded-lg hover:bg-red-500/10">
+        <button id="btnLogout" class="text-sm font-medium text-red-400 hover:text-red-300 transition-colors flex items-center gap-2 px-4 py-2 rounded-lg hover:bg-red-500/10 border border-transparent hover:border-red-500/20">
             <i class="fas fa-sign-out-alt"></i> Sair
         </button>
     </header>
 
+    <!-- Main Content -->
     <main class="relative z-10 flex-1 flex flex-col items-center justify-start p-4 pb-20 animate-fade-in-up">
         
-        <div class="w-full max-w-3xl space-y-8">
+        <div class="w-full max-w-4xl space-y-6">
             
-            <div class="glass-panel rounded-3xl p-8 shadow-2xl relative overflow-hidden">
-                <div class="absolute top-0 left-0 w-full h-2 bg-gradient-to-r from-purple-500 to-pink-500"></div>
+            <!-- Banner / Cover (Optional visual flair) -->
+            <div class="w-full h-32 bg-gradient-to-r from-purple-900/40 to-indigo-900/40 rounded-t-3xl border-t border-x border-cronos-border relative overflow-hidden">
+                <div class="absolute inset-0 bg-[url('https://www.transparenttextures.com/patterns/cubes.png')] opacity-10"></div>
+            </div>
 
-                <div class="flex flex-col md:flex-row gap-8 items-start">
-                    
-                    <div class="flex flex-col items-center space-y-4 w-full md:w-auto">
-                        <div class="relative group">
-                            <div id="avatarPlaceholder" class="w-32 h-32 rounded-full avatar-gradient flex items-center justify-center text-4xl font-bold text-white shadow-lg border-4 border-[#1A1C2E]">
-                                <i class="fas fa-user"></i>
-                            </div>
-                            <div class="absolute bottom-0 right-0 bg-gray-800 border border-gray-600 rounded-full p-2 text-gray-300 shadow-md">
-                                <i class="fas fa-shield-alt text-xs"></i>
-                            </div>
-                        </div>
-                        <div class="text-center">
-                            <span class="bg-purple-500/10 text-purple-400 border border-purple-500/20 text-xs font-bold px-3 py-1 rounded-full uppercase tracking-wider">
-                                Administrador
-                            </span>
-                        </div>
-                    </div>
-
-                    <div class="flex-1 w-full space-y-6">
-                        <form id="profileForm">
-                            <div class="grid grid-cols-1 gap-6">
+            <!-- Profile Card -->
+            <div class="glass-panel rounded-b-3xl rounded-t-none p-8 shadow-2xl relative -mt-6 border-t-0">
+                
+                <form id="profileForm">
+                    <div class="flex flex-col lg:flex-row gap-10 items-start">
+                        
+                        <!-- Coluna Esquerda: Avatar e Status -->
+                        <div class="flex flex-col items-center space-y-4 w-full lg:w-64 flex-shrink-0 -mt-20">
+                            
+                            <!-- Avatar Upload -->
+                            <div class="relative group image-upload-trigger cursor-pointer">
+                                <div id="avatarContainer" class="w-40 h-40 rounded-full avatar-gradient flex items-center justify-center text-5xl font-bold text-white shadow-2xl border-8 border-[#1A1C2E] overflow-hidden bg-cover bg-center">
+                                    <span id="avatarInitials">--</span>
+                                </div>
                                 
-                                <div>
-                                    <label class="block text-xs font-bold text-gray-400 uppercase tracking-wider mb-2">Nome de Exibição</label>
-                                    <div class="relative">
-                                        <i class="fas fa-user absolute left-4 top-3.5 text-gray-500"></i>
-                                        <input type="text" id="displayNameInput" class="input-dark w-full pl-10 pr-4 py-3 rounded-xl" placeholder="Seu nome">
+                                <!-- Overlay de Upload -->
+                                <div class="upload-overlay absolute inset-0 w-40 h-40 rounded-full bg-black/60 flex items-center justify-center opacity-0 transition-opacity duration-300 m-auto border-8 border-transparent pointer-events-none group-hover:pointer-events-auto">
+                                    <i class="fas fa-camera text-white text-2xl"></i>
+                                </div>
+                                <input type="file" id="avatarInput" accept="image/*" class="hidden">
+                                
+                                <!-- Badge Status -->
+                                <div class="absolute bottom-2 right-2 bg-green-500 border-4 border-[#1A1C2E] w-6 h-6 rounded-full shadow-lg" title="Online"></div>
+                            </div>
+
+                            <div class="text-center w-full">
+                                <h2 id="previewName" class="text-xl font-bold text-white truncate">Usuário</h2>
+                                <p id="previewRole" class="text-sm text-purple-400 font-medium truncate">Colaborador</p>
+                            </div>
+
+                            <div class="w-full pt-4 border-t border-gray-700/50">
+                                <div class="flex justify-between text-xs text-gray-400 mb-2">
+                                    <span>Perfil Completo</span>
+                                    <span class="text-green-400">85%</span>
+                                </div>
+                                <div class="w-full bg-gray-800 rounded-full h-1.5">
+                                    <div class="bg-gradient-to-r from-green-400 to-emerald-500 h-1.5 rounded-full" style="width: 85%"></div>
+                                </div>
+                            </div>
+                        </div>
+
+                        <!-- Coluna Direita: Dados -->
+                        <div class="flex-1 w-full space-y-8">
+                            
+                            <!-- Seção 1: Informações Pessoais -->
+                            <div>
+                                <h3 class="text-white font-semibold mb-4 flex items-center gap-2 border-b border-gray-700/50 pb-2">
+                                    <i class="fas fa-user-circle text-purple-500"></i> Informações Pessoais
+                                </h3>
+                                <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
+                                    <div class="col-span-2 md:col-span-1">
+                                        <label class="block text-xs font-bold text-gray-400 uppercase tracking-wider mb-2">Nome Completo</label>
+                                        <input type="text" id="displayNameInput" class="input-dark w-full px-4 py-3 rounded-xl" placeholder="Seu nome">
+                                    </div>
+                                    <div class="col-span-2 md:col-span-1">
+                                        <label class="block text-xs font-bold text-gray-400 uppercase tracking-wider mb-2">E-mail Corporativo</label>
+                                        <input type="email" id="emailInput" class="input-dark w-full px-4 py-3 rounded-xl" readonly>
                                     </div>
                                 </div>
+                            </div>
 
-                                <div>
-                                    <label class="block text-xs font-bold text-gray-400 uppercase tracking-wider mb-2">E-mail (Login)</label>
-                                    <div class="relative opacity-60">
-                                        <i class="fas fa-envelope absolute left-4 top-3.5 text-gray-500"></i>
-                                        <input type="email" id="emailInput" class="input-dark w-full pl-10 pr-4 py-3 rounded-xl cursor-not-allowed bg-gray-900" readonly>
-                                        <div class="absolute right-3 top-3.5 text-xs text-gray-500"><i class="fas fa-lock"></i></div>
+                            <!-- Seção 2: Dados Corporativos -->
+                            <div>
+                                <h3 class="text-white font-semibold mb-4 flex items-center gap-2 border-b border-gray-700/50 pb-2">
+                                    <i class="fas fa-briefcase text-orange-500"></i> Dados Corporativos
+                                </h3>
+                                <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
+                                    <!-- Cargo / Função -->
+                                    <div>
+                                        <label class="block text-xs font-bold text-gray-400 uppercase tracking-wider mb-2">Cargo / Função</label>
+                                        <div class="relative">
+                                            <i class="fas fa-id-badge absolute left-4 top-3.5 text-gray-500"></i>
+                                            <input type="text" id="jobTitleInput" class="input-dark w-full pl-10 pr-4 py-3 rounded-xl" placeholder="Ex: Analista de NOC">
+                                        </div>
+                                    </div>
+
+                                    <!-- Departamento -->
+                                    <div>
+                                        <label class="block text-xs font-bold text-gray-400 uppercase tracking-wider mb-2">Departamento / Equipe</label>
+                                        <div class="relative">
+                                            <i class="fas fa-users absolute left-4 top-3.5 text-gray-500"></i>
+                                            <input type="text" id="deptInput" class="input-dark w-full pl-10 pr-4 py-3 rounded-xl" placeholder="Ex: Operações T1">
+                                        </div>
+                                    </div>
+
+                                    <!-- Ramal / Telefone -->
+                                    <div class="col-span-2">
+                                        <label class="block text-xs font-bold text-gray-400 uppercase tracking-wider mb-2">Contato Profissional (Ramal / Tel)</label>
+                                        <div class="relative">
+                                            <i class="fas fa-phone-alt absolute left-4 top-3.5 text-gray-500"></i>
+                                            <input type="text" id="phoneInput" class="input-dark w-full pl-10 pr-4 py-3 rounded-xl" placeholder="(XX) 0000-0000">
+                                        </div>
                                     </div>
                                 </div>
+                            </div>
 
-                                <div class="border-t border-gray-700/50 my-2"></div>
-
-                                <div>
-                                    <h3 class="text-white font-semibold mb-4 flex items-center gap-2">
-                                        <i class="fas fa-key text-orange-500"></i> Alterar Senha
-                                    </h3>
+                            <!-- Seção 3: Segurança -->
+                            <div>
+                                <h3 class="text-white font-semibold mb-4 flex items-center gap-2 border-b border-gray-700/50 pb-2">
+                                    <i class="fas fa-lock text-gray-400"></i> Segurança
+                                </h3>
+                                <div class="bg-black/20 p-4 rounded-xl border border-gray-700/50">
                                     <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
                                         <div>
-                                            <input type="password" id="newPassword" class="input-dark w-full px-4 py-3 rounded-xl text-sm" placeholder="Nova senha (min. 6 caracteres)">
+                                            <label class="block text-xs font-bold text-gray-500 mb-1">Nova Senha</label>
+                                            <input type="password" id="newPassword" class="input-dark w-full px-4 py-2 rounded-lg text-sm" placeholder="Mínimo 6 caracteres">
                                         </div>
                                         <div>
-                                            <input type="password" id="confirmPassword" class="input-dark w-full px-4 py-3 rounded-xl text-sm" placeholder="Confirme a nova senha">
+                                            <label class="block text-xs font-bold text-gray-500 mb-1">Confirmar Senha</label>
+                                            <input type="password" id="confirmPassword" class="input-dark w-full px-4 py-2 rounded-lg text-sm" placeholder="Repita a senha">
                                         </div>
                                     </div>
-                                    <p class="text-xs text-gray-500 mt-2 ml-1">Deixe em branco se não deseja alterar a senha.</p>
+                                    <p class="text-[10px] text-gray-500 mt-2">* Deixe em branco para manter a senha atual.</p>
                                 </div>
                             </div>
 
-                            <div class="mt-8 flex items-center justify-between">
-                                <div id="statusMessage" class="text-sm font-medium opacity-0 transition-opacity duration-300"></div>
+                            <!-- Actions -->
+                            <div class="pt-4 flex items-center justify-end gap-4">
+                                <span id="statusMessage" class="text-sm font-medium opacity-0 transition-opacity duration-300"></span>
+                                <button type="button" id="btnCancel" class="px-6 py-3 rounded-xl font-bold text-gray-400 hover:text-white hover:bg-gray-800 transition-colors">
+                                    Cancelar
+                                </button>
                                 <button type="submit" id="btnSave" class="btn-gradient text-white font-bold py-3 px-8 rounded-xl shadow-lg hover:shadow-purple-500/25 transition-all active:scale-95 flex items-center gap-2">
                                     <i class="fas fa-save"></i> Salvar Alterações
                                 </button>
                             </div>
-                        </form>
+
+                        </div>
                     </div>
-                </div>
+                </form>
             </div>
 
-            <div class="text-center text-gray-600 text-xs">
-                <p>Conta protegida por Google Firebase Authentication.</p>
-                <p class="mt-1">Cronos Admin v1.0</p>
+            <!-- Footer Info -->
+            <div class="text-center text-gray-600 text-xs pb-6">
+                <p>Cronos Admin v1.0 &bull; ID: <span id="userIdLabel" class="font-mono">...</span></p>
             </div>
         </div>
     </main>
 
+    <!-- Script Module -->
     <script type="module">
         import { initializeApp } from "https://www.gstatic.com/firebasejs/11.0.2/firebase-app.js";
         import { getAuth, onAuthStateChanged, updateProfile, updatePassword, signOut } from "https://www.gstatic.com/firebasejs/11.0.2/firebase-auth.js";
 
-        // Configuração Firebase (Mesma do seu projeto)
+        // Configuração Firebase
         const firebaseConfig = {
             apiKey: "AIzaSyCBKSPH7lfUt0VsQPhJX3a0CQ2wYcziQvM",
             authDomain: "dadosescala.firebaseapp.com",
@@ -179,16 +258,57 @@
 
         // Elementos DOM
         const form = document.getElementById('profileForm');
+        
+        // Inputs
         const displayNameInput = document.getElementById('displayNameInput');
         const emailInput = document.getElementById('emailInput');
+        const jobTitleInput = document.getElementById('jobTitleInput');
+        const deptInput = document.getElementById('deptInput');
+        const phoneInput = document.getElementById('phoneInput');
         const newPassInput = document.getElementById('newPassword');
         const confirmPassInput = document.getElementById('confirmPassword');
+        
+        // Avatar
+        const avatarContainer = document.getElementById('avatarContainer');
+        const avatarInitials = document.getElementById('avatarInitials');
+        const avatarInput = document.getElementById('avatarInput');
+        const uploadTrigger = document.querySelector('.image-upload-trigger');
+        
+        // UI
         const btnSave = document.getElementById('btnSave');
         const btnLogout = document.getElementById('btnLogout');
-        const avatarPlaceholder = document.getElementById('avatarPlaceholder');
+        const btnCancel = document.getElementById('btnCancel');
+        const btnBackHeader = document.getElementById('btnBackHeader');
         const statusMsg = document.getElementById('statusMessage');
+        const previewName = document.getElementById('previewName');
+        const previewRole = document.getElementById('previewRole');
+        const userIdLabel = document.getElementById('userIdLabel');
 
-        // Helper para mostrar mensagens
+        let currentPhotoURL = null;
+
+        // --- Funções Auxiliares ---
+
+        // CORREÇÃO: Função segura para redirecionamento que previne erros em ambiente Blob
+        function safeRedirect(path) {
+            // Em ambientes de desenvolvimento (preview/blob), window.location.href para arquivos relativos pode falhar.
+            if (window.location.protocol === 'blob:') {
+                console.warn(`Redirecionamento para '${path}' cancelado (Ambiente Blob detectado). Em produção, o navegador iria para: ${path}`);
+                return;
+            }
+
+            try {
+                window.location.href = path;
+            } catch (e) {
+                console.error("Erro ao tentar redirecionar:", e);
+                // Tenta fallback com replace para evitar histórico se href falhar
+                try {
+                    window.location.replace(path);
+                } catch(e2) {
+                    console.error("Redirecionamento falhou completamente.", e2);
+                }
+            }
+        }
+
         function showStatus(msg, type = 'success') {
             statusMsg.textContent = msg;
             statusMsg.className = type === 'success' 
@@ -198,42 +318,86 @@
             setTimeout(() => statusMsg.classList.add('opacity-0'), 4000);
         }
 
-        // Verifica Autenticação
-        onAuthStateChanged(auth, (user) => {
-            if (user) {
-                // Preenche dados
-                emailInput.value = user.email;
-                displayNameInput.value = user.displayName || '';
-                
-                // Avatar (Iniciais)
-                if (user.displayName) {
-                    const initials = user.displayName.split(' ').map(n => n[0]).join('').substring(0, 2).toUpperCase();
-                    avatarPlaceholder.textContent = initials;
-                }
+        function updateAvatarUI(name, photoUrl) {
+            previewName.textContent = name || "Usuário";
+            if (photoUrl) {
+                avatarContainer.style.backgroundImage = `url('${photoUrl}')`;
+                avatarInitials.classList.add('hidden');
             } else {
-                // Se não estiver logado, manda pro login
-                window.location.href = "login.html";
+                avatarContainer.style.backgroundImage = 'none';
+                avatarInitials.classList.remove('hidden');
+                if (name) {
+                    const initials = name.split(' ').map(n => n[0]).join('').substring(0, 2).toUpperCase();
+                    avatarInitials.textContent = initials;
+                } else {
+                    avatarInitials.textContent = "--";
+                }
+            }
+        }
+
+        // --- Lógica de Upload de Imagem ---
+        uploadTrigger.addEventListener('click', () => avatarInput.click());
+        
+        avatarInput.addEventListener('change', (e) => {
+            const file = e.target.files[0];
+            if (file) {
+                const reader = new FileReader();
+                reader.onload = function(event) {
+                    currentPhotoURL = event.target.result;
+                    updateAvatarUI(displayNameInput.value, currentPhotoURL);
+                };
+                reader.readAsDataURL(file);
             }
         });
 
-        // Logout
-        btnLogout.addEventListener('click', () => {
-            signOut(auth).then(() => {
-                window.location.href = "login.html";
-            });
+        // --- Autenticação & Carregamento ---
+        onAuthStateChanged(auth, (user) => {
+            if (user) {
+                userIdLabel.textContent = user.uid.substring(0, 8);
+                
+                emailInput.value = user.email;
+                displayNameInput.value = user.displayName || '';
+                
+                const savedData = JSON.parse(localStorage.getItem(`cronos_user_${user.uid}`)) || {};
+                
+                jobTitleInput.value = savedData.jobTitle || '';
+                deptInput.value = savedData.department || '';
+                phoneInput.value = savedData.phone || '';
+                
+                currentPhotoURL = savedData.photoURL || user.photoURL;
+                
+                previewRole.textContent = savedData.jobTitle || 'Defina seu cargo';
+                updateAvatarUI(user.displayName, currentPhotoURL);
+
+            } else {
+                // Se não tiver usuário, tenta redirecionar (ou avisa no console se for blob)
+                safeRedirect("login.html");
+            }
         });
 
-        // Salvar Perfil
+        // --- Botões e Ações ---
+        btnLogout.addEventListener('click', () => {
+            signOut(auth).then(() => safeRedirect("login.html"));
+        });
+
+        // Navegação de volta
+        const goBack = () => safeRedirect("index.html");
+        btnCancel.addEventListener('click', goBack);
+        btnBackHeader.addEventListener('click', goBack);
+
+        // --- Salvar Perfil ---
         form.addEventListener('submit', async (e) => {
             e.preventDefault();
             const user = auth.currentUser;
             if (!user) return;
 
             const newName = displayNameInput.value.trim();
+            const newJob = jobTitleInput.value.trim();
+            const newDept = deptInput.value.trim();
+            const newPhone = phoneInput.value.trim();
             const newPass = newPassInput.value;
             const confirmPass = confirmPassInput.value;
 
-            // Loading state
             const originalBtnContent = btnSave.innerHTML;
             btnSave.innerHTML = '<i class="fas fa-spinner fa-spin"></i> Salvando...';
             btnSave.disabled = true;
@@ -241,54 +405,58 @@
             try {
                 const promises = [];
 
-                // 1. Atualizar Nome
                 if (newName !== user.displayName) {
                     promises.push(updateProfile(user, { displayName: newName }));
                 }
 
-                // 2. Atualizar Senha (se preenchida)
                 if (newPass) {
-                    if (newPass.length < 6) {
-                        throw new Error("A senha deve ter pelo menos 6 caracteres.");
-                    }
-                    if (newPass !== confirmPass) {
-                        throw new Error("As senhas não coincidem.");
-                    }
+                    if (newPass.length < 6) throw new Error("A senha deve ter min. 6 caracteres.");
+                    if (newPass !== confirmPass) throw new Error("As senhas não coincidem.");
                     promises.push(updatePassword(user, newPass));
                 }
 
-                if (promises.length > 0) {
-                    await Promise.all(promises);
-                    
-                    // Atualiza avatar visualmente se mudou o nome
-                    if (newName) {
-                        const initials = newName.split(' ').map(n => n[0]).join('').substring(0, 2).toUpperCase();
-                        avatarPlaceholder.textContent = initials;
-                    }
+                if (promises.length > 0) await Promise.all(promises);
 
-                    showStatus('Perfil atualizado com sucesso!', 'success');
-                    
-                    // Limpa campos de senha
-                    newPassInput.value = '';
-                    confirmPassInput.value = '';
-                } else {
-                    showStatus('Nenhuma alteração detectada.', 'success');
-                }
+                const extraData = {
+                    jobTitle: newJob,
+                    department: newDept,
+                    phone: newPhone,
+                    photoURL: currentPhotoURL
+                };
+                localStorage.setItem(`cronos_user_${user.uid}`, JSON.stringify(extraData));
+
+                previewRole.textContent = newJob || 'Cargo não definido';
+                updateAvatarUI(newName, currentPhotoURL);
+
+                showStatus('Perfil atualizado com sucesso!', 'success');
+                
+                newPassInput.value = '';
+                confirmPassInput.value = '';
 
             } catch (error) {
                 console.error(error);
-                let msg = "Erro ao atualizar perfil.";
-                
+                let msg = "Erro ao atualizar.";
                 if (error.message.includes("senhas não coincidem")) msg = error.message;
-                else if (error.code === 'auth/requires-recent-login') msg = "Para mudar a senha, faça login novamente.";
-                else if (error.code === 'auth/weak-password') msg = "A senha é muito fraca.";
-
+                else if (error.code === 'auth/requires-recent-login') msg = "Faça login novamente para mudar a senha.";
+                else if (error.code === 'auth/weak-password') msg = "Senha muito fraca.";
+                
                 showStatus(msg, 'error');
             } finally {
                 btnSave.innerHTML = originalBtnContent;
                 btnSave.disabled = false;
             }
         });
+
+        // Live Update
+        displayNameInput.addEventListener('input', (e) => {
+            if (!currentPhotoURL) updateAvatarUI(e.target.value, null);
+            previewName.textContent = e.target.value || "Usuário";
+        });
+        
+        jobTitleInput.addEventListener('input', (e) => {
+             previewRole.textContent = e.target.value || "Colaborador";
+        });
+
     </script>
 </body>
 </html>
