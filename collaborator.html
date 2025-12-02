@@ -11,23 +11,18 @@
             theme: {
                 extend: {
                     colors: {
-                        cronos: {
-                            bg: '#0F1020',
-                            card: '#1A1C2E',
-                            border: '#2E3250',
-                            primary: '#7C3AED',
-                        }
+                        cronos: { bg: '#0F1020', card: '#1A1C2E', border: '#2E3250', primary: '#7C3AED' }
                     },
                     fontFamily: { sans: ['Inter', 'sans-serif'] }
                 }
             }
         }
     </script>
-    <link rel="stylesheet" href="styless.css">
     <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;600;700&family=JetBrains+Mono:wght@500&display=swap" rel="stylesheet">
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css" />
+    <link rel="stylesheet" href="styless.css">
 </head>
-<body class="text-gray-300 font-sans antialiased selection:bg-purple-500 selection:text-white pb-20">
+<body class="text-gray-300 font-sans antialiased selection:bg-purple-500 selection:text-white pb-20 bg-[#0F1020]">
 
     <nav class="bg-cronos-card/80 backdrop-blur-md border-b border-cronos-border sticky top-0 z-50">
         <div class="container mx-auto px-4 py-3 flex justify-between items-center">
@@ -43,173 +38,87 @@
                     <p id="userNameDisplay" class="text-sm font-bold text-white">Carregando...</p>
                     <p id="userRoleDisplay" class="text-xs text-purple-400">...</p>
                 </div>
-                <button id="btnLogout" class="bg-gray-800 hover:bg-red-900/30 text-gray-400 hover:text-red-400 p-2 rounded-lg transition-all border border-transparent hover:border-red-500/30">
-                    <i class="fas fa-power-off"></i>
-                </button>
+                <button id="btnLogout" class="bg-gray-800 hover:bg-red-900/30 text-gray-400 hover:text-red-400 p-2 rounded-lg transition-all border border-transparent hover:border-red-500/30"><i class="fas fa-power-off"></i></button>
             </div>
         </div>
     </nav>
 
     <div class="container mx-auto p-4 max-w-5xl mt-6">
-        
-        <header class="mb-8 animate-fade-in-up">
-            <h2 class="text-3xl font-extrabold text-white mb-2">Olá, <span id="welcomeName" class="text-gradient">Colaborador</span> 👋</h2>
+        <header class="mb-8 animate-pulse-slow">
+            <h2 class="text-3xl font-extrabold text-white mb-2">Olá, <span id="welcomeName" class="text-transparent bg-clip-text bg-gradient-to-r from-purple-400 to-orange-400">Colaborador</span> 👋</h2>
             <p class="text-gray-400">Gerencie sua escala e solicitações em tempo real.</p>
         </header>
 
         <div class="grid grid-cols-1 md:grid-cols-3 gap-4 mb-8">
-            <div class="cronos-card p-5 rounded-2xl bg-gradient-to-br from-[#1A1C2E] to-[#2E3250]/40 border border-purple-500/20 relative overflow-hidden group">
-                <div class="absolute right-0 top-0 p-4 opacity-10 group-hover:opacity-20 transition-opacity">
-                    <i class="fas fa-clock text-6xl text-purple-500"></i>
-                </div>
+            <div class="bg-[#1A1C2E] p-5 rounded-2xl border border-[#2E3250] relative overflow-hidden group">
                 <h3 class="text-xs font-bold text-gray-400 uppercase tracking-wider mb-1">Turno Atual</h3>
                 <p id="currentShiftDisplay" class="text-2xl font-bold text-white">--</p>
                 <div class="mt-2 text-xs text-purple-400 font-mono" id="currentHoursDisplay">--:--</div>
             </div>
-
-            <div class="cronos-card p-5 rounded-2xl relative overflow-hidden">
-                <h3 class="text-xs font-bold text-gray-400 uppercase tracking-wider mb-1">Próxima Folga</h3>
-                <p id="nextOffDisplay" class="text-2xl font-bold text-white">--/--</p>
-                <div class="mt-2 text-xs text-yellow-500 flex items-center gap-1">
-                    <i class="fas fa-calendar-check"></i> <span id="nextOffType">--</span>
-                </div>
+            <div class="bg-[#1A1C2E] p-5 rounded-2xl border border-[#2E3250]">
+                <h3 class="text-xs font-bold text-gray-400 uppercase tracking-wider mb-1">Mês de Referência</h3>
+                <p id="currentMonthLabel" class="text-2xl font-bold text-white">--/--</p>
+                <div class="mt-2 text-xs text-yellow-500">Escala vigente</div>
             </div>
-
-            <div class="cronos-card p-5 rounded-2xl relative overflow-hidden cursor-pointer hover:border-orange-500/50 transition-colors" onclick="document.getElementById('tabRequests').click()">
+            <div class="bg-[#1A1C2E] p-5 rounded-2xl border border-[#2E3250] cursor-pointer hover:border-orange-500/50 transition-colors" onclick="document.getElementById('tabRequests').click()">
                 <div class="flex justify-between items-start">
                     <div>
                         <h3 class="text-xs font-bold text-gray-400 uppercase tracking-wider mb-1">Solicitações</h3>
                         <p id="pendingCount" class="text-2xl font-bold text-white">0</p>
                     </div>
-                    <div class="w-8 h-8 rounded-full bg-orange-500/10 flex items-center justify-center text-orange-500">
-                        <i class="fas fa-bell"></i>
-                    </div>
+                    <i class="fas fa-bell text-orange-500"></i>
                 </div>
-                <div class="mt-2 text-xs text-gray-500">Pendentes de ação</div>
+                <div class="mt-2 text-xs text-gray-500">Pendentes</div>
             </div>
         </div>
 
-        <div class="flex gap-2 mb-6 overflow-x-auto pb-2 custom-scrollbar">
-            <button data-target="viewSchedule" class="nav-tab active px-5 py-2.5 rounded-xl text-sm font-bold text-white bg-purple-600/20 border border-purple-500 text-purple-400 whitespace-nowrap transition-all">
-                <i class="fas fa-calendar-alt mr-2"></i> Minha Escala
-            </button>
-            <button data-target="viewSwap" class="nav-tab px-5 py-2.5 rounded-xl text-sm font-bold text-gray-400 hover:bg-[#2E3250] border border-transparent whitespace-nowrap transition-all">
-                <i class="fas fa-exchange-alt mr-2"></i> Trocas
-            </button>
-            <button id="tabRequests" data-target="viewRequests" class="nav-tab px-5 py-2.5 rounded-xl text-sm font-bold text-gray-400 hover:bg-[#2E3250] border border-transparent whitespace-nowrap transition-all">
-                <i class="fas fa-inbox mr-2"></i> Histórico & Pendências
-            </button>
+        <div class="flex gap-2 mb-6 overflow-x-auto pb-2">
+            <button data-target="viewSchedule" class="nav-tab active px-5 py-2.5 rounded-xl text-sm font-bold text-white bg-purple-600/20 border border-purple-500 text-purple-400 whitespace-nowrap">Minha Escala</button>
+            <button data-target="viewSwap" class="nav-tab px-5 py-2.5 rounded-xl text-sm font-bold text-gray-400 border border-transparent whitespace-nowrap hover:bg-[#2E3250]">Trocas</button>
+            <button id="tabRequests" data-target="viewRequests" class="nav-tab px-5 py-2.5 rounded-xl text-sm font-bold text-gray-400 border border-transparent whitespace-nowrap hover:bg-[#2E3250]">Histórico</button>
         </div>
 
         <div id="viewSchedule" class="tab-content block space-y-6">
-            <div class="bg-[#1A1C2E] border border-cronos-border rounded-2xl overflow-hidden">
-                <div class="p-4 border-b border-cronos-border bg-[#0F1020]/50 flex justify-between items-center">
-                    <h3 class="font-bold text-white flex items-center gap-2">
-                        <i class="fas fa-calendar-day text-purple-500"></i> Visão Mensal
-                    </h3>
-                    <span id="currentMonthLabel" class="text-xs font-mono text-gray-400 bg-gray-800 px-2 py-1 rounded">...</span>
-                </div>
-                <div id="myScheduleGrid" class="grid grid-cols-2 sm:grid-cols-4 md:grid-cols-7 gap-px bg-cronos-border">
+            <div class="bg-[#1A1C2E] border border-[#2E3250] rounded-2xl overflow-hidden p-4">
+                <div id="myScheduleGrid" class="grid grid-cols-2 sm:grid-cols-4 md:grid-cols-7 gap-1">
                     </div>
             </div>
         </div>
 
         <div id="viewSwap" class="tab-content hidden space-y-6">
             <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
-                <div class="cronos-card p-6 rounded-2xl border-t-4 border-t-purple-500">
-                    <div class="mb-4">
-                        <div class="w-10 h-10 rounded-lg bg-purple-500/20 flex items-center justify-center text-purple-400 mb-3">
-                            <i class="fas fa-history"></i>
-                        </div>
-                        <h3 class="text-lg font-bold text-white">Troca de Turno Fixa</h3>
-                        <p class="text-sm text-gray-400 mt-1">Solicite alteração do seu período de trabalho (Ex: Manhã para Noite).</p>
-                    </div>
-                    
+                <div class="bg-[#1A1C2E] p-6 rounded-2xl border-t-4 border-t-purple-500 border border-[#2E3250]">
+                    <h3 class="text-lg font-bold text-white mb-4"><i class="fas fa-history mr-2"></i>Troca de Turno</h3>
                     <form id="formShiftSwap" class="space-y-4">
-                        <div class="bg-gray-900/50 p-3 rounded-lg border border-gray-700">
-                            <label class="text-[10px] uppercase font-bold text-gray-500">Seu Turno Atual</label>
-                            <div id="formCurrentShift" class="text-white font-bold">Carregando...</div>
-                        </div>
-                        <div>
-                            <label class="text-xs font-bold text-gray-300 mb-1 block">Turno Desejado</label>
-                            <select id="targetShift" class="w-full bg-[#0F1020] border border-gray-700 text-white rounded-lg p-2.5 focus:border-purple-500 outline-none">
-                                <option value="Manhã">Manhã</option>
-                                <option value="Tarde">Tarde</option>
-                                <option value="Noite">Noite</option>
-                                <option value="Madrugada">Madrugada</option>
-                            </select>
-                        </div>
-                        <button type="submit" class="w-full bg-purple-600 hover:bg-purple-500 text-white font-bold py-3 rounded-xl shadow-lg shadow-purple-900/20 transition-all active:scale-95">
-                            Solicitar à Liderança
-                        </button>
+                        <div class="bg-black/20 p-3 rounded text-sm"><span class="text-gray-500 text-xs block">Atual:</span> <span id="formCurrentShift" class="font-bold text-white">--</span></div>
+                        <select id="targetShift" class="w-full bg-[#0F1020] border border-gray-700 text-white rounded p-2"><option>Manhã</option><option>Tarde</option><option>Noite</option></select>
+                        <button type="submit" class="w-full bg-purple-600 hover:bg-purple-500 text-white font-bold py-2 rounded">Solicitar</button>
                     </form>
                 </div>
-
-                <div class="cronos-card p-6 rounded-2xl border-t-4 border-t-orange-500">
-                    <div class="mb-4">
-                        <div class="w-10 h-10 rounded-lg bg-orange-500/20 flex items-center justify-center text-orange-500 mb-3">
-                            <i class="fas fa-handshake"></i>
-                        </div>
-                        <h3 class="text-lg font-bold text-white">Troca de Folga</h3>
-                        <p class="text-sm text-gray-400 mt-1">Negocie um dia específico com outro colaborador.</p>
-                    </div>
-
+                <div class="bg-[#1A1C2E] p-6 rounded-2xl border-t-4 border-t-orange-500 border border-[#2E3250]">
+                    <h3 class="text-lg font-bold text-white mb-4"><i class="fas fa-handshake mr-2"></i>Troca de Folga</h3>
                     <form id="formDayOffSwap" class="space-y-4">
-                        <div>
-                            <label class="text-xs font-bold text-gray-300 mb-1 block">Minha Folga (Para ceder)</label>
-                            <input type="date" id="myDayOffDate" class="w-full bg-[#0F1020] border border-gray-700 text-white rounded-lg p-2.5 focus:border-orange-500 outline-none" required>
-                        </div>
-                        
-                        <div>
-                            <label class="text-xs font-bold text-gray-300 mb-1 block">Trocar com (Parceiro)</label>
-                            <select id="partnerSelect" class="w-full bg-[#0F1020] border border-gray-700 text-white rounded-lg p-2.5 focus:border-orange-500 outline-none">
-                                <option value="">Carregando lista...</option>
-                            </select>
-                        </div>
-
-                        <div>
-                            <label class="text-xs font-bold text-gray-300 mb-1 block">Data Desejada (Dia do Parceiro)</label>
-                            <input type="date" id="wantedDate" class="w-full bg-[#0F1020] border border-gray-700 text-white rounded-lg p-2.5 focus:border-orange-500 outline-none" required>
-                        </div>
-
-                        <button type="submit" class="w-full bg-orange-600 hover:bg-orange-500 text-white font-bold py-3 rounded-xl shadow-lg shadow-orange-900/20 transition-all active:scale-95">
-                            Propor Troca
-                        </button>
+                        <input type="date" id="myDayOffDate" class="w-full bg-[#0F1020] border border-gray-700 text-white rounded p-2" required>
+                        <select id="partnerSelect" class="w-full bg-[#0F1020] border border-gray-700 text-white rounded p-2"><option value="">Carregando colegas...</option></select>
+                        <input type="date" id="wantedDate" class="w-full bg-[#0F1020] border border-gray-700 text-white rounded p-2" required>
+                        <button type="submit" class="w-full bg-orange-600 hover:bg-orange-500 text-white font-bold py-2 rounded">Propor Troca</button>
                     </form>
                 </div>
             </div>
         </div>
 
-        <div id="viewRequests" class="tab-content hidden space-y-8">
+        <div id="viewRequests" class="tab-content hidden space-y-6">
+            <h3 class="text-sm font-bold text-gray-400 uppercase border-b border-gray-800 pb-2">Pendências (Inbox)</h3>
+            <div id="inboxList" class="space-y-2"></div>
             
-            <section>
-                <h3 class="text-sm font-bold text-gray-400 uppercase tracking-wider mb-4 border-b border-gray-800 pb-2">
-                    <i class="fas fa-inbox text-blue-400 mr-2"></i> Requerem sua Ação
-                </h3>
-                <div id="inboxList" class="space-y-3">
-                    <div class="text-center py-8 text-gray-600 text-sm bg-[#1A1C2E] rounded-xl border border-dashed border-gray-700">
-                        Nenhuma solicitação pendente para você.
-                    </div>
-                </div>
-            </section>
-
-            <section>
-                <h3 class="text-sm font-bold text-gray-400 uppercase tracking-wider mb-4 border-b border-gray-800 pb-2">
-                    <i class="fas fa-paper-plane text-purple-400 mr-2"></i> Minhas Solicitações
-                </h3>
-                <div id="historyList" class="space-y-3">
-                    </div>
-            </section>
+            <h3 class="text-sm font-bold text-gray-400 uppercase border-b border-gray-800 pb-2 mt-6">Minhas Solicitações</h3>
+            <div id="historyList" class="space-y-2"></div>
         </div>
-
     </div>
 
-    <div id="toast" class="fixed bottom-4 right-4 bg-cronos-card border border-cronos-border p-4 rounded-xl shadow-2xl transform translate-y-20 opacity-0 transition-all duration-300 z-50 flex items-center gap-3">
-        <div id="toastIcon" class="w-8 h-8 rounded-full flex items-center justify-center"></div>
-        <div>
-            <h4 id="toastTitle" class="font-bold text-sm text-white"></h4>
-            <p id="toastMsg" class="text-xs text-gray-400"></p>
-        </div>
+    <div id="toast" class="fixed bottom-4 right-4 bg-[#1A1C2E] border border-[#2E3250] p-4 rounded-xl shadow-2xl translate-y-20 opacity-0 transition-all z-50 flex items-center gap-3">
+        <div id="toastIcon"></div>
+        <div><h4 id="toastTitle" class="font-bold text-sm text-white"></h4><p id="toastMsg" class="text-xs text-gray-400"></p></div>
     </div>
 
     <script type="module" src="collaborators.js"></script>
