@@ -514,6 +514,8 @@
     <script type="module">
         import { initializeApp } from "https://www.gstatic.com/firebasejs/11.0.2/firebase-app.js";
         import { getAuth, onAuthStateChanged, updateProfile, updatePassword, signOut } from "https://www.gstatic.com/firebasejs/11.0.2/firebase-auth.js";
+        // IMPORTANTE: Adicionando imports do Firestore para persistência real
+        import { getFirestore, doc, getDoc, setDoc } from "https://www.gstatic.com/firebasejs/11.0.2/firebase-firestore.js";
 
         // Configuração Firebase
         const firebaseConfig = {
@@ -527,6 +529,10 @@
 
         const app = initializeApp(firebaseConfig);
         const auth = getAuth(app);
+        const db = getFirestore(app); // Inicializa Firestore
+        
+        // App ID Global (para regras de segurança)
+        const appId = typeof __app_id !== 'undefined' ? __app_id : 'default-app-id';
 
         // Elementos DOM
         const form = document.getElementById('profileForm');
@@ -580,11 +586,8 @@
 
         // --- Lógica de Permissões Automáticas ---
         function updatePermissionsByRole(role) {
-            // Definições de Permissões
-            // Colaborador: apenas operacional (view_dashboards, interact_alerts, personal_config)
             const collabPermissions = ['view_dashboards', 'interact_alerts', 'personal_config'];
             
-            // Admin: tudo
             const adminPermissions = [
                 'view_dashboards', 'interact_alerts', 'personal_config',
                 'manage_users', 'manage_ops', 'manage_rules',
@@ -602,12 +605,8 @@
                 descriptionText = "Acesso completo de gerenciamento e sistema.";
             }
 
-            // Atualizar checkboxes
             permissionCheckboxes.forEach(cb => {
                 cb.checked = activePermissions.includes(cb.value);
-                
-                // Opcional: Desabilitar checkboxes para forçar a política do cargo
-                // cb.disabled = true; 
             });
 
             roleDescription.textContent = descriptionText;
@@ -651,7 +650,6 @@
                 }
             }
             
-            // Atualiza badge de nível
             if(level) {
                 previewLevel.textContent = level;
                 if(level === 'admin') previewLevel.className = "mt-2 inline-block px-2 py-0.5 rounded text-[10px] font-bold uppercase tracking-wider bg-purple-900/50 text-purple-300 border border-purple-500/50";
@@ -661,7 +659,6 @@
         }
 
         function renderSecurityLists() {
-            // Histórico (Mock)
             loginHistoryList.innerHTML = `
                 <li class="flex items-center justify-between text-xs p-2 rounded bg-gray-800/40 border border-gray-700/30">
                     <div class="flex items-center gap-3">
@@ -685,7 +682,6 @@
                 </li>
             `;
 
-            // Dispositivos (Mock)
             devicesList.innerHTML = `
                 <li class="flex items-center justify-between text-xs p-2 rounded bg-indigo-900/20 border border-indigo-500/30">
                     <div class="flex items-center gap-3">
@@ -708,7 +704,6 @@
             `;
         }
 
-        // --- Eventos 2FA ---
         toggle2FA.addEventListener('change', (e) => {
             const isChecked = e.target.checked;
             label2FA.textContent = isChecked ? 'Ativado' : 'Desativado';
@@ -717,7 +712,6 @@
                 : 'text-xs font-bold text-gray-400 uppercase tracking-wide transition-colors';
         });
 
-        // --- Lógica de Upload de Imagem ---
         uploadTrigger.addEventListener('click', () => avatarInput.click());
         
         avatarInput.addEventListener('change', (e) => {
@@ -732,16 +726,31 @@
             }
         });
 
-        // --- Autenticação & Carregamento ---
-        onAuthStateChanged(auth, (user) => {
+        // --- Autenticação & Carregamento do Firestore ---
+        onAuthStateChanged(auth, async (user) => {
             if (user) {
                 userIdLabel.textContent = user.uid.substring(0, 8);
                 
                 emailInput.value = user.email;
                 displayNameInput.value = user.displayName || '';
                 
-                const savedData = JSON.parse(localStorage.getItem(`cronos_user_${user.uid}`)) || {};
+                // --- BUSCA DO FIRESTORE (substituindo localStorage) ---
+                let savedData = {};
+                try {
+                    // Path: artifacts/{appId}/users/{userId}/profile/data
+                    const docRef = doc(db, 'artifacts', appId, 'users', user.uid, 'profile', 'data');
+                    const docSnap = await getDoc(docRef);
+                    if (docSnap.exists()) {
+                        savedData = docSnap.data();
+                    } else {
+                        console.log("Nenhum perfil salvo encontrado no Firestore, usando defaults.");
+                    }
+                } catch (error) {
+                    console.error("Erro ao buscar dados do Firestore:", error);
+                    showStatus("Erro ao carregar dados.", "error");
+                }
                 
+                // Populando campos
                 jobTitleInput.value = savedData.jobTitle || '';
                 deptInput.value = savedData.department || '';
                 phoneInput.value = savedData.phone || '';
@@ -751,7 +760,6 @@
                 
                 unitsInput.value = savedData.operationalUnits || '';
                 
-                // Se não houver permissões salvas, aplicar default do cargo
                 if (!savedData.permissions) {
                     updatePermissionsByRole(savedAccessLevel);
                 } else {
@@ -798,7 +806,7 @@
         btnCancel.addEventListener('click', goBack);
         btnBackHeader.addEventListener('click', goBack);
 
-        // --- Salvar Perfil ---
+        // --- Salvar Perfil (No Firestore) ---
         form.addEventListener('submit', async (e) => {
             e.preventDefault();
             const user = auth.currentUser;
@@ -815,7 +823,6 @@
             const newUnits = unitsInput.value.trim();
             const newPermissions = Array.from(permissionCheckboxes).filter(cb => cb.checked).map(cb => cb.value);
 
-            // Coletar novas configurações + 2FA
             const newSettings = {
                 emailNotifications: notifEmail.checked,
                 smsNotifications: notifSMS.checked,
@@ -855,7 +862,11 @@
                     permissions: newPermissions,
                     settings: newSettings
                 };
-                localStorage.setItem(`cronos_user_${user.uid}`, JSON.stringify(extraData));
+                
+                // --- SALVAR NO FIRESTORE ---
+                // Path: artifacts/{appId}/users/{userId}/profile/data
+                // Use 'merge: true' para não sobrescrever campos não enviados se houver updates parciais futuros
+                await setDoc(doc(db, 'artifacts', appId, 'users', user.uid, 'profile', 'data'), extraData, { merge: true });
 
                 previewRole.textContent = newJob || 'Cargo não definido';
                 updateAvatarUI(newName, currentPhotoURL, newAccessLevel);
@@ -868,7 +879,7 @@
             } catch (error) {
                 console.error(error);
                 let msg = "Erro ao atualizar.";
-                if (error.message.includes("senhas não coincidem")) msg = error.message;
+                if (error.message && error.message.includes("senhas não coincidem")) msg = error.message;
                 else if (error.code === 'auth/requires-recent-login') msg = "Faça login novamente para mudar a senha.";
                 else if (error.code === 'auth/weak-password') msg = "Senha muito fraca.";
                 
@@ -890,9 +901,7 @@
         });
         
         accessLevelInput.addEventListener('change', (e) => {
-            // Atualiza badge visual
             updateAvatarUI(displayNameInput.value, currentPhotoURL, e.target.value);
-            // Atualiza permissões automaticamente
             updatePermissionsByRole(e.target.value);
         });
 
