@@ -362,7 +362,7 @@
                                         </div>
                                     </div>
 
-                                    <!-- Interface e Favoritos -->
+                                    <!-- Interface -->
                                     <div class="col-span-2 md:col-span-1 space-y-6">
                                         <!-- Idioma -->
                                         <div>
@@ -376,25 +376,6 @@
                                                  <div class="pointer-events-none absolute inset-y-0 right-0 flex items-center px-4 text-gray-500">
                                                     <i class="fas fa-language text-sm"></i>
                                                 </div>
-                                            </div>
-                                        </div>
-
-                                        <!-- Favoritos -->
-                                         <div>
-                                            <label class="block text-xs font-bold text-gray-400 uppercase tracking-wider mb-3">Dashboards Favoritos</label>
-                                            <div class="bg-black/20 p-4 rounded-xl border border-gray-700/50 space-y-2">
-                                                <label class="flex items-center gap-2 cursor-pointer group">
-                                                    <input type="checkbox" name="favorites" value="realtime" class="custom-checkbox w-4 h-4 rounded bg-gray-700 border-gray-600 focus:ring-blue-500">
-                                                    <span class="text-sm text-gray-300 group-hover:text-white transition-colors">Operação em Tempo Real</span>
-                                                </label>
-                                                <label class="flex items-center gap-2 cursor-pointer group">
-                                                    <input type="checkbox" name="favorites" value="reports" class="custom-checkbox w-4 h-4 rounded bg-gray-700 border-gray-600 focus:ring-blue-500">
-                                                    <span class="text-sm text-gray-300 group-hover:text-white transition-colors">Relatórios de Escala</span>
-                                                </label>
-                                                <label class="flex items-center gap-2 cursor-pointer group">
-                                                    <input type="checkbox" name="favorites" value="kpi" class="custom-checkbox w-4 h-4 rounded bg-gray-700 border-gray-600 focus:ring-blue-500">
-                                                    <span class="text-sm text-gray-300 group-hover:text-white transition-colors">Indicadores (KPIs)</span>
-                                                </label>
                                             </div>
                                         </div>
                                     </div>
@@ -556,7 +537,6 @@
         const notifPush = document.getElementById('notifPush');
         const alertPriority = document.getElementById('alertPriority');
         const languageInput = document.getElementById('languageInput');
-        const favoriteCheckboxes = document.querySelectorAll('input[name="favorites"]');
 
         // Inputs Segurança
         const newPassInput = document.getElementById('newPassword');
@@ -776,11 +756,6 @@
                 alertPriority.value = settings.alertPriority || 'medium';
                 languageInput.value = settings.language || 'pt-BR';
                 
-                const savedFavorites = settings.favorites || [];
-                favoriteCheckboxes.forEach(cb => {
-                    cb.checked = savedFavorites.includes(cb.value);
-                });
-
                 const is2FA = settings.twoFactorAuth || false;
                 toggle2FA.checked = is2FA;
                 toggle2FA.dispatchEvent(new Event('change'));
@@ -829,7 +804,6 @@
                 pushNotifications: notifPush.checked,
                 alertPriority: alertPriority.value,
                 language: languageInput.value,
-                favorites: Array.from(favoriteCheckboxes).filter(cb => cb.checked).map(cb => cb.value),
                 twoFactorAuth: toggle2FA.checked
             };
 
