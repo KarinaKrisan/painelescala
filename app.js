@@ -1,922 +1,811 @@
-// Este script depende das variáveis globais: rawDataFromEscala e employeeMetadata (de escala-data.js)
+// app.js - Cosmic Dark Edition (Rounded)
+// ==========================================
+// 1. IMPORTAÇÕES FIREBASE (WEB SDK)
+// ==========================================
+import { initializeApp } from "https://www.gstatic.com/firebasejs/11.0.2/firebase-app.js";
+import { getFirestore, doc, getDoc, setDoc } from "https://www.gstatic.com/firebasejs/11.0.2/firebase-firestore.js";
+import { getAuth, onAuthStateChanged, signOut } from "https://www.gstatic.com/firebasejs/11.0.2/firebase-auth.js";
 
 // ==========================================
-// 1. CONFIGURAÇÃO DE DATA (MULTI-MÊS)
+// 2. CONFIGURAÇÃO
 // ==========================================
+const firebaseConfig = {
+  apiKey: "AIzaSyCBKSPH7lfUt0VsQPhJX3a0CQ2wYcziQvM",
+  authDomain: "dadosescala.firebaseapp.com",
+  projectId: "dadosescala",
+  storageBucket: "dadosescala.firebasestorage.app",
+  messagingSenderId: "117221956502",
+  appId: "1:117221956502:web:e5a7f051daf3306b501bb7"
+};
+
+const app = initializeApp(firebaseConfig);
+const db = getFirestore(app);
+const auth = getAuth(app);
+
+// ==========================================
+// 3. ESTADO
+// ==========================================
+let isAdmin = false;
+let hasUnsavedChanges = false;
+let scheduleData = {}; 
+let rawSchedule = {};  
+let dailyChart = null;
+let isTrendMode = false;
+let currentDay = new Date().getDate();
+
 const currentDateObj = new Date();
-const monthNames = ["Janeiro", "Fevereiro", "Março", "Abril", "Maio", "Junho", "Julho", "Agosto", "Setembro", "Outubro", "Novembro", "Dezembro"];
-
-// Variáveis do sistema
+const monthNames = ["Janeiro","Fevereiro","Março","Abril","Maio","Junho","Julho","Agosto","Setembro","Outubro","Novembro","Dezembro"];
 const systemYear = currentDateObj.getFullYear();
-const systemMonth = currentDateObj.getMonth();
-const systemDay = currentDateObj.getDate();
+const systemMonth = currentDateObj.getMonth(); 
 
-// Meses disponíveis na interface (Nov 2025, Dez 2025, Jan 2026)
 const availableMonths = [
-    { year: 2025, month: 10 }, // Novembro 2025 (index 10)
-    { year: 2025, month: 11 }, // Dezembro 2025 (index 11)
-    { year: 2026, month: 0 }   // Janeiro 2026 (index 0)
+    { year: 2025, month: 10 }, { year: 2025, month: 11 }, 
+    { year: 2026, month: 0 }, { year: 2026, month: 1 }, { year: 2026, month: 2 }, 
+    { year: 2026, month: 3 }, { year: 2026, month: 4 }, { year: 2026, month: 5 }, 
+    { year: 2026, month: 6 }, { year: 2026, month: 7 }, { year: 2026, month: 8 }, 
+    { year: 2026, month: 9 }, { year: 2026, month: 10 }, { year: 2026, month: 11 }  
 ];
 
-// Estado selecionado (inicialmente tenta systemMonth se estiver disponível, senão primeiro disponível)
-let selectedMonthObj = availableMonths.find(m => m.year === systemYear && m.month === systemMonth) || availableMonths[0];
-let currentDay = systemDay;
+let selectedMonthObj = availableMonths.find(m => m.year === systemYear && m.month === systemMonth) || availableMonths[availableMonths.length-1];
 
-// scheduleData para o mês atual (reconstruído ao trocar mês)
-let scheduleData = {};
-let rawSchedule = {}; // resultado do parse inicial do texto bruto
+const statusMap = { 'T':'Trabalhando','F':'Folga','FS':'Folga Sáb','FD':'Folga Dom','FE':'Férias','OFF-SHIFT':'Exp.Encerrado', 'F_EFFECTIVE': 'Exp.Encerrado' };
+const daysOfWeek = ["Domingo","Segunda","Terça","Quarta","Quinta","Sexta","Sábado"];
 
-// Mapa de status
-const daysOfWeek = ["Dom", "Seg", "Ter", "Qua", "Qui", "Sex", "Sáb"];
-const statusMap = { 'T': 'Trabalhando', 'F': 'Folga', 'FS': 'Folga Sáb', 'FD': 'Folga Dom', 'FE': 'Férias', 'OFF-SHIFT': 'Exp. Encerrado' };
-let dailyChart = null;
+function pad(n){ return n < 10 ? '0' + n : '' + n; }
 
 // ==========================================
-// 2. FUNÇÕES DE PARSE E GERAÇÃO DA ESCALA
+// 4. AUTH & UI LOGIC
 // ==========================================
+const adminToolbar = document.getElementById('adminToolbar');
+const btnOpenLogin = document.getElementById('btnOpenLogin');
+const btnLogout = document.getElementById('btnLogout');
 
-// Processa o texto bruto e extrai os blocos.
-function processRawSchedule(rawText) {
-    const records = rawText.trim().split('*********************************');
-    const processedData = {};
+if(btnLogout) btnLogout.addEventListener('click', () => {
+    signOut(auth);
+    window.location.reload();
+});
 
-    records.forEach(record => {
-        const normalized = record.replace(/\r/g, '\n').replace(/\n{2,}/g, '\n').trim();
-        const lines = normalized.split('\n').map(line => line.trim()).filter(line => line.length > 0);
-        let name = '';
-        const data = { T: '', F: '', FS: '', FD: '', FE: '' };
-        let currentField = null;
+onAuthStateChanged(auth, (user) => {
+    if (user) {
+        isAdmin = true;
+        adminToolbar.classList.remove('hidden');
+        if(btnOpenLogin) btnOpenLogin.classList.add('hidden');
+        document.getElementById('adminEditHint').classList.remove('hidden');
+        document.body.style.paddingBottom = "100px"; 
+    } else {
+        isAdmin = false;
+        adminToolbar.classList.add('hidden');
+        if(btnOpenLogin) btnOpenLogin.classList.remove('hidden');
+        document.getElementById('adminEditHint').classList.add('hidden');
+        document.body.style.paddingBottom = "0";
+    }
+    updateDailyView();
+    const sel = document.getElementById('employeeSelect');
+    if(sel && sel.value) updatePersonalView(sel.value);
+});
 
-        lines.forEach(line => {
-            if (line.startsWith('Nome do colaborador:')) {
-                name = line.replace('Nome do colaborador:', '').trim();
-                currentField = null;
-            } else if (line.startsWith('Dias trabalhados:')) {
-                data.T = line.replace('Dias trabalhados:', '').trim();
-                currentField = 'T';
-            } else if (line.startsWith('F:')) {
-                if (line.includes('12x36') || line.toLowerCase().includes('12x36')) {
-                    data.T = line.substring(line.indexOf('12x36'));
-                    data.F = '';
-                    currentField = 'T';
-                } else {
-                    data.F = line.replace('F:', '').trim();
-                    currentField = 'F';
-                }
-            } else if (line.startsWith('FS:')) {
-                data.FS = line.replace('FS:', '').trim();
-                currentField = 'FS';
-            } else if (line.startsWith('FD:')) {
-                data.FD = line.replace('FD:', '').trim();
-                currentField = 'FD';
-            } else if (line.startsWith('FE:')) {
-                data.FE = line.replace('FE:', '').trim();
-                currentField = 'FE';
-            } else if (currentField) {
-                data[currentField] += ', ' + line;
-            } else {
-                if (name && !data.T && !data.F && !data.FS && !data.FD && !data.FE) {
-                    name = (name + ' ' + line).trim();
-                }
-            }
-        });
+// ==========================================
+// 5. FIRESTORE DATA
+// ==========================================
+async function loadDataFromCloud() {
+    const docId = `escala-${selectedMonthObj.year}-${String(selectedMonthObj.month+1).padStart(2,'0')}`;
+    try {
+        const docRef = doc(db, "escalas", docId);
+        const docSnap = await getDoc(docRef);
 
-        Object.keys(data).forEach(key => {
-            data[key] = data[key].replace(/,\s*$/, '').replace(/^\s*,\s*/, '').trim();
-        });
-
-        if (name) {
-            const cleanName = name.replace(/\s{2,}/g, ' ').trim();
-            processedData[cleanName] = data;
+        if (docSnap.exists()) {
+            rawSchedule = docSnap.data();
+            processScheduleData(); 
+            updateDailyView();
+            initSelect();
+        } else {
+            console.log("Nenhum documento encontrado.");
+            rawSchedule = {}; 
+            processScheduleData();
+            updateDailyView();
         }
-    });
+    } catch (e) {
+        console.error("Erro ao baixar dados:", e);
+    }
+}
 
-    return processedData;
+async function saveToCloud() {
+    if(!isAdmin) return;
+    const btn = document.getElementById('btnSaveCloud');
+    const status = document.getElementById('saveStatus');
+    const statusIcon = document.getElementById('saveStatusIcon');
+    
+    btn.innerHTML = '<i class="fas fa-spinner fa-spin mr-2"></i> ...';
+    btn.classList.add('opacity-75', 'cursor-not-allowed');
+    
+    const docId = `escala-${selectedMonthObj.year}-${String(selectedMonthObj.month+1).padStart(2,'0')}`;
+    
+    try {
+        await setDoc(doc(db, "escalas", docId), rawSchedule, { merge: true });
+        hasUnsavedChanges = false;
+        status.textContent = "Sincronizado";
+        status.className = "text-xs text-gray-300 font-medium transition-colors";
+        if(statusIcon) statusIcon.className = "w-1.5 h-1.5 rounded-full bg-emerald-500 shadow-[0_0_8px_rgba(16,185,129,0.6)]";
+        setTimeout(() => {
+            btn.innerHTML = '<i class="fas fa-cloud-upload-alt mr-2 group-hover:-translate-y-0.5 transition-transform"></i> Salvar';
+            btn.classList.remove('opacity-75', 'cursor-not-allowed');
+        }, 1000);
+    } catch (e) {
+        console.error("Erro ao salvar:", e);
+        alert("Erro ao salvar!");
+        btn.innerHTML = '<i class="fas fa-exclamation-circle"></i> Erro';
+    }
+}
+
+document.getElementById('btnSaveCloud').addEventListener('click', saveToCloud);
+
+// ==========================================
+// 5.1 ADMIN PROFILE LOGIC (MEU PERFIL)
+// ==========================================
+const profileModal = document.getElementById('profileModal');
+const btnOpenProfile = document.getElementById('btnOpenProfile');
+const btnCloseProfile = document.getElementById('btnCloseProfile');
+const btnCancelProfile = document.getElementById('btnCancelProfile');
+const btnSaveProfile = document.getElementById('btnSaveProfile');
+
+// Inputs do Modal
+const inpName = document.getElementById('profName');
+const inpEmail = document.getElementById('profEmail');
+const inpRole = document.getElementById('profRole');
+const inpUnit = document.getElementById('profUnit');
+const inpPhone = document.getElementById('profPhone');
+
+function toggleProfileModal(show) {
+    if(show) {
+        profileModal.classList.remove('hidden');
+        loadAdminProfile();
+    } else {
+        profileModal.classList.add('hidden');
+    }
+}
+
+if(btnOpenProfile) btnOpenProfile.addEventListener('click', () => toggleProfileModal(true));
+if(btnCloseProfile) btnCloseProfile.addEventListener('click', () => toggleProfileModal(false));
+if(btnCancelProfile) btnCancelProfile.addEventListener('click', () => toggleProfileModal(false));
+if(profileModal) profileModal.addEventListener('click', (e) => {
+    if(e.target === profileModal) toggleProfileModal(false);
+});
+
+async function loadAdminProfile() {
+    const user = auth.currentUser;
+    if(!user) return;
+
+    inpEmail.value = user.email; // Preenche email do Auth automaticamente
+    
+    btnSaveProfile.innerHTML = '<i class="fas fa-spinner fa-spin mr-2"></i> Carregando...';
+    btnSaveProfile.disabled = true;
+
+    try {
+        const docRef = doc(db, "admins", user.uid);
+        const docSnap = await getDoc(docRef);
+
+        if (docSnap.exists()) {
+            const data = docSnap.data();
+            inpName.value = data.name || '';
+            inpRole.value = data.role || '';
+            inpUnit.value = data.unit || '';
+            inpPhone.value = data.phone || '';
+        } else {
+            // Se não existe perfil ainda, limpa os campos
+            inpName.value = '';
+            inpRole.value = '';
+            inpUnit.value = '';
+            inpPhone.value = '';
+        }
+    } catch (e) {
+        console.error("Erro ao carregar perfil:", e);
+    } finally {
+        btnSaveProfile.innerHTML = '<i class="fas fa-save mr-2"></i> Salvar Alterações';
+        btnSaveProfile.disabled = false;
+    }
+}
+
+if(btnSaveProfile) btnSaveProfile.addEventListener('click', async () => {
+    const user = auth.currentUser;
+    if(!user) return;
+
+    const profileData = {
+        name: inpName.value,
+        email: user.email,
+        role: inpRole.value,
+        unit: inpUnit.value,
+        phone: inpPhone.value,
+        updatedAt: new Date().toISOString()
+    };
+
+    btnSaveProfile.innerHTML = '<i class="fas fa-spinner fa-spin mr-2"></i> Salvando...';
+    btnSaveProfile.disabled = true;
+
+    try {
+        await setDoc(doc(db, "admins", user.uid), profileData, { merge: true });
+        toggleProfileModal(false);
+        // Opcional: Mostrar toast de sucesso
+    } catch (e) {
+        console.error("Erro ao salvar perfil:", e);
+        alert("Erro ao salvar perfil.");
+    } finally {
+        btnSaveProfile.innerHTML = '<i class="fas fa-save mr-2"></i> Salvar Alterações';
+        btnSaveProfile.disabled = false;
+    }
+});
+
+
+// ==========================================
+// 6. DATA PROCESSING
+// ==========================================
+function generate5x2ScheduleDefaultForMonth(monthObj) {
+    const totalDays = new Date(monthObj.year, monthObj.month+1, 0).getDate();
+    const arr = [];
+    for (let d=1; d<=totalDays; d++){
+        const dow = new Date(monthObj.year, monthObj.month, d).getDay();
+        arr.push((dow===0||dow===6) ? 'F' : 'T');
+    }
+    return arr;
 }
 
 function parseDayListForMonth(dayString, monthObj) {
     if (!dayString) return [];
-    const totalDays = new Date(monthObj.year, monthObj.month + 1, 0).getDate();
+    if (Array.isArray(dayString)) return dayString; 
+    const totalDays = new Date(monthObj.year, monthObj.month+1, 0).getDate();
     const days = new Set();
+    const normalized = String(dayString).replace(/\b(at[eé]|até|a)\b/gi,' a ').replace(/–|—/g,'-').replace(/\s+/g,' ').trim();
+    const parts = normalized.split(',').map(p=>p.trim()).filter(p=>p.length>0);
 
-    const normalized = dayString.replace(/\b(at[eé]|até|a)\b/gi, ' a ')
-                                .replace(/–|—/g, '-')
-                                .replace(/\s*-\s*/g, '-')
-                                .replace(/\s+até\s+/gi, ' a ')
-                                .replace(/\s+/g, ' ')
-                                .trim();
-
-    const parts = normalized.split(',').map(p => p.trim()).filter(p => p.length > 0);
-
-    parts.forEach(part => {
-        const dateRange = part.match(/^(\d{1,2})\/(\d{1,2})(?:\/(\d{2,4}))?\s*(?:a|-)\s*(\d{1,2})\/(\d{1,2})(?:\/(\d{2,4}))?$/);
-        if (dateRange) {
-            let [ , sDay, sMonth, sYear, eDay, eMonth, eYear ] = dateRange;
-            sDay = parseInt(sDay, 10);
-            sMonth = parseInt(sMonth, 10) - 1;
-            eDay = parseInt(eDay, 10);
-            eMonth = parseInt(eMonth, 10) - 1;
-
-            const sY = sYear ? parseInt(sYear,10) : (sMonth <= monthObj.month ? monthObj.year : monthObj.year - (sMonth > monthObj.month ? 1 : 0));
-            const eY = eYear ? parseInt(eYear,10) : (eMonth >= monthObj.month ? monthObj.year : monthObj.year + (eMonth < monthObj.month ? 1 : 0));
-
-            const startDate = new Date(sY, sMonth, sDay);
-            const endDate = new Date(eY, eMonth, eDay);
-
-            if (isNaN(startDate) || isNaN(endDate)) return;
-
-            for (let d = new Date(startDate); d <= endDate; d.setDate(d.getDate() + 1)) {
-                if (d.getFullYear() === monthObj.year && d.getMonth() === monthObj.month) {
-                    days.add(d.getDate());
-                }
-            }
+    parts.forEach(part=>{
+        const simple = part.match(/^(\d{1,2})-(\d{1,2})$/);
+        if (simple) { for(let x=parseInt(simple[1]); x<=parseInt(simple[2]); x++) if(x>=1 && x<=totalDays) days.add(x); return; }
+        const number = part.match(/^(\d{1,2})$/);
+        if (number) { const v=parseInt(number[1]); if(v>=1 && v<=totalDays) days.add(v); return; }
+        if (/fins? de semana|fim de semana/i.test(part)) {
+            for (let d=1; d<=totalDays; d++){ const dow = new Date(monthObj.year, monthObj.month, d).getDay(); if (dow===0||dow===6) days.add(d); }
             return;
         }
-
-        const singleDate = part.match(/^(\d{1,2})\/(\d{1,2})(?:\/(\d{2,4}))?$/);
-        if (singleDate) {
-            const day = parseInt(singleDate[1],10);
-            const month = parseInt(singleDate[2],10) - 1;
-            const year = singleDate[3] ? parseInt(singleDate[3],10) : (month <= monthObj.month ? monthObj.year : monthObj.year + (month < monthObj.month ? 1 : 0));
-            if (year === monthObj.year && month === monthObj.month) {
-                if (day >=1 && day <= totalDays) days.add(day);
-            }
-            return;
-        }
-
-        const simpleRange = part.match(/^(\d{1,2})-(\d{1,2})$/);
-        if (simpleRange) {
-            let start = parseInt(simpleRange[1],10);
-            let end = parseInt(simpleRange[2],10);
-            if (!isNaN(start) && !isNaN(end) && start <= end) {
-                for (let d = start; d <= end; d++) {
-                    if (d >=1 && d <= totalDays) days.add(d);
-                }
-            }
-            return;
-        }
-
-        const dayOnly = part.match(/^(\d{1,2})$/);
-        if (dayOnly) {
-            const d = parseInt(dayOnly[1],10);
-            if (d >=1 && d <= totalDays) days.add(d);
-            return;
-        }
-
-        if (/fins de semana/i.test(part) || /fim de semana/i.test(part)) {
-            for (let d = 1; d <= totalDays; d++) {
-                const dow = new Date(monthObj.year, monthObj.month, d).getDay();
-                if (dow === 0 || dow === 6) days.add(d);
-            }
-            return;
-        }
-        if (/segunda a sexta/i.test(part) || /segunda à sexta/i.test(part)) {
-            for (let d = 1; d <= totalDays; d++) {
-                const dow = new Date(monthObj.year, monthObj.month, d).getDay();
-                if (dow >= 1 && dow <= 5) days.add(d);
-            }
+        if (/segunda a sexta/i.test(part)) {
+            for (let d=1; d<=totalDays; d++){ const dow = new Date(monthObj.year, monthObj.month, d).getDay(); if (dow>=1 && dow<=5) days.add(d); }
             return;
         }
     });
-
-    return Array.from(days).sort((a,b) => a-b);
+    return Array.from(days).sort((a,b)=>a-b);
 }
-
-
-function generate12x36Schedule(startWorkingDay, totalDays) {
-    let schedule = [];
-    for (let day = 1; day <= totalDays; day++) {
-        const offset = day - startWorkingDay;
-        schedule.push(offset >= 0 && offset % 2 === 0 ? "T" : "F");
-    }
-    return schedule;
-}
-
-function generate5x2ScheduleDefaultForMonth(monthObj) {
-    const totalDays = new Date(monthObj.year, monthObj.month + 1, 0).getDate();
-    let schedule = [];
-    for (let day = 1; day <= totalDays; day++) {
-        const dow = new Date(monthObj.year, monthObj.month, day).getDay();
-        schedule.push((dow === 0 || dow === 6) ? "F" : "T");
-    }
-    return schedule;
-}
-
 
 function buildFinalScheduleForMonth(employeeData, monthObj) {
-    const totalDays = new Date(monthObj.year, monthObj.month + 1, 0).getDate();
-    let schedule = new Array(totalDays).fill(null);
+    const totalDays = new Date(monthObj.year, monthObj.month+1, 0).getDate();
+    if (employeeData.calculatedSchedule && Array.isArray(employeeData.calculatedSchedule)) return employeeData.calculatedSchedule;
 
-    const parseDaysOrSchedule = (dayString) => {
-        if (!dayString) return [];
-        if (dayString.toLowerCase().includes('segunda a sexta') || dayString.toLowerCase().includes('segunda à sexta')) return generate5x2ScheduleDefaultForMonth(monthObj);
-        if (dayString.toLowerCase().includes('12x36 iniciado no dia 1/11')) return generate12x36Schedule(1, totalDays);
-        if (dayString.toLowerCase().includes('12x36 iniciado no dia 2/11')) return generate12x36Schedule(2, totalDays);
-        return parseDayListForMonth(dayString, monthObj);
-    };
-
-    const vacationDays = parseDayListForMonth(employeeData.FE, monthObj);
-    vacationDays.forEach(day => {
-        if (day >=1 && day <= totalDays) schedule[day - 1] = 'FE';
-    });
-
-    let isFixedSchedule = false;
-    let fixedScheduleDays = [];
-
-    const workingStatusOrDays = parseDaysOrSchedule(employeeData.T);
-    if (Array.isArray(workingStatusOrDays) && workingStatusOrDays.length === totalDays && typeof workingStatusOrDays[0] === 'string') {
-        fixedScheduleDays = workingStatusOrDays;
-        isFixedSchedule = true;
-    } else if (employeeData.F && employeeData.F.toLowerCase().includes('fins de semana')) {
-        fixedScheduleDays = generate5x2ScheduleDefaultForMonth(monthObj);
-        isFixedSchedule = true;
+    const schedule = new Array(totalDays).fill(null);
+    let tArr = [];
+    if(typeof employeeData.T === 'string' && /segunda a sexta/i.test(employeeData.T)) tArr = generate5x2ScheduleDefaultForMonth(monthObj);
+    else if(Array.isArray(employeeData.T)) {
+        const arr = new Array(totalDays).fill('F');
+        employeeData.T.forEach(x => { if(typeof x === 'number') arr[x-1] = 'T'; });
+        tArr = arr;
     }
 
-    if (isFixedSchedule) {
-        schedule = fixedScheduleDays.map((status, index) => schedule[index] === 'FE' ? 'FE' : status);
-    } else {
-        if (Array.isArray(workingStatusOrDays)) {
-            workingStatusOrDays.forEach(day => {
-                if (schedule[day - 1] === null) schedule[day - 1] = 'T';
-            });
+    const vacDays = parseDayListForMonth(employeeData.FE, monthObj);
+    vacDays.forEach(d => { if (d>=1 && d<=totalDays) schedule[d-1] = 'FE'; });
+    const fsDays = parseDayListForMonth(employeeData.FS, monthObj);
+    fsDays.forEach(d => { if(schedule[d-1] !== 'FE') schedule[d-1] = 'FS'; });
+    const fdDays = parseDayListForMonth(employeeData.FD, monthObj);
+    fdDays.forEach(d => { if(schedule[d-1] !== 'FE') schedule[d-1] = 'FD'; });
+
+    for(let i=0; i<totalDays; i++) {
+        if(!schedule[i]) {
+            if(tArr[i] === 'T') schedule[i] = 'T';
+            else schedule[i] = 'F';
         }
     }
-
-    parseDayListForMonth(employeeData.FD, monthObj).forEach(day => {
-        if (schedule[day - 1] !== 'FE') schedule[day - 1] = 'FD';
-    });
-
-    parseDayListForMonth(employeeData.FS, monthObj).forEach(day => {
-        if (schedule[day - 1] !== 'FE' && schedule[day - 1] !== 'FD') schedule[day - 1] = 'FS';
-    });
-
-    if (!isFixedSchedule) {
-        parseDayListForMonth(employeeData.F, monthObj).forEach(day => {
-            if (schedule[day - 1] !== 'FE' && schedule[day - 1] !== 'FD' && schedule[day - 1] !== 'FS') {
-                schedule[day - 1] = 'F';
-            }
-        });
-    }
-
-    for (let i = 0; i < totalDays; i++) {
-        if (schedule[i] === null) schedule[i] = 'T';
-    }
-
     return schedule;
 }
 
-
-function rebuildScheduleDataForSelectedMonth() {
-    const monthObj = { year: selectedMonthObj.year, month: selectedMonthObj.month };
-    const totalDays = new Date(monthObj.year, monthObj.month + 1, 0).getDate();
-
+function processScheduleData() {
     scheduleData = {};
-    Object.keys(employeeMetadata).forEach(name => {
-        const data = rawSchedule[name] || { T: 'segunda a sexta', F: 'fins de semana', FS: '', FD: '', FE: '' };
-        scheduleData[name] = {
-            info: employeeMetadata[name],
-            schedule: buildFinalScheduleForMonth(data, monthObj)
-        };
+    if (!rawSchedule) return;
+    Object.keys(rawSchedule).forEach(name => {
+        const finalArr = buildFinalScheduleForMonth(rawSchedule[name], selectedMonthObj);
+        scheduleData[name] = { info: rawSchedule[name], schedule: finalArr };
+        rawSchedule[name].calculatedSchedule = finalArr;
     });
-
+    const totalDays = new Date(selectedMonthObj.year, selectedMonthObj.month+1, 0).getDate();
     const slider = document.getElementById('dateSlider');
     if (slider) {
         slider.max = totalDays;
-        const sliderMaxLabel = document.getElementById('sliderMaxLabel');
-        if (sliderMaxLabel) sliderMaxLabel.textContent = `Dia ${totalDays}`;
+        document.getElementById('sliderMaxLabel').textContent = `Dia ${totalDays}`;
         if (currentDay > totalDays) currentDay = totalDays;
         slider.value = currentDay;
     }
 }
 
-
 // ==========================================
-// 3. LÓGICA DE VISUALIZAÇÃO E INTERAÇÃO
+// 7. CHART & UI
 // ==========================================
-function pad(number) {
-    return number < 10 ? '0' + number : number;
+function parseSingleTimeRange(rangeStr) {
+    if (!rangeStr || typeof rangeStr !== 'string') return null;
+    const m = rangeStr.match(/(\d{1,2}):(\d{2})\s*às\s*(\d{1,2}):(\d{2})/);
+    if (!m) return null;
+    return { startTotal: parseInt(m[1])*60 + parseInt(m[2]), endTotal: parseInt(m[3])*60 + parseInt(m[4]) };
 }
 
 function isWorkingTime(timeRange) {
-    if (!timeRange || timeRange.includes('12x36')) return true;
-
+    if (!timeRange || /12x36/i.test(timeRange)) return true;
     const now = new Date();
-    const currentMinutes = now.getHours() * 60 + now.getMinutes();
-    const match = timeRange.match(/(\d{1,2}):(\d{2})\s*às\s*(\d{1,2}):(\d{2})/);
-
-    if (!match) return false;
-
-    const [, startH, startM, endH, endM] = match.map(Number);
-    const startTotal = startH * 60 + startM;
-    const endTotal = endH * 60 + endM;
-
-    if (startTotal > endTotal) {
-        return currentMinutes >= startTotal || currentMinutes <= endTotal;
+    const curr = now.getHours()*60 + now.getMinutes();
+    const ranges = Array.isArray(timeRange) ? timeRange : [timeRange];
+    for (const r of ranges) {
+        const p = parseSingleTimeRange(r);
+        if (!p) continue;
+        if (p.startTotal > p.endTotal) { if (curr >= p.startTotal || curr <= p.endTotal) return true; }
+        else { if (curr >= p.startTotal && curr <= p.endTotal) return true; }
     }
-    return currentMinutes >= startTotal && currentMinutes <= endTotal;
+    return false;
 }
 
-function updateDailyView() {
-    const currentDateLabel = document.getElementById('currentDateLabel');
-    const monthObj = { year: selectedMonthObj.year, month: selectedMonthObj.month };
-    const dayOfWeekIndex = new Date(monthObj.year, monthObj.month, currentDay).getDay();
-    const now = new Date();
-    const isToday = (now.getDate() === currentDay && now.getMonth() === systemMonth && now.getFullYear() === systemYear);
-    const dayString = currentDay < 10 ? '0' + currentDay : currentDay;
-
-    currentDateLabel.textContent = `${daysOfWeek[dayOfWeekIndex]}, ${dayString}/${pad(monthObj.month + 1)}/${monthObj.year}`;
-
-    let workingCount = 0;
-    let offCount = 0;
-    let vacationCount = 0;
-    let offShiftCount = 0;
-    let workingHtml = '';
-    let offHtml = '';
-    let vacationHtml = '';
-    let offShiftHtml = '';
-
-    const kpiWorking = document.getElementById('kpiWorking');
-    const kpiOffShift = document.getElementById('kpiOffShift');
-    const kpiOff = document.getElementById('kpiOff');
-    const kpiVacation = document.getElementById('kpiVacation');
-    const listWorking = document.getElementById('listWorking');
-    const listOffShift = document.getElementById('listOffShift');
-    const listOff = document.getElementById('listOff');
-    const listVacation = document.getElementById('listVacation');
-
-    Object.keys(scheduleData).forEach(name => {
-        const employee = scheduleData[name];
-        const scheduleIndex = currentDay - 1;
-        const status = employee.schedule[scheduleIndex];
-        let kpiStatus = status;
-        let displayStatus = status;
-
-        if (kpiStatus === 'FE') {
-            vacationCount++;
-            displayStatus = 'FE';
-        } else if (isToday && kpiStatus === 'T') {
-            const isWorking = isWorkingTime(employee.info.Horário);
-            if (!isWorking) {
-                offShiftCount++;
-                displayStatus = 'OFF-SHIFT';
-                kpiStatus = 'F_EFFECTIVE';
-            } else {
-                workingCount++;
-            }
-        } else if (kpiStatus === 'T') {
-            workingCount++;
-        } else if (kpiStatus === 'F' || kpiStatus === 'FS' || kpiStatus === 'FD') {
-            offCount++;
-        }
-
-        let itemHtml = `
-            <li class="flex justify-between items-center text-sm p-3 rounded hover:bg-indigo-50 border-b border-gray-100 last:border-0 transition-colors">
-                <div class="flex flex-col">
-                    <span class="font-semibold text-gray-700">${name}</span>
-                    <span class="text-xs text-gray-400">${employee.info.Horário}</span>
-                </div>
-                <span class="font-bold text-xs px-2 py-1 rounded day-status status-${displayStatus}">
-                    ${statusMap[displayStatus] || displayStatus}
-                </span>
-            </li>
-        `;
-
-        if (kpiStatus === 'T') {
-            workingHtml += itemHtml;
-        } else if (kpiStatus === 'F_EFFECTIVE') {
-            offShiftHtml += itemHtml;
-        } else if (kpiStatus === 'F' || kpiStatus === 'FS' || kpiStatus === 'FD') {
-            offHtml += itemHtml;
-        } else if (kpiStatus === 'FE') {
-            vacationHtml += itemHtml;
-        }
-    });
-
-    kpiWorking.textContent = workingCount;
-    kpiOffShift.textContent = offShiftCount;
-    kpiOff.textContent = offCount;
-    kpiVacation.textContent = vacationCount;
-
-    listWorking.innerHTML = workingHtml || '<li class="text-gray-400 text-sm text-center py-4">Ninguém em expediente no momento.</li>';
-    listOffShift.innerHTML = offShiftHtml || '<li class="text-gray-400 text-sm text-center py-4">Ninguém fora de expediente no momento.</li>';
-    listOff.innerHTML = offHtml || '<li class="text-gray-400 text-sm text-center py-4">Nenhuma folga programada.</li>';
-    listVacation.innerHTML = vacationHtml || '<li class="text-gray-400 text-sm text-center py-4">Ninguém de férias.</li>';
-
-    updateChart(workingCount, offCount, offShiftCount, vacationCount);
+window.toggleChartMode = function() {
+    isTrendMode = !isTrendMode;
+    const btn = document.getElementById("btnToggleChart");
+    const title = document.getElementById("chartTitle");
+    if (isTrendMode) {
+        if(btn) btn.textContent = "Voltar";
+        if(title) title.textContent = "Tendência Mensal";
+        renderMonthlyTrendChart();
+    } else {
+        if(btn) btn.textContent = "Ver Tendência";
+        if(title) title.textContent = "Capacidade Atual";
+        updateDailyView();
+    }
 }
 
-function updateChart(working, off, offShift, vacation) {
-    const total = working + off + offShift + vacation;
-    const dataPoints = [working, off, offShift, vacation];
-    const labels = ['Trabalhando', 'Folga Programada', 'Exp. Encerrado', 'Férias'];
-    const colors = ['#10b981', '#fcd34d', '#6366f1', '#ef4444'];
+const centerTextPlugin = {
+    id: 'centerTextPlugin',
+    beforeDraw: (chart) => {
+        if (chart.config.type !== 'doughnut') return;
+        const { ctx, width, height, data } = chart;
+        const total = data.datasets[0].data.reduce((a, b) => a + b, 0);
+        const wIdx = data.labels.findIndex(l => l.includes('Trabalhando'));
+        const wCount = wIdx !== -1 ? data.datasets[0].data[wIdx] : 0;
+        const pct = total > 0 ? ((wCount / total) * 100).toFixed(0) : 0;
+        ctx.save();
+        ctx.font = 'bolder 3rem sans-serif';
+        ctx.fillStyle = '#FFFFFF';
+        ctx.textAlign = 'center';
+        ctx.textBaseline = 'middle';
+        ctx.fillText(`${pct}%`, width/2, height/2 - 10);
+        ctx.font = '600 0.7rem sans-serif';
+        ctx.fillStyle = '#94A3B8';
+        ctx.fillText('CAPACIDADE', width/2, height/2 + 25);
+        ctx.restore();
+    }
+};
 
-    const filteredData = [];
-    const filteredLabels = [];
-    const filteredColors = [];
+function renderMonthlyTrendChart() {
+    const totalDays = new Date(selectedMonthObj.year, selectedMonthObj.month + 1, 0).getDate();
+    const labels = [];
+    const dataPoints = [];
+    const pointColors = [];
 
-    dataPoints.forEach((data, index) => {
-        if (data > 0 || total === 0) {
-            filteredData.push(data);
-            filteredLabels.push(labels[index]);
-            filteredColors.push(colors[index]);
-        }
-    });
-
-    if (dailyChart) {
-        dailyChart.data.datasets[0].data = filteredData;
-        dailyChart.data.datasets[0].backgroundColor = filteredColors;
-        dailyChart.data.labels = filteredLabels;
-        dailyChart.update();
-        return;
+    for (let d = 1; d <= totalDays; d++) {
+        let working = 0;
+        let totalStaff = 0;
+        Object.keys(scheduleData).forEach(name => {
+            const employee = scheduleData[name];
+            if(!employee.schedule) return;
+            const status = employee.schedule[d-1];
+            if (status === 'T') working++;
+            if (status !== 'FE') totalStaff++;
+        });
+        const percentage = totalStaff > 0 ? ((working / totalStaff) * 100).toFixed(0) : 0;
+        labels.push(d);
+        dataPoints.push(percentage);
+        pointColors.push(percentage < 75 ? '#F87171' : '#34D399');
     }
 
-    const data = {
-        labels: filteredLabels,
-        datasets: [{
-            data: filteredData,
-            backgroundColor: filteredColors,
-            hoverOffset: 4
-        }]
-    };
+    const ctx = document.getElementById('dailyChart').getContext('2d');
+    if (dailyChart) { dailyChart.destroy(); dailyChart = null; }
 
-    const config = {
-        type: 'doughnut',
-        data: data,
+    dailyChart = new Chart(ctx, {
+        type: 'line',
+        data: {
+            labels: labels,
+            datasets: [{
+                label: 'Capacidade (%)',
+                data: dataPoints,
+                borderColor: '#7C3AED',
+                backgroundColor: 'rgba(124, 58, 237, 0.15)',
+                pointBackgroundColor: pointColors,
+                pointBorderColor: '#0F1020',
+                pointRadius: 4,
+                pointHoverRadius: 7,
+                fill: true,
+                tension: 0.3
+            }]
+        },
         options: {
             responsive: true,
             maintainAspectRatio: false,
-            plugins: {
-                legend: { position: 'bottom' },
-                tooltip: {
-                    callbacks: {
-                        label: function(context) {
-                            let label = context.label || '';
-                            if (label) label = label.split('(')[0].trim();
-                            if (context.parsed !== null) label += ': ' + context.parsed;
-                            return label;
-                        }
-                    }
+            interaction: { mode: 'index', intersect: false },
+            plugins: { legend: { display: false }, centerTextPlugin: false },
+            scales: {
+                y: { min: 0, max: 100, ticks: { callback: v => v+'%', color: '#64748B' }, grid: { color: '#2E3250' } },
+                x: { ticks: { color: '#64748B' }, grid: { display: false } }
+            }
+        },
+        plugins: [{
+            id: 'targetLine',
+            beforeDraw: (chart) => {
+                const { ctx, chartArea: { left, right }, scales: { y } } = chart;
+                const yValue = y.getPixelForValue(75);
+                if(yValue) {
+                    ctx.save();
+                    ctx.beginPath();
+                    ctx.strokeStyle = '#4B5563';
+                    ctx.lineWidth = 1;
+                    ctx.setLineDash([5, 5]);
+                    ctx.moveTo(left, yValue);
+                    ctx.lineTo(right, yValue);
+                    ctx.stroke();
+                    ctx.restore();
                 }
             }
-        }
-    };
+        }]
+    });
+}
+
+function updateDailyChartDonut(working, off, offShift, vacation) {
+    const labels = [`Trabalhando (${working})`, `Folga (${off})`, `Encerrado (${offShift})`, `Férias (${vacation})`];
+    const rawColors = ['#34D399','#FBBF24','#E879F9','#F87171'];
+    const fData=[], fLabels=[], fColors=[];
+    [working, off, offShift, vacation].forEach((d,i)=>{ 
+        if(d>0 || (working+off+offShift+vacation)===0){ fData.push(d); fLabels.push(labels[i]); fColors.push(rawColors[i]); }
+    });
 
     const ctx = document.getElementById('dailyChart').getContext('2d');
-    dailyChart = new Chart(ctx, config);
-}
-
-// ==========================================
-// 4. MEU PERFIL (LÓGICA NOVA)
-// ==========================================
-
-const PROFILE_KEY = 'cronos_user_profile';
-
-function initProfile() {
-    const savedProfile = localStorage.getItem(PROFILE_KEY);
-    const select = document.getElementById('profileSelect');
-    const setupCard = document.getElementById('profileSetupCard');
-    const dashboard = document.getElementById('profileDashboard');
-
-    // Popula o select de perfil
-    select.innerHTML = '<option value="">Buscar colaborador...</option>';
-    Object.keys(scheduleData).sort().forEach(name => {
-        const option = document.createElement('option');
-        option.value = name;
-        option.textContent = name;
-        select.appendChild(option);
-    });
-
-    if (savedProfile && scheduleData[savedProfile]) {
-        setupCard.classList.add('hidden');
-        dashboard.classList.remove('hidden');
-        renderProfileDashboard(savedProfile);
+    if (dailyChart) {
+        if (dailyChart.config.type !== 'doughnut') { dailyChart.destroy(); dailyChart = null; }
+    }
+    if (!dailyChart) {
+        dailyChart = new Chart(ctx, {
+            type: 'doughnut',
+            data: { labels: fLabels, datasets:[{ data: fData, backgroundColor: fColors, borderWidth: 0, hoverOffset:5 }] },
+            options: { 
+                responsive: true, 
+                maintainAspectRatio: false, 
+                cutout: '75%', 
+                plugins: { 
+                    legend: { position:'bottom', labels:{ padding:15, boxWidth: 8, color: '#94A3B8', font: {size: 10} } } 
+                } 
+            },
+            plugins: [centerTextPlugin]
+        });
     } else {
-        setupCard.classList.remove('hidden');
-        dashboard.classList.add('hidden');
-    }
-
-    // Botão Salvar
-    document.getElementById('btnSaveProfile').addEventListener('click', () => {
-        const selected = select.value;
-        if (selected) {
-            localStorage.setItem(PROFILE_KEY, selected);
-            setupCard.classList.add('hidden');
-            dashboard.classList.remove('hidden');
-            renderProfileDashboard(selected);
-        }
-    });
-
-    // Botão Sair
-    document.getElementById('btnLogoutProfile').addEventListener('click', () => {
-        localStorage.removeItem(PROFILE_KEY);
-        setupCard.classList.remove('hidden');
-        dashboard.classList.add('hidden');
-        select.value = "";
-    });
-}
-
-function renderProfileDashboard(name) {
-    const employee = scheduleData[name];
-    
-    // 1. Identidade
-    document.getElementById('profileNameDisplay').textContent = name;
-    document.getElementById('profileInitials').textContent = name.split(' ').map(n=>n[0]).join('').slice(0,2);
-    document.getElementById('profileRoleBadge').textContent = employee.info.Grupo;
-    document.getElementById('profileTeamBadge').textContent = employee.info.Célula;
-    document.getElementById('profileShiftTime').textContent = employee.info.Horário;
-
-    // 2. Stats
-    // Calcular próxima folga
-    const today = systemDay;
-    let nextOffDay = null;
-    let daysWorkingCount = 0;
-
-    for (let i = 0; i < employee.schedule.length; i++) {
-        const status = employee.schedule[i];
-        const day = i + 1;
-        
-        // Contar dias trabalhados no mês
-        if (status === 'T') daysWorkingCount++;
-
-        // Achar próxima folga (a partir de hoje)
-        if (!nextOffDay && day >= today && (status === 'F' || status === 'FS' || status === 'FD' || status === 'FE')) {
-            nextOffDay = day;
-        }
-    }
-
-    document.getElementById('profileDaysWorking').textContent = daysWorkingCount;
-    
-    if (nextOffDay) {
-        document.getElementById('profileNextOff').textContent = `${pad(nextOffDay)}/${pad(selectedMonthObj.month + 1)}`;
-        const status = employee.schedule[nextOffDay - 1];
-        const statusLabel = status === 'FE' ? 'Férias' : 'Folga';
-        
-        // Calcular dia da semana
-        const dateObj = new Date(selectedMonthObj.year, selectedMonthObj.month, nextOffDay);
-        const dow = daysOfWeek[dateObj.getDay()];
-        
-        document.getElementById('profileNextOffDay').textContent = `${dow} • ${statusLabel}`;
-    } else {
-        document.getElementById('profileNextOff').textContent = "--/--";
-        document.getElementById('profileNextOffDay').textContent = "Nenhuma prevista";
-    }
-
-
-    // 3. Calendário Dedicado
-    const grid = document.getElementById('profileCalendarGrid');
-    grid.innerHTML = '';
-
-    const monthObj = { year: selectedMonthObj.year, month: selectedMonthObj.month };
-    const firstDayOfMonth = new Date(monthObj.year, monthObj.month, 1).getDay();
-    
-    // Espaços vazios antes do dia 1
-    for (let i = 0; i < firstDayOfMonth; i++) {
-        grid.insertAdjacentHTML('beforeend', '<div class="calendar-cell bg-[#1A1C2E]/50 border-gray-800/50"></div>');
-    }
-
-    const todayDay = systemDay;
-    const isCurrentMonth = (systemMonth === monthObj.month && systemYear === monthObj.year);
-
-    for (let i = 0; i < employee.schedule.length; i++) {
-        const dayNumber = i + 1;
-        const status = employee.schedule[i];
-        const displayStatus = statusMap[status] || status;
-        
-        // Lógica de cores específica para o dashboard escuro
-        let statusClass = '';
-        if(status === 'T') statusClass = 'bg-emerald-900/30 text-emerald-400 border border-emerald-500/30';
-        else if(status === 'FE') statusClass = 'bg-red-900/30 text-red-400 border border-red-500/30';
-        else if(status === 'FS') statusClass = 'bg-blue-900/30 text-blue-400 border border-blue-500/30';
-        else if(status === 'FD') statusClass = 'bg-pink-900/30 text-pink-400 border border-pink-500/30';
-        else statusClass = 'bg-yellow-900/30 text-yellow-400 border border-yellow-500/30'; // F
-
-        const isTodayClass = (isCurrentMonth && dayNumber === todayDay) ? 'ring-2 ring-purple-500' : '';
-
-        const cellHtml = `
-            <div class="calendar-cell bg-[#1A1C2E] border-gray-800 ${isTodayClass}">
-                <div class="day-number text-gray-400">${dayNumber}</div>
-                <div class="text-[10px] uppercase font-bold px-1 py-0.5 rounded text-center mt-auto ${statusClass}">${displayStatus}</div>
-            </div>
-        `;
-        grid.insertAdjacentHTML('beforeend', cellHtml);
+        dailyChart.data.labels = fLabels;
+        dailyChart.data.datasets[0].data = fData;
+        dailyChart.data.datasets[0].backgroundColor = fColors;
+        dailyChart.update();
     }
 }
 
+function updateDailyView() {
+    if (isTrendMode) window.toggleChartMode();
+
+    const currentDateLabel = document.getElementById('currentDateLabel');
+    const dayOfWeekIndex = new Date(selectedMonthObj.year, selectedMonthObj.month, currentDay).getDay();
+    const now = new Date();
+    const isToday = (now.getDate() === currentDay && now.getMonth() === selectedMonthObj.month && now.getFullYear() === selectedMonthObj.year);
+    
+    currentDateLabel.textContent = `${daysOfWeek[dayOfWeekIndex]}, ${pad(currentDay)}/${pad(selectedMonthObj.month+1)}`;
+
+    let w=0, o=0, v=0, os=0;
+    let wH='', oH='', vH='', osH='';
+
+    if (Object.keys(scheduleData).length === 0) {
+        updateDailyChartDonut(0,0,0,0);
+        return;
+    }
+
+    Object.keys(scheduleData).forEach(name=>{
+        const emp = scheduleData[name];
+        let status = emp.schedule[currentDay-1] || 'F';
+        let display = status;
+
+        if (status === 'FE') { v++; display='FE'; }
+        else if (isToday && status === 'T') {
+            if (!isWorkingTime(emp.info.Horário)) { os++; display='OFF-SHIFT'; status='F_EFFECTIVE'; }
+            else w++;
+        }
+        else if (status === 'T') w++;
+        else o++; 
+
+        // CRIAÇÃO DO ITEM DA LISTA COM BORDAS ARREDONDADAS (rounded-xl)
+        const row = `
+            <li class="flex justify-between items-center text-sm p-4 rounded-xl mb-2 bg-[#1A1C2E] hover:bg-[#2E3250] border border-[#2E3250] hover:border-purple-500 transition-all cursor-default shadow-sm group">
+                <div class="flex flex-col">
+                    <span class="font-bold text-gray-200 group-hover:text-white transition-colors">${name}</span>
+                    <span class="text-[10px] text-gray-500 font-mono mt-0.5">${emp.info.Horário||'--'}</span>
+                </div>
+                <span class="day-status status-${display} rounded-lg px-2.5 py-1 text-[10px] font-bold tracking-wide shadow-none border-0 bg-opacity-10">${statusMap[display]||display}</span>
+            </li>`;
+
+        if (status==='T') wH+=row;
+        else if (status==='F_EFFECTIVE') osH+=row;
+        else if (['FE'].includes(status)) vH+=row;
+        else oH+=row;
+    });
+
+    document.getElementById('kpiWorking').textContent = w;
+    document.getElementById('kpiOffShift').textContent = os;
+    document.getElementById('kpiOff').textContent = o;
+    document.getElementById('kpiVacation').textContent = v;
+
+    document.getElementById('listWorking').innerHTML = wH || '<li class="text-gray-600 text-xs text-center py-4 italic">Ninguém neste status.</li>';
+    document.getElementById('listOffShift').innerHTML = osH || '<li class="text-gray-600 text-xs text-center py-4 italic">Ninguém neste status.</li>';
+    document.getElementById('listOff').innerHTML = oH || '<li class="text-gray-600 text-xs text-center py-4 italic">Ninguém neste status.</li>';
+    document.getElementById('listVacation').innerHTML = vH || '<li class="text-gray-600 text-xs text-center py-4 italic">Ninguém neste status.</li>';
+
+    updateDailyChartDonut(w, o, os, v);
+}
 
 // ==========================================
-// 5. INICIALIZAÇÃO GERAL E EVENTOS
+// 8. PERSONAL & ADMIN
 // ==========================================
-
 function initSelect() {
-    // Select da aba "Consultar Escala" (antiga Personal)
     const select = document.getElementById('employeeSelect');
+    if (!select) return;
     select.innerHTML = '<option value="">Selecione um colaborador</option>';
-    Object.keys(scheduleData).sort().forEach(name => {
-        const option = document.createElement('option');
-        option.value = name;
-        option.textContent = name;
-        select.appendChild(option);
+    Object.keys(scheduleData).sort().forEach(name=>{
+        const opt = document.createElement('option'); opt.value=name; opt.textContent=name; select.appendChild(opt);
     });
-
-    select.addEventListener('change', (e) => {
-        const employeeName = e.target.value;
-        const infoCard = document.getElementById('personalInfoCard');
-        const calendarContainer = document.getElementById('calendarContainer');
-
-        if (employeeName) {
-            updatePersonalView(employeeName);
+    
+    const newSelect = select.cloneNode(true);
+    select.parentNode.replaceChild(newSelect, select);
+    
+    newSelect.addEventListener('change', e => {
+        const name = e.target.value;
+        if(name) {
+            updatePersonalView(name);
         } else {
-            infoCard.classList.remove('opacity-100');
-            infoCard.classList.add('opacity-0');
-            setTimeout(() => {
-                infoCard.classList.add('hidden');
-                calendarContainer.classList.add('hidden');
-            }, 300);
+            document.getElementById('personalInfoCard').classList.add('hidden');
+            document.getElementById('calendarContainer').classList.add('hidden');
         }
     });
 }
 
-function updatePersonalView(employeeName) {
-    const employee = scheduleData[employeeName];
-    const infoCard = document.getElementById('personalInfoCard');
-    const calendarContainer = document.getElementById('calendarContainer');
+function updatePersonalView(name) {
+    const emp = scheduleData[name];
+    if (!emp) return;
+    const card = document.getElementById('personalInfoCard');
+    
+    const cargo = emp.info.Cargo || emp.info.Grupo || 'Colaborador';
+    const horario = emp.info.Horário || '--:--';
+    const celula = emp.info.Célula || emp.info.Celula || 'Sitelbra';
+    let turno = emp.info.Turno || 'Comercial';
 
-    const isLeader = employee.info.Grupo === "Líder de Célula";
-    const bgColor = isLeader ? 'bg-purple-700' : 'bg-indigo-600';
-    const mainColor = isLeader ? 'text-purple-300' : 'text-indigo-300';
-    const turnoDisplay = employee.info.Turno;
+    let statusToday = emp.schedule[currentDay - 1] || 'F';
+    let displayStatus = statusToday;
+    const now = new Date();
+    const isToday = (now.getDate() === currentDay && now.getMonth() === selectedMonthObj.month && now.getFullYear() === selectedMonthObj.year);
+    if (isToday && statusToday === 'T' && !isWorkingTime(emp.info.Horário)) displayStatus = 'OFF-SHIFT';
 
-    infoCard.className = `hidden ${bgColor} p-6 rounded-2xl mb-6 shadow-xl text-white flex flex-col sm:flex-row justify-between items-center transition-opacity duration-300 opacity-0`;
+    const colorClasses = {
+        'T': 'bg-green-500 shadow-[0_0_10px_#22c55e]',
+        'F': 'bg-yellow-500 shadow-[0_0_10px_#eab308]',
+        'FS': 'bg-sky-500 shadow-[0_0_10px_#0ea5e9]',
+        'FD': 'bg-indigo-500 shadow-[0_0_10px_#6366f1]',
+        'FE': 'bg-red-500 shadow-[0_0_10px_#ef4444]',
+        'OFF-SHIFT': 'bg-fuchsia-500 shadow-[0_0_10px_#d946ef]'
+    };
+    let dotClass = colorClasses[displayStatus] || 'bg-gray-500';
 
-    infoCard.innerHTML = `
-        <div class="flex items-center space-x-4 w-full mb-4 sm:mb-0 pb-4 sm:pb-0 border-b sm:border-b-0 sm:border-r border-white/20">
-            <svg class="h-10 w-10 ${mainColor} flex-shrink-0" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                ${isLeader ?
-                    '<path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M17 20h5v-2a3 3 0 00-5.356-1.857M17 20v-2c0-.656-.126-1.283-.356-1.857M9 20l3-3m0 0l-3-3m3 3h6m-3 3v-2.5M10 9a2 2 0 012-2h4a2 2 0 012 2v4a2 2 0 01-2 2h-4a2 2 0 01-2-2v-4zm-9 3a2 2 0 012-2h4a2 2 0 012 2v4a2 2 0 01-2 2H3a2 2 0 01-2-2v-4z" />' :
-                    '<path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M16 7a4 4 0 11-8 0 4 4 0 018 0zM12 14a7 7 0 00-7 7h14a7 7 0 00-7-7z" />'
-                }
-            </svg>
-            <div class="flex-1 min-w-0">
-                <p class="text-xl sm:text-2xl font-extrabold">${employeeName}</p>
-                <p class="text-sm font-semibold">${employee.info.Grupo}</p>
+    card.classList.remove('hidden');
+    card.className = "mb-8 bg-[#1A1C2E] rounded-xl border border-[#2E3250] overflow-hidden";
+    card.innerHTML = `
+        <div class="px-6 py-5 flex justify-between items-center bg-gradient-to-r from-[#1A1C2E] to-[#2E3250]/30">
+            <div>
+                <h2 class="text-xl md:text-2xl font-bold text-white tracking-tight">${name}</h2>
+                <p class="text-purple-400 text-xs font-bold uppercase tracking-widest mt-1">${cargo}</p>
             </div>
+            <div class="w-3 h-3 rounded-full ${dotClass}"></div>
         </div>
-        <div class="grid grid-cols-2 gap-4 w-full sm:w-auto mt-4 sm:mt-0 sm:pl-6">
-            <div class="md:col-span-1">
-                <p class="text-xs font-medium ${mainColor}">Célula</p>
-                <p class="font-bold text-sm">${employee.info.Célula}</p>
+        <div class="grid grid-cols-3 divide-x divide-[#2E3250] bg-[#0F1020]/50 border-t border-[#2E3250]">
+            <div class="py-4 text-center">
+                <span class="block text-[10px] text-gray-500 font-bold uppercase tracking-wider">Célula</span>
+                <span class="block text-sm font-bold text-gray-300 mt-1">${celula}</span>
             </div>
-            <div class="md:col-span-1">
-                <p class="text-xs font-medium ${mainColor}">Horário</p>
-                <p class="font-bold text-sm">${employee.info.Horário}</p>
+            <div class="py-4 text-center">
+                <span class="block text-[10px] text-gray-500 font-bold uppercase tracking-wider">Turno</span>
+                <span class="block text-sm font-bold text-gray-300 mt-1">${turno}</span>
             </div>
-            <div class="md:col-span-1">
-                <p class="text-xs font-medium ${mainColor}">Turno</p>
-                <p class="font-bold text-sm">${turnoDisplay}</p>
+            <div class="py-4 text-center">
+                <span class="block text-[10px] text-gray-500 font-bold uppercase tracking-wider">Horário</span>
+                <span class="block text-sm font-bold text-gray-300 mt-1">${horario}</span>
             </div>
         </div>
     `;
 
-    infoCard.classList.remove('hidden', 'opacity-0');
-    infoCard.classList.add('opacity-100');
-
-    calendarContainer.classList.remove('hidden');
-    updateCalendar(employee.schedule);
+    document.getElementById('calendarContainer').classList.remove('hidden');
+    updateCalendar(name, emp.schedule);
 }
 
-function updateCalendar(schedule) {
+function cycleStatus(current) {
+    const sequence = ['T', 'F', 'FS', 'FD', 'FE'];
+    let idx = sequence.indexOf(current);
+    if(idx === -1) return 'T';
+    return sequence[(idx + 1) % sequence.length];
+}
+
+async function handleCellClick(name, dayIndex) {
+    if (!isAdmin) return;
+    const emp = scheduleData[name];
+    const newStatus = cycleStatus(emp.schedule[dayIndex]);
+    emp.schedule[dayIndex] = newStatus;
+    rawSchedule[name].calculatedSchedule = emp.schedule;
+    
+    hasUnsavedChanges = true;
+    const statusEl = document.getElementById('saveStatus');
+    const statusIcon = document.getElementById('saveStatusIcon');
+    if(statusEl) {
+        statusEl.textContent = "Alterado (Não salvo)";
+        statusEl.className = "text-xs text-orange-400 font-bold";
+    }
+    if(statusIcon) statusIcon.className = "w-1.5 h-1.5 rounded-full bg-orange-500 animate-pulse";
+    
+    updateCalendar(name, emp.schedule);
+    updateDailyView();
+    const sel = document.getElementById('employeeSelect');
+    updateWeekendTable(sel ? sel.value : null);
+}
+
+function updateCalendar(name, schedule) {
     const grid = document.getElementById('calendarGrid');
+    const isMobile = window.innerWidth <= 767;
     grid.innerHTML = '';
+    
+    if(isMobile) {
+        grid.className = 'space-y-2 mt-4';
+        schedule.forEach((st, i) => {
+            let pillClasses = "flex justify-between items-center p-3 px-4 rounded-xl border transition-all text-sm";
+            if(isAdmin) pillClasses += " cursor-pointer active:scale-95";
+            
+            // Dark Mode Mobile Pills
+            pillClasses += " bg-[#1A1C2E] border-[#2E3250] text-gray-300";
 
-    const monthObj = { year: selectedMonthObj.year, month: selectedMonthObj.month };
-    const firstDayOfMonth = new Date(monthObj.year, monthObj.month, 1).getDay();
-    for (let i = 0; i < firstDayOfMonth; i++) {
-        grid.insertAdjacentHTML('beforeend', '<div class="calendar-cell bg-gray-50 border-gray-100"></div>');
-    }
+            const el = document.createElement('div');
+            el.className = pillClasses;
+            el.innerHTML = `
+                <span class="font-mono text-gray-500">Dia ${pad(i+1)}</span>
+                <span class="day-status status-${st}">${statusMap[st]||st}</span>
+            `;
+            if(isAdmin) el.onclick = () => handleCellClick(name, i);
+            grid.appendChild(el);
+        });
+    } else {
+        grid.className = 'calendar-grid-container';
+        const m = { y: selectedMonthObj.year, mo: selectedMonthObj.month };
+        const empty = new Date(m.y, m.mo, 1).getDay();
+        for(let i=0;i<empty;i++) grid.insertAdjacentHTML('beforeend','<div class="calendar-cell bg-[#1A1C2E] opacity-50"></div>');
+        
+        schedule.forEach((st, i) => {
+            const cell = document.createElement('div');
+            cell.className = "calendar-cell relative group";
+            
+            const badge = document.createElement('div');
+            badge.className = `day-status-badge status-${st}`;
+            badge.textContent = statusMap[st]||st;
+            
+            if(isAdmin) {
+                cell.classList.add('cursor-pointer');
+                cell.title = "Clique para alterar";
+                cell.onclick = () => handleCellClick(name, i);
+            }
 
-    const todayDay = systemDay;
-    const isCurrentMonth = (systemMonth === monthObj.month && systemYear === monthObj.year);
-
-    for (let i = 0; i < schedule.length; i++) {
-        const dayNumber = i + 1;
-        const status = schedule[i];
-        const displayStatus = statusMap[status] || status;
-        const currentDayClass = isCurrentMonth && dayNumber === todayDay ? 'current-day' : '';
-
-        const cellHtml = `
-            <div class="calendar-cell ${currentDayClass}">
-                <div class="day-number">${dayNumber}</div>
-                <div class="day-status-badge status-${status}">${displayStatus}</div>
-            </div>
-        `;
-        grid.insertAdjacentHTML('beforeend', cellHtml);
+            cell.innerHTML = `<div class="day-number group-hover:text-white transition-colors">${pad(i+1)}</div>`;
+            cell.appendChild(badge);
+            grid.appendChild(cell);
+        });
     }
 }
 
-function updateWeekendTable() {
-    const container = document.getElementById('weekendPlantaoContainer');
-    container.innerHTML = '';
-    let hasResults = false;
-
-    const monthObj = { year: selectedMonthObj.year, month: selectedMonthObj.month };
-    const totalDays = new Date(monthObj.year, monthObj.month + 1, 0).getDate();
-
-    for (let day = 1; day <= totalDays; day++) {
-        const date = new Date(monthObj.year, monthObj.month, day);
-        const dayOfWeek = date.getDay();
-
-        if (dayOfWeek === 6 || dayOfWeek === 0) {
-            const satDay = dayOfWeek === 6 ? day : (day - 1);
-            const sunDay = dayOfWeek === 0 ? day : (day + 1);
-
-            if (dayOfWeek === 6 || (dayOfWeek === 0 && day === 1)) {
-                let satWorkers = [];
-                let sunWorkers = [];
-
-                Object.keys(scheduleData).forEach(name => {
-                    const employee = scheduleData[name];
-                    if (employee.info.Grupo === "Operador Noc" || employee.info.Grupo === "Líder de Célula") {
-                        if (satDay > 0 && satDay <= totalDays) {
-                            if (employee.schedule[satDay - 1] === 'T') satWorkers.push(name);
-                        }
-                        if (sunDay > 0 && sunDay <= totalDays) {
-                            if (employee.schedule[sunDay - 1] === 'T') sunWorkers.push(name);
-                        }
-                    }
-                });
-
-                const hasSaturday = satWorkers.length > 0 && satDay <= totalDays;
-                const hasSunday = sunWorkers.length > 0 && sunDay <= totalDays;
-
-                if (hasSaturday || hasSunday) {
-                    hasResults = true;
-
-                    const formatDate = (d) => `${pad(d)}/${pad(monthObj.month + 1)}`;
-                    const formatBadge = (name) => {
-                        const employee = scheduleData[name];
-                        const isLeader = employee.info.Grupo === "Líder de Célula";
-                        const badgeClass = isLeader ? 'bg-purple-100 text-purple-800 border-purple-300' : 'bg-blue-100 text-blue-800 border-blue-300';
-                        return `<span class="text-sm font-semibold px-3 py-1 rounded-full border ${badgeClass} shadow-sm">${name}</span>`;
-                    };
-                    const formatSatBadge = (workers) => workers.map(formatBadge).join('');
-                    const formatSunBadge = (workers) => workers.map(formatBadge).join('');
-
-                    const cardHtml = `
-                        <div class="bg-white p-5 rounded-2xl shadow-xl border border-gray-200 flex flex-col min-h-full">
-                            <div class="bg-indigo-700 text-white p-4 -m-5 mb-5 rounded-t-xl flex justify-center items-center">
-                                <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5 mr-2" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8 7V3m8 4V3m-9 8h10M5 21h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z" />
-                                </svg>
-                                <h3 class="text-white font-bold text-base"> Fim de Semana ${formatDate(satDay)} - ${formatDate(sunDay)}
-                                </h3>
-                            </div>
-                            <div class="flex-1 flex flex-col justify-start space-y-6">
-                                ${hasSaturday ? `
-                                    <div class="flex gap-4">
-                                        <div class="w-1.5 bg-blue-500 rounded-full shrink-0"></div>
-                                        <div class="flex-1">
-                                            <p class="text-xs font-bold text-blue-600 uppercase tracking-widest mb-3">
-                                                Sábado (${formatDate(satDay)})
-                                            </p>
-                                            <div class="flex flex-wrap gap-2">
-                                                ${formatSatBadge(satWorkers) || '<span class="text-gray-400 text-sm italic">Ninguém escalado</span>'}
-                                            </div>
-                                        </div>
-                                    </div>` : ''}
-                                ${hasSunday ? `
-                                    <div class="flex gap-4">
-                                        <div class="w-1.5 bg-purple-500 rounded-full shrink-0"></div>
-                                        <div class="flex-1">
-                                            <p class="text-xs font-bold text-purple-600 uppercase tracking-widest mb-3">
-                                                Domingo (${formatDate(sunDay)})
-                                            </p>
-                                            <div class="flex flex-wrap gap-2">
-                                                ${formatSunBadge(sunWorkers) || '<span class="text-gray-400 text-sm italic">Ninguém escalado</span>'}
-                                            </div>
-                                        </div>
-                                    </div>` : ''}
-                            </div>
-                        </div>
-                    `;
-                    container.insertAdjacentHTML('beforeend', cardHtml);
-                }
-            }
-        }
+// ==========================================
+// 9. INIT
+// ==========================================
+function initGlobal() {
+    initTabs();
+    
+    const header = document.getElementById('monthSelectorContainer');
+    if(!document.getElementById('monthSel')) {
+        const sel = document.createElement('select'); sel.id='monthSel';
+        sel.className = 'bg-[#1A1C2E] text-white text-sm font-medium px-4 py-2 rounded-lg border border-[#2E3250] focus:ring-2 focus:ring-purple-500 outline-none cursor-pointer w-full md:w-auto shadow-lg';
+        
+        availableMonths.forEach(m => {
+            const opt = document.createElement('option'); 
+            opt.value = `${m.year}-${m.month}`;
+            opt.textContent = `${monthNames[m.month]}/${m.year}`;
+            if(m.month === selectedMonthObj.month && m.year === selectedMonthObj.year) opt.selected = true;
+            sel.appendChild(opt);
+        });
+        
+        sel.addEventListener('change', e=>{
+            const [y,mo] = e.target.value.split('-').map(Number);
+            selectedMonthObj={year:y, month:mo};
+            loadDataFromCloud(); 
+        });
+        header.appendChild(sel);
     }
 
-    if (!hasResults) {
-        container.innerHTML = `<div class="md:col-span-2 lg:col-span-3 bg-white p-8 rounded-xl shadow-sm border border-gray-200 text-center"><p class="text-gray-500 text-lg">Nenhum Operador Noc escalado para fins de semana neste mês.</p></div>`;
-    }
+    const ds = document.getElementById('dateSlider');
+    if (ds) ds.addEventListener('input', e => { currentDay = parseInt(e.target.value); updateDailyView(); });
+
+    loadDataFromCloud();
 }
 
 function initTabs() {
-    const tabButtons = document.querySelectorAll('.tab-button:not(.turno-filter)');
-    const tabContents = document.querySelectorAll('.tab-content');
-
-    tabButtons.forEach(button => {
-        button.addEventListener('click', () => {
-            tabButtons.forEach(btn => btn.classList.remove('active'));
-            button.classList.add('active');
-            const targetTab = button.dataset.tab;
-
-            tabContents.forEach(content => {
-                if (content.id === `${targetTab}View`) {
-                    content.classList.remove('hidden');
-                    if (targetTab === 'personal') {
-                        updateWeekendTable();
-                    }
-                    if (targetTab === 'profile') {
-                        initProfile();
-                    }
-                } else {
-                    content.classList.add('hidden');
-                }
-            });
+    document.querySelectorAll('.tab-button').forEach(b => {
+        b.addEventListener('click', () => {
+            document.querySelectorAll('.tab-button').forEach(x=>x.classList.remove('active'));
+            document.querySelectorAll('.tab-content').forEach(x=>x.classList.add('hidden'));
+            b.classList.add('active');
+            document.getElementById(`${b.dataset.tab}View`).classList.remove('hidden');
+            if(b.dataset.tab==='personal') {
+                const sel = document.getElementById('employeeSelect');
+                if(sel && sel.value) updateWeekendTable(sel.value); 
+                else updateWeekendTable(null);
+            }
         });
     });
 }
 
-function initDailyView() {
-    const slider = document.getElementById('dateSlider');
-    slider.addEventListener('input', (e) => {
-        currentDay = parseInt(e.target.value, 10);
-        updateDailyView();
-    });
+function updateWeekendTable(specificName) {
+    const container = document.getElementById('weekendPlantaoContainer');
+    if (!container) return;
+    container.innerHTML = '';
+    const m = { y: selectedMonthObj.year, mo: selectedMonthObj.month };
+    const total = new Date(m.y, m.mo+1, 0).getDate();
+    const fmtDate = (d) => `${pad(d)}/${pad(m.mo+1)}`;
 
-    const ctx = document.getElementById('dailyChart').getContext('2d');
-    dailyChart = new Chart(ctx, { type: 'doughnut', data: { datasets: [{ data: [0, 0, 0, 0] }] }, options: { responsive: true, maintainAspectRatio: false } });
-}
+    for (let d=1; d<=total; d++){
+        const dow = new Date(m.y, m.mo, d).getDay();
+        if (dow === 6) { 
+            const satDate = d;
+            const sunDate = d+1 <= total ? d+1 : null;
+            let satW=[], sunW=[];
+            Object.keys(scheduleData).forEach(n=>{
+                if(scheduleData[n].schedule[satDate-1]==='T') satW.push(n);
+                if(sunDate && scheduleData[n].schedule[sunDate-1]==='T') sunW.push(n);
+            });
 
-function initMonthSelect() {
-    const select = document.createElement('select');
-    select.id = 'monthSelect';
-    select.className = 'appearance-none w-56 p-3 bg-indigo-50 border border-indigo-200 rounded-xl focus:ring-4 focus:ring-indigo-100 focus:border-indigo-500 text-gray-900 text-sm font-semibold transition-all shadow-lg';
-    availableMonths.forEach(m => {
-        const opt = document.createElement('option');
-        opt.value = `${m.year}-${m.month}`;
-        opt.textContent = `${monthNames[m.month]} / ${m.year}`;
-        if (m.year === selectedMonthObj.year && m.month === selectedMonthObj.month) opt.selected = true;
-        select.appendChild(opt);
-    });
+            if(satW.length || sunW.length) {
+                const makeTags = (list, colorClass) => {
+                    if(!list.length) return '<span class="text-gray-600 text-xs italic">Sem escala</span>';
+                    return list.map(name => `<span class="inline-block bg-[#0F1020] border border-${colorClass}-900 text-${colorClass}-400 px-2 py-1 rounded text-xs font-bold mr-1 mb-1 shadow-sm">${name}</span>`).join('');
+                };
+                const satTags = makeTags(satW, 'sky');
+                const sunTags = makeTags(sunW, 'indigo');
+                const labelSat = `Sábado ${fmtDate(satDate)}`;
+                const labelSun = sunDate ? `Domingo ${fmtDate(sunDate)}` : 'Domingo';
 
-    const header = document.querySelector('#monthSelectorContainer');
-    if(header) header.appendChild(select);
-
-    select.addEventListener('change', (e) => {
-        const [y, mo] = e.target.value.split('-').map(Number);
-        selectedMonthObj = { year: y, month: mo };
-        
-        rebuildScheduleDataForSelectedMonth();
-        
-        // Atualiza todas as visões que podem estar ativas
-        initSelect();
-        initProfile(); // Recarrega perfil com dados do novo mês
-        updateDailyView();
-        updateWeekendTable();
-
-        const headerDate = document.getElementById('headerDate');
-        headerDate.textContent = `Mês de Referência: ${monthNames[selectedMonthObj.month]} de ${selectedMonthObj.year}`;
-    });
-}
-
-function initGlobal() {
-    rawSchedule = processRawSchedule(rawDataFromEscala);
-
-    initMonthSelect();
-    rebuildScheduleDataForSelectedMonth();
-
-    document.getElementById('headerDate').textContent = `Mês de Referência: ${monthNames[selectedMonthObj.month]} de ${selectedMonthObj.year}`;
-
-    const monthObj = { year: selectedMonthObj.year, month: selectedMonthObj.month };
-    const totalDays = new Date(monthObj.year, monthObj.month + 1, 0).getDate();
-    const slider = document.getElementById('dateSlider');
-    slider.max = totalDays;
-    const sliderMaxLabel = document.getElementById('sliderMaxLabel');
-    if (sliderMaxLabel) sliderMaxLabel.textContent = `Dia ${totalDays}`;
-
-    initTabs();
-    initSelect();
-    initDailyView();
-    initProfile(); // Inicializa o perfil na carga
-
-    currentDay = Math.min(systemDay, totalDays);
-    document.getElementById('dateSlider').value = currentDay;
-    updateDailyView();
-    scheduleMidnightUpdate();
-    updateWeekendTable();
-}
-
-function scheduleMidnightUpdate() {
-    const now = new Date();
-    const midnight = new Date(now);
-    midnight.setHours(24, 0, 0, 0);
-    const timeToMidnight = midnight.getTime() - now.getTime();
-
-    setTimeout(() => {
-        updateDailyView();
-        setInterval(updateDailyView, 24 * 60 * 60 * 1000);
-    }, timeToMidnight + 1000);
+                const cardHTML = `
+                <div class="bg-[#1A1C2E] rounded-xl shadow-lg border border-[#2E3250] overflow-hidden">
+                    <div class="bg-[#2E3250]/50 p-3 flex justify-between items-center border-b border-[#2E3250]">
+                        <span class="text-xs font-bold text-gray-400 uppercase tracking-wider">Fim de Semana</span>
+                        <span class="text-xs font-mono text-purple-400 bg-purple-900/20 px-2 py-0.5 rounded border border-purple-500/30">${fmtDate(satDate)}</span>
+                    </div>
+                    <div class="p-4 space-y-4">
+                        <div>
+                            <h4 class="text-sky-500 font-bold text-xs uppercase mb-2 flex items-center gap-2"><i class="fas fa-calendar-day"></i> ${labelSat}</h4>
+                            <div class="flex flex-wrap">${satTags}</div>
+                        </div>
+                        ${sunDate ? `<div class="pt-3 border-t border-[#2E3250]">
+                            <h4 class="text-indigo-500 font-bold text-xs uppercase mb-2 flex items-center gap-2"><i class="fas fa-calendar-day"></i> ${labelSun}</h4>
+                            <div class="flex flex-wrap">${sunTags}</div></div>` : ''}
+                    </div>
+                </div>`;
+                container.insertAdjacentHTML('beforeend', cardHTML);
+            }
+        }
+    }
 }
 
 document.addEventListener('DOMContentLoaded', initGlobal);
