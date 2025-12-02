@@ -66,6 +66,11 @@
         .image-upload-trigger:hover .upload-overlay {
             opacity: 1;
         }
+        /* Checkbox Customization */
+        .custom-checkbox:checked {
+            background-color: #7C3AED;
+            border-color: #7C3AED;
+        }
     </style>
 </head>
 <body class="min-h-screen flex flex-col relative overflow-x-hidden selection:bg-purple-500 selection:text-white">
@@ -127,15 +132,16 @@
                             <div class="text-center w-full">
                                 <h2 id="previewName" class="text-xl font-bold text-white truncate">Usuário</h2>
                                 <p id="previewRole" class="text-sm text-purple-400 font-medium truncate">Colaborador</p>
+                                <span id="previewLevel" class="mt-2 inline-block px-2 py-0.5 rounded text-[10px] font-bold uppercase tracking-wider bg-gray-700 text-gray-300 border border-gray-600">Nível</span>
                             </div>
 
                             <div class="w-full pt-4 border-t border-gray-700/50">
                                 <div class="flex justify-between text-xs text-gray-400 mb-2">
                                     <span>Perfil Completo</span>
-                                    <span class="text-green-400">85%</span>
+                                    <span class="text-green-400">90%</span>
                                 </div>
                                 <div class="w-full bg-gray-800 rounded-full h-1.5">
-                                    <div class="bg-gradient-to-r from-green-400 to-emerald-500 h-1.5 rounded-full" style="width: 85%"></div>
+                                    <div class="bg-gradient-to-r from-green-400 to-emerald-500 h-1.5 rounded-full" style="width: 90%"></div>
                                 </div>
                             </div>
                         </div>
@@ -195,7 +201,69 @@
                                 </div>
                             </div>
 
-                            <!-- Seção 3: Segurança -->
+                            <!-- Seção 3: Credenciais e Permissões (NOVA) -->
+                            <div>
+                                <h3 class="text-white font-semibold mb-4 flex items-center gap-2 border-b border-gray-700/50 pb-2">
+                                    <i class="fas fa-user-shield text-emerald-500"></i> Credenciais e Permissões
+                                </h3>
+                                <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
+                                    
+                                    <!-- Nível de Acesso -->
+                                    <div>
+                                        <label class="block text-xs font-bold text-gray-400 uppercase tracking-wider mb-2">Nível de Acesso</label>
+                                        <div class="relative">
+                                            <select id="accessLevelInput" class="input-dark w-full px-4 py-3 rounded-xl appearance-none cursor-pointer focus:ring-2 focus:ring-emerald-500/50">
+                                                <option value="operador">Operador</option>
+                                                <option value="analista">Analista</option>
+                                                <option value="gestor">Gestor</option>
+                                                <option value="admin">Administrador</option>
+                                            </select>
+                                            <div class="pointer-events-none absolute inset-y-0 right-0 flex items-center px-4 text-gray-500">
+                                                <i class="fas fa-chevron-down text-xs"></i>
+                                            </div>
+                                        </div>
+                                    </div>
+
+                                    <!-- Unidades Operacionais -->
+                                    <div>
+                                        <label class="block text-xs font-bold text-gray-400 uppercase tracking-wider mb-2">Unidades / Áreas Associadas</label>
+                                        <div class="relative">
+                                            <i class="fas fa-building absolute left-4 top-3.5 text-gray-500"></i>
+                                            <input type="text" id="unitsInput" class="input-dark w-full pl-10 pr-4 py-3 rounded-xl" placeholder="Ex: Matriz, Filial RJ (Separe por vírgula)">
+                                        </div>
+                                    </div>
+
+                                    <!-- Funções Permitidas (Checkboxes) -->
+                                    <div class="col-span-2">
+                                        <label class="block text-xs font-bold text-gray-400 uppercase tracking-wider mb-3">Funções Permitidas</label>
+                                        <div class="grid grid-cols-2 md:grid-cols-4 gap-4 bg-black/20 p-4 rounded-xl border border-gray-700/50">
+                                            
+                                            <label class="flex items-center gap-2 cursor-pointer group">
+                                                <input type="checkbox" name="permissions" value="view" class="custom-checkbox w-4 h-4 rounded bg-gray-700 border-gray-600 focus:ring-purple-500 focus:ring-offset-gray-800 transition-colors">
+                                                <span class="text-sm text-gray-300 group-hover:text-white transition-colors">Visualização</span>
+                                            </label>
+
+                                            <label class="flex items-center gap-2 cursor-pointer group">
+                                                <input type="checkbox" name="permissions" value="edit" class="custom-checkbox w-4 h-4 rounded bg-gray-700 border-gray-600 focus:ring-purple-500 focus:ring-offset-gray-800 transition-colors">
+                                                <span class="text-sm text-gray-300 group-hover:text-white transition-colors">Edição</span>
+                                            </label>
+
+                                            <label class="flex items-center gap-2 cursor-pointer group">
+                                                <input type="checkbox" name="permissions" value="reports" class="custom-checkbox w-4 h-4 rounded bg-gray-700 border-gray-600 focus:ring-purple-500 focus:ring-offset-gray-800 transition-colors">
+                                                <span class="text-sm text-gray-300 group-hover:text-white transition-colors">Relatórios</span>
+                                            </label>
+
+                                            <label class="flex items-center gap-2 cursor-pointer group">
+                                                <input type="checkbox" name="permissions" value="admin" class="custom-checkbox w-4 h-4 rounded bg-gray-700 border-gray-600 focus:ring-purple-500 focus:ring-offset-gray-800 transition-colors">
+                                                <span class="text-sm text-gray-300 group-hover:text-white transition-colors">Admin</span>
+                                            </label>
+
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+
+                            <!-- Seção 4: Segurança -->
                             <div>
                                 <h3 class="text-white font-semibold mb-4 flex items-center gap-2 border-b border-gray-700/50 pb-2">
                                     <i class="fas fa-lock text-gray-400"></i> Segurança
@@ -265,6 +333,12 @@
         const jobTitleInput = document.getElementById('jobTitleInput');
         const deptInput = document.getElementById('deptInput');
         const phoneInput = document.getElementById('phoneInput');
+        
+        // Novos Inputs
+        const accessLevelInput = document.getElementById('accessLevelInput');
+        const unitsInput = document.getElementById('unitsInput');
+        const permissionCheckboxes = document.querySelectorAll('input[name="permissions"]');
+
         const newPassInput = document.getElementById('newPassword');
         const confirmPassInput = document.getElementById('confirmPassword');
         
@@ -282,30 +356,22 @@
         const statusMsg = document.getElementById('statusMessage');
         const previewName = document.getElementById('previewName');
         const previewRole = document.getElementById('previewRole');
+        const previewLevel = document.getElementById('previewLevel');
         const userIdLabel = document.getElementById('userIdLabel');
 
         let currentPhotoURL = null;
 
         // --- Funções Auxiliares ---
 
-        // CORREÇÃO: Função segura para redirecionamento que previne erros em ambiente Blob
         function safeRedirect(path) {
-            // Em ambientes de desenvolvimento (preview/blob), window.location.href para arquivos relativos pode falhar.
             if (window.location.protocol === 'blob:') {
-                console.warn(`Redirecionamento para '${path}' cancelado (Ambiente Blob detectado). Em produção, o navegador iria para: ${path}`);
+                console.warn(`Redirecionamento para '${path}' cancelado (Ambiente Blob detectado).`);
                 return;
             }
-
             try {
                 window.location.href = path;
             } catch (e) {
                 console.error("Erro ao tentar redirecionar:", e);
-                // Tenta fallback com replace para evitar histórico se href falhar
-                try {
-                    window.location.replace(path);
-                } catch(e2) {
-                    console.error("Redirecionamento falhou completamente.", e2);
-                }
             }
         }
 
@@ -318,7 +384,7 @@
             setTimeout(() => statusMsg.classList.add('opacity-0'), 4000);
         }
 
-        function updateAvatarUI(name, photoUrl) {
+        function updateAvatarUI(name, photoUrl, level) {
             previewName.textContent = name || "Usuário";
             if (photoUrl) {
                 avatarContainer.style.backgroundImage = `url('${photoUrl}')`;
@@ -333,6 +399,15 @@
                     avatarInitials.textContent = "--";
                 }
             }
+            
+            // Atualiza badge de nível
+            if(level) {
+                previewLevel.textContent = level;
+                // Cores dinâmicas para o badge
+                if(level === 'admin') previewLevel.className = "mt-2 inline-block px-2 py-0.5 rounded text-[10px] font-bold uppercase tracking-wider bg-purple-900/50 text-purple-300 border border-purple-500/50";
+                else if(level === 'gestor') previewLevel.className = "mt-2 inline-block px-2 py-0.5 rounded text-[10px] font-bold uppercase tracking-wider bg-emerald-900/50 text-emerald-300 border border-emerald-500/50";
+                else previewLevel.className = "mt-2 inline-block px-2 py-0.5 rounded text-[10px] font-bold uppercase tracking-wider bg-gray-700 text-gray-300 border border-gray-600";
+            }
         }
 
         // --- Lógica de Upload de Imagem ---
@@ -344,7 +419,7 @@
                 const reader = new FileReader();
                 reader.onload = function(event) {
                     currentPhotoURL = event.target.result;
-                    updateAvatarUI(displayNameInput.value, currentPhotoURL);
+                    updateAvatarUI(displayNameInput.value, currentPhotoURL, accessLevelInput.value);
                 };
                 reader.readAsDataURL(file);
             }
@@ -358,19 +433,31 @@
                 emailInput.value = user.email;
                 displayNameInput.value = user.displayName || '';
                 
+                // Carregar dados extras do localStorage
                 const savedData = JSON.parse(localStorage.getItem(`cronos_user_${user.uid}`)) || {};
                 
+                // Dados Corporativos
                 jobTitleInput.value = savedData.jobTitle || '';
                 deptInput.value = savedData.department || '';
                 phoneInput.value = savedData.phone || '';
+
+                // Credenciais e Permissões
+                accessLevelInput.value = savedData.accessLevel || 'analista';
+                unitsInput.value = savedData.operationalUnits || '';
+                
+                // Permissões (Checkboxes)
+                const savedPermissions = savedData.permissions || [];
+                permissionCheckboxes.forEach(cb => {
+                    cb.checked = savedPermissions.includes(cb.value);
+                });
                 
                 currentPhotoURL = savedData.photoURL || user.photoURL;
                 
+                // Atualizar Visualização Lateral
                 previewRole.textContent = savedData.jobTitle || 'Defina seu cargo';
-                updateAvatarUI(user.displayName, currentPhotoURL);
+                updateAvatarUI(user.displayName, currentPhotoURL, accessLevelInput.value);
 
             } else {
-                // Se não tiver usuário, tenta redirecionar (ou avisa no console se for blob)
                 safeRedirect("login.html");
             }
         });
@@ -380,7 +467,6 @@
             signOut(auth).then(() => safeRedirect("login.html"));
         });
 
-        // Navegação de volta
         const goBack = () => safeRedirect("index.html");
         btnCancel.addEventListener('click', goBack);
         btnBackHeader.addEventListener('click', goBack);
@@ -397,6 +483,13 @@
             const newPhone = phoneInput.value.trim();
             const newPass = newPassInput.value;
             const confirmPass = confirmPassInput.value;
+            
+            // Novos Campos
+            const newAccessLevel = accessLevelInput.value;
+            const newUnits = unitsInput.value.trim();
+            const newPermissions = Array.from(permissionCheckboxes)
+                .filter(cb => cb.checked)
+                .map(cb => cb.value);
 
             const originalBtnContent = btnSave.innerHTML;
             btnSave.innerHTML = '<i class="fas fa-spinner fa-spin"></i> Salvando...';
@@ -421,12 +514,16 @@
                     jobTitle: newJob,
                     department: newDept,
                     phone: newPhone,
-                    photoURL: currentPhotoURL
+                    photoURL: currentPhotoURL,
+                    // Novos dados salvos
+                    accessLevel: newAccessLevel,
+                    operationalUnits: newUnits,
+                    permissions: newPermissions
                 };
                 localStorage.setItem(`cronos_user_${user.uid}`, JSON.stringify(extraData));
 
                 previewRole.textContent = newJob || 'Cargo não definido';
-                updateAvatarUI(newName, currentPhotoURL);
+                updateAvatarUI(newName, currentPhotoURL, newAccessLevel);
 
                 showStatus('Perfil atualizado com sucesso!', 'success');
                 
@@ -449,12 +546,17 @@
 
         // Live Update
         displayNameInput.addEventListener('input', (e) => {
-            if (!currentPhotoURL) updateAvatarUI(e.target.value, null);
+            if (!currentPhotoURL) updateAvatarUI(e.target.value, null, accessLevelInput.value);
             previewName.textContent = e.target.value || "Usuário";
         });
         
         jobTitleInput.addEventListener('input', (e) => {
              previewRole.textContent = e.target.value || "Colaborador";
+        });
+        
+        // Atualiza a badge de nível ao mudar o select
+        accessLevelInput.addEventListener('change', (e) => {
+            updateAvatarUI(displayNameInput.value, currentPhotoURL, e.target.value);
         });
 
     </script>
